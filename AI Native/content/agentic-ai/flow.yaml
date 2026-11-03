@@ -1,0 +1,23 @@
+# Flow — Tangible story §4.8
+# "Flows are ordered CUs that take one approach to one problem."
+#
+# This is the shipped UDAAN sequence. A problem may carry more than one flow;
+# a proposed banking re-skin is in proposals/banking-reskin.md.
+
+id: flow.agentic-ai.udaan-v1
+problem: prob.agentic-ai
+approach: >
+  Problem-based, narrative-driven. Five units, each opening on a failure created
+  by the previous unit's success. No jargon until earned; the framework is
+  assembled across the course and revealed in the final unit.
+  See context/udaan-build-manual.md Part III.
+status: shipped
+mode: pedagogy
+actor: human
+
+cus:
+  - cu.c2.u1
+  - cu.c2.u2
+  - cu.c2.u3
+  - cu.c2.u4
+  - cu.c2.u5

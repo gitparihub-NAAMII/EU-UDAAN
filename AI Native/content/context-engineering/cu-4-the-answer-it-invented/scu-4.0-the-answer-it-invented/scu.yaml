@@ -1,0 +1,33 @@
+# Sub-Content Unit — Tangible story §4.6
+# "The atomic capability spec." Everything is keyed to this id.
+
+id: scu.c1.u4.0
+cu: cu.c1.u4
+title: "The answer it invented"
+
+# UDAAN type tag — build manual §3.1.
+type_tag: experience-the-problem
+type_tag_source: inferred   # from sub-unit title, NOT read from the deck
+
+# Story §4.6. Empty pending AI_Native_Skill_Mapper.xlsx — graph/README.md.
+skills: []
+
+knowledge:
+  - kb.world.himalayan-getaways
+
+actor: human
+mode: pedagogy
+
+# Story §6.1 compartmentalization, honestly declared.
+# vocabulary-map.md §1.1: only concept-cycle SCUs are durable corpus assets;
+# the rest is flow-local connective tissue.
+liftable: false
+assumes: []
+
+# Story §6.1 artifact tier model.
+artifact:
+  tier: 1            # shipped as .pptx + .pdf slide decks
+  target_tier: 1     # raise where the SCU runs a live experiment
+  path: null         # set when authored in-repo
+
+duration_min: null   # declared per sub-unit in the source decks

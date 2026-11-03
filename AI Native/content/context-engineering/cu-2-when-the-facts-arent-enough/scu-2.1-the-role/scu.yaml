@@ -1,0 +1,54 @@
+# Sub-Content Unit — Tangible story §4.6
+# "The atomic capability spec." Everything is keyed to this id.
+#
+# REFERENCE IMPLEMENTATION. Build manual §3.1: "Study this one before writing a new
+# sub-unit." This is the only SCU in the repo with skills declared and an authored
+# artifact; the other 62 are scaffold. Use it as the shape to fill.
+
+id: scu.c1.u2.1
+cu: cu.c1.u2
+title: "The Role"
+
+# UDAAN type tag — build manual §3.1.
+type_tag: discover-it-yourself
+type_tag_source: build-manual-§3.1   # documented in full, not inferred
+
+# Story §4.6 — skills at competency levels, per story §4.11.
+# The primary skill is quoted from AI_Native_Skill_Mapper.xlsx in build manual §1.6.
+skills:
+  - [role-persona-specification, application]
+  - [structured-prompt-engineering, application]
+  - [audience-aware-ai-communication, awareness]
+
+knowledge:
+  - kb.world.himalayan-getaways
+  - kb.framework.brief
+
+actor: human
+mode: pedagogy
+
+# Story §6.1 compartmentalization, honestly declared.
+# vocabulary-map.md §1.1: only concept-cycle SCUs are durable corpus assets;
+# the rest is flow-local connective tissue.
+liftable: true
+assumes:
+  - scu.c1.u2.0   # the failed message this SCU re-reads in step 3
+
+# Story §6.1 artifact tier model.
+artifact:
+  tier: 1
+  target_tier: 3
+  target_tier_reason: >
+    Step 4 is a four-variant one-variable experiment the learner currently reads rather
+    than runs. As Tier 3 (stateful frontend, browser-only state, bounded cost) they run
+    it. Build manual §4.6 names this experiment as one of two whose model-dependence is
+    "the highest-risk maintenance item in the program" — a live artifact degrades visibly
+    instead of silently. See context/vocabulary-map.md §3.4.
+  path: artifact.md
+
+duration_min: null   # declared per sub-unit in the source decks
+
+# Story §8.2 — "how to learn it" telemetry. The intra-SCU pedagogical shape.
+pedagogy:
+  pattern: udaan-8-step
+  targets_habit: true   # see context/vocabulary-map.md §2.3 and upstream Q1
