@@ -35,3 +35,7 @@ source/**/*.key
 dist/
 build/
 *.log
+
+# Confidential — never push. This repository is public.
+_system/tangible-story.md
+5-roadmap/banking-reskin.md

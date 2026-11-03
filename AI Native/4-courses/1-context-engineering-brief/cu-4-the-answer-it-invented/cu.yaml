@@ -1,0 +1,20 @@
+# Content Unit — Tangible story §4.8
+# "CUs are ordered sequences of SCUs forming one coherent unit."
+# In pedagogy mode a CU is a lesson. Here: one UDAAN unit.
+
+id: cu.c1.u4
+flow: flow.context-engineering.udaan-v1
+title: "The answer it invented"
+concept: "Grounding (B deepened)"
+
+# The learner-facing title is the learner's complaint, in their voice.
+# Build manual §3.2 step 1: name the failure, not the topic.
+
+scus:
+  - scu.c1.u4.0
+  - scu.c1.u4.1
+  - scu.c1.u4.2
+  - scu.c1.u4.3
+
+# Skills are declared per-SCU, not here. Empty until
+# AI_Native_Skill_Mapper.xlsx lands in _system/source/ — see _system/graph/README.md.

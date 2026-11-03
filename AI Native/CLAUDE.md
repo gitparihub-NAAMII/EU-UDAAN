@@ -6,18 +6,18 @@ Working instructions for agents in this repo. Read `README.md` for what the repo
 
 Read in this order. Skipping straight to the third is the most common way to get work here wrong.
 
-1. `context/tangible-story.md` **§4** (the substrate) and **§13** (the decision rules) — the
+1. `_system/tangible-story.md` **§4** (the substrate) and **§13** (the decision rules) — the
    vocabulary and the constraints everything downstream instantiates
-2. `context/vocabulary-map.md` — how this program maps onto that, and the three places it doesn't
-3. `WORKFLOW.md` — the pipeline you are executing
+2. `_system/vocabulary-map.md` — how this program maps onto that, and the three places it doesn't
+3. `1-how-we-built-it/authoring-workflow.md` — the pipeline you are executing
 
-If you are authoring content, also read `context/udaan-build-manual.md` Part III, and the
-reference SCU at `content/context-engineering/cu-2-when-the-facts-arent-enough/scu-2.1-the-role/`.
+If you are authoring content, also read `1-how-we-built-it/build-manual.md` Part III, and the
+reference SCU at `4-courses/1-context-engineering-brief/cu-2-when-the-facts-arent-enough/scu-2.1-the-role/`.
 
 ## Hard constraints
 
-**Never edit `context/tangible-story.md`.** Vendored from `tangiblecareers/tangible-source`,
-overwritten on every upstream publish. Disagreements go to `context/vocabulary-map.md` §5 as open
+**Never edit or commit `_system/tangible-story.md`.** It is gitignored and this repo is public. Vendored from `tangiblecareers/tangible-source`,
+overwritten on every upstream publish. Disagreements go to `_system/vocabulary-map.md` §5 as open
 questions, then to Alok or Bishesh.
 
 **Competency levels are `awareness | application | mastery | influence`.** Story §4.11. The
@@ -30,13 +30,13 @@ never rename.
 **Every SCU anchors.** Story §8.3 — no unanchored content. An SCU declares its CU, its type tag,
 its `liftable` status, and (once the skill mapper lands) its skills at levels.
 
-**Run the validator before claiming done:** `env/bin/python tools/validate.py`. Zero errors.
+**Run the validator before claiming done:** `env/bin/python _system/tools/validate.py`. Zero errors.
 
 ## Things that look like mistakes and are not
 
-- **268 `INCOMPLETE` results.** Deliberate and accurate — see `proposals/corpus-gaps.md`. Do not
+- **268 `INCOMPLETE` results.** Deliberate and accurate — see `5-roadmap/corpus-gaps.md`. Do not
   "fix" them by inventing skill assignments. Story §13: *"provenance over assertion."* If the
-  skill mapper spreadsheet isn't in `source/`, the skills aren't known.
+  skill mapper spreadsheet isn't in `_system/source/`, the skills aren't known.
 - **`type_tag_source: inferred` on 62 SCUs.** The tags were derived from sub-unit titles, not read
   from the decks, and the inference is provably wrong somewhere: build manual §3.1 records 17
   concept cycles, the scaffold produces 24. Don't silently reconcile — read the decks.
@@ -44,7 +44,7 @@ its `liftable` status, and (once the skill mapper lands) its skills at levels.
   propose without blocking on curation. Clearing one is a curation decision, not an edit.
 - **`liftable: false` on 46 SCUs.** Honest, not a defect. UDAAN pedagogy is deliberately
   sequence-dependent (build manual §3.0 commitments 2 and 3). `vocabulary-map.md` §4.1.
-- **`graph/` has no `tools.yaml`.** This contribution is pedagogy-mode only. ChatGPT and Gemini
+- **`_system/graph/` has no `tools.yaml`.** This contribution is pedagogy-mode only. ChatGPT and Gemini
   appear as subjects of study, not as wired MCP integrations, so they are not typed tool assets.
 
 ## Writing content
@@ -59,7 +59,7 @@ Voice rules are in build manual §3.5 and they are strict. The ones most often b
 - Never blame the learner. Maya is competent throughout; the failures are structural
 - Maya's story carries no citations. Keep the evidence layer and the narrative layer separate
 
-Consistency: every artifact must agree with `kb.world.himalayan-getaways` (`graph/knowledge.yaml`).
+Consistency: every artifact must agree with `kb.world.himalayan-getaways` (`_system/graph/knowledge.yaml`).
 Characters and world objects may be reused across problems but must not be re-characterised.
 
 Framework acronyms (BRIEF, AGENT, TRUST) must **never be named before their reveal sub-unit** —
@@ -70,8 +70,8 @@ Framework acronyms (BRIEF, AGENT, TRUST) must **never be named before their reve
 - YAML for graph objects, Markdown for artifacts, Python 3 for tools
 - The venv is `env/` and is gitignored. Use `env/bin/python`, not bare `python3` — PyYAML is
   installed in the venv only
-- Source binaries are gitignored. `source/` holds the manifest and the pointer, not the files
-- `tools/seed_corpus.py` is a one-time seed kept for auditability. It skips existing files unless
+- Source binaries are gitignored. `_system/source/` holds the manifest and the pointer, not the files
+- `_system/tools/seed_corpus.py` is a one-time seed kept for auditability. It skips existing files unless
   `--force`; `--force` destroys hand edits
 
 ## When something is genuinely ambiguous

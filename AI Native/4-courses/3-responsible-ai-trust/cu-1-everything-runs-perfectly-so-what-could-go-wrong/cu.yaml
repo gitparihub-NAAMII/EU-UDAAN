@@ -1,0 +1,21 @@
+# Content Unit — Tangible story §4.8
+# "CUs are ordered sequences of SCUs forming one coherent unit."
+# In pedagogy mode a CU is a lesson. Here: one UDAAN unit.
+
+id: cu.c3.u1
+flow: flow.responsible-ai.udaan-v1
+title: "Everything runs perfectly, so what could go wrong?"
+concept: "Frames all five"
+
+# The learner-facing title is the learner's complaint, in their voice.
+# Build manual §3.2 step 1: name the failure, not the topic.
+
+scus:
+  - scu.c3.u1.1
+  - scu.c3.u1.2
+  - scu.c3.u1.3
+  - scu.c3.u1.4
+  - scu.c3.u1.5
+
+# Skills are declared per-SCU, not here. Empty until
+# AI_Native_Skill_Mapper.xlsx lands in _system/source/ — see _system/graph/README.md.
