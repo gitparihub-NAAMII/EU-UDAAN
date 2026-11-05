@@ -45,9 +45,9 @@ the problem-based-learning evidence) derives from Khatri & Khanal (2026), arXiv:
 by Tangible's CEO and CSO. When it and the canon disagree, that's a real conflict to escalate, not a
 local mapping problem. One is live: `vocabulary-map.md` §5 Q1.
 
-## Known gap: `graph/` is missing
+## The graph registries
 
-The validator expects `graph/domains.yaml`, `skills.yaml`, `knowledge.yaml`, `problems.yaml` and
-`escalations.yaml`. They were described but never committed, so the validator currently reports
-77 errors, every one a reference to a registry that doesn't exist yet. Rebuilding them is tracked in
-[`5-roadmap/corpus-gaps.md`](../5-roadmap/corpus-gaps.md).
+`graph/` holds five registries: domains, skills (with typed edges), knowledge bases, problems and
+escalations. They were rebuilt on 2026-11-05 after it turned out the originals had never been
+committed. [`graph/README.md`](graph/README.md) records the source for each and what couldn't be
+recovered.

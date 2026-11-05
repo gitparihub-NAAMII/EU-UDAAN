@@ -1,0 +1,84 @@
+# Knowledge bases — Tangible story §4.3
+# Versioned, governed collections of retrievable context that an SCU can reference.
+# Reusable across SCUs and flows.
+#
+# Rebuilt 2026-11-05. The original file was described as holding 8 knowledge bases but was
+# never committed; these 7 are the ones a source in this repo names or directly describes.
+
+knowledge:
+  # ── The world ───────────────────────────────────────────────────────────
+  - id: kb.world.himalayan-getaways
+    name: Himalayan Getaways world bible
+    kind: world
+    version: "1.0"
+    source: build manual §1.2
+    description: >
+      Maya Gurung and the fixed cast and objects of the programme: Ravi Shrestha, Suresh,
+      Sunita, CodeHimal, the Thapa family, the treks (Annapurna Base Camp, Ghorepani–Poon Hill,
+      Ghandruk), the Tihar offer. Every artifact must agree with it. Characters may be reused
+      across problems but never re-characterised.
+    rules:
+      - Maya is competent throughout; the failures are structural
+      - Maya's story carries no citations
+      - Localisation is structural (Kathmandu, Pokhara, monsoon, Tihar, WhatsApp), per build manual §3.6
+
+  # ── The frameworks ──────────────────────────────────────────────────────
+  # Each carries its disclosure rule: the acronym is never named before its reveal sub-unit.
+  # Build manual §3.3 rule 3.
+  - id: kb.framework.brief
+    name: BRIEF — Background, Role, Intent, Examples, Format
+    kind: framework
+    version: "1.0"
+    source: build manual §1.3
+    problem: prob.context-engineering
+    disclosure_rule:
+      reveal_scu: scu.c1.u5.2   # Everything on one page
+      rule: Never name BRIEF before this sub-unit
+  - id: kb.framework.agent
+    name: AGENT — Aim, Go-signal, Explicit steps, Nod points, Tools & limits
+    kind: framework
+    version: "1.0"
+    source: build manual §1.4
+    problem: prob.agentic-ai
+    disclosure_rule:
+      reveal_scu: scu.c2.u5.0   # Five parts, one word
+      rule: Never name AGENT before this sub-unit
+  - id: kb.framework.trust
+    name: TRUST — Trace, Respect, Uncover, Show, Take
+    kind: framework
+    version: "1.0"
+    source: build manual §1.5
+    problem: prob.responsible-ai
+    disclosure_rule:
+      reveal_scu: scu.c3.u5.2   # Everything spells TRUST
+      rule: Never name TRUST before this sub-unit
+
+  # ── Cases and evidence ──────────────────────────────────────────────────
+  - id: kb.case.air-canada-chatbot
+    name: Air Canada chatbot bereavement-fare ruling (2024)
+    kind: case
+    version: "1.0"
+    source: 1-how-we-built-it/sources-and-context.md; build manual §1.5
+    description: >
+      The programme's only external real-world case. Anchors consequence in C3 Unit 2 before
+      the same failure reaches Maya's inbox.
+  - id: kb.evidence.adoption-figures
+    name: AI adoption and impact figures
+    kind: evidence
+    version: null   # meant to be version-stamped; stamp it at the next quarterly review
+    staleness: high
+    review: quarterly
+    source: build manual §2.7
+    description: >
+      The evidence set the programme argues from. Several figures are standing arguments and
+      several will be wrong within a year; review per 1-how-we-built-it/authoring-workflow.md.
+
+  # ── Theory ──────────────────────────────────────────────────────────────
+  - id: kb.theory.ai-pyramid
+    name: The AI Pyramid (Khatri & Khanal 2026)
+    kind: theory
+    version: "arXiv:2601.06500"
+    source: build manual Part II
+    description: >
+      Native / Foundation / Deep capability layers and the four AI-Native skill areas the
+      course map comes from. Shared theory with the canon; conflicts escalate (vocabulary-map.md §5 Q1).

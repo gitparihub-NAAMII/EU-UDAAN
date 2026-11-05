@@ -1,0 +1,97 @@
+# Problems — Tangible story §4.10
+# "Always anchored to one domain and one creator-of-record. Difficulty rated. One or more
+# flows attached." In pedagogy mode a problem is a teaching anchor: one course here.
+#
+# Rebuilt 2026-11-05 from _system/vocabulary-map.md §1, §3.2, §4.2–4.4. The original file was
+# described but never committed.
+#
+# difficulty is null throughout: no source in this repo rates it, so it is left for curation
+# rather than guessed.
+
+problems:
+  - id: prob.context-engineering
+    title: Teach context engineering
+    course: 1
+    domain: ai-native-practice
+    scenario_domain: travel-tourism
+    creator_of_record: NAAMII Education & Outreach Division
+    mode: pedagogy
+    status: shipped
+    difficulty: null
+    capability: Context Engineering & Effective Prompting
+    flows:
+      - flow.context-engineering.udaan-v1
+    knowledge:
+      - kb.world.himalayan-getaways
+      - kb.framework.brief
+    prereq_problems: []
+    # vocabulary-map.md §3.2: the course tangible is the submitted artifact (pipeline stage 1);
+    # the build manual's Level 3 test seeds the AI interview (stage 3).
+    validation:
+      artifact: A filled one-page BRIEF for the learner's own recurring job
+      interview_seeds:
+        - Produce a second BRIEF for a job type unlike the first, and say what changed
+
+  - id: prob.agentic-ai
+    title: Teach agentic AI
+    course: 2
+    domain: ai-native-practice
+    scenario_domain: travel-tourism
+    creator_of_record: NAAMII Education & Outreach Division
+    mode: pedagogy
+    status: shipped
+    difficulty: null
+    capability: Agentic Automation Design
+    flows:
+      - flow.agentic-ai.udaan-v1
+    knowledge:
+      - kb.world.himalayan-getaways
+      - kb.framework.agent
+    prereq_problems:
+      - prob.context-engineering
+    validation:
+      artifact: An AGENT spec and a working Gemini Gem
+      interview_seeds:
+        - Argue that a given task should not get an agent
+
+  - id: prob.responsible-ai
+    title: Teach responsible AI
+    course: 3
+    domain: ai-native-practice
+    scenario_domain: travel-tourism
+    creator_of_record: NAAMII Education & Outreach Division
+    mode: pedagogy
+    status: shipped
+    difficulty: null
+    capability: Responsible AI Governance
+    flows:
+      - flow.responsible-ai.udaan-v1
+    knowledge:
+      - kb.world.himalayan-getaways
+      - kb.framework.trust
+      - kb.case.air-canada-chatbot
+    escalations:
+      - esc.bright-line
+    prereq_problems:
+      - prob.agentic-ai
+    validation:
+      artifact: A one-page AI policy and a TRUST audit of something already shipped
+      interview_seeds:
+        - Find a bright-line decision that no course example covered
+
+  # vocabulary-map.md §4.4: the fourth AI-Native skill area, recorded so the gap is queryable.
+  # Draft in 5-roadmap/course-4-ai-enabled-problem-solving.md. Sequencing is undecided, so
+  # prereq_problems is left empty on purpose.
+  - id: prob.ai-enabled-problem-solving
+    title: Teach AI-enabled problem solving
+    course: 4
+    domain: ai-native-practice
+    creator_of_record: NAAMII Education & Outreach Division
+    mode: pedagogy
+    status: unbuilt
+    difficulty: null
+    capability: AI-Enabled Problem Solving
+    flows: []
+    knowledge:
+      - kb.theory.ai-pyramid
+    prereq_problems: []

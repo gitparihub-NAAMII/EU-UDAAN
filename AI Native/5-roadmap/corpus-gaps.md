@@ -7,18 +7,12 @@ Regenerate the numbers before trusting them; this is a snapshot, not a ledger.
 
 ---
 
-## 0. The graph registries were never committed — 77 errors
+## 0. ~~The graph registries were never committed~~ — rebuilt 2026-11-05
 
-`_system/graph/` (`domains.yaml`, `skills.yaml`, `knowledge.yaml`, `problems.yaml`,
-`escalations.yaml`) is described throughout this repo but no copy of it was ever committed, here or
-in the original local repo. The "0 errors" above was true when it was written; today the validator
-reports 77 errors, every one a reference to a registry that isn't there (63 × the world knowledge
-base, the three flows with no problem, the bright-line escalation, three skills).
-
-**To close:** rebuild the five files from `_system/vocabulary-map.md`, the build manual and the
-references the SCUs already make, or recover the originals if a copy exists elsewhere. This comes
-before item 1, because the skill mapper has nowhere to land without `skills.yaml`.
-
+The five `_system/graph/` files were described but never committed, which left the validator at 77
+errors. They were rebuilt from the build manual and `_system/vocabulary-map.md`; see
+`_system/graph/README.md` for what each one was rebuilt from and what could not be recovered
+(the original 20 skill edges and an eighth knowledge base). The validator is back to 0 errors.
 
 ## 1. The skill mapper spreadsheet is not in the repo — blocks 62 SCUs
 

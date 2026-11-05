@@ -1,0 +1,31 @@
+# Domains — Tangible story §4.1
+# "Coarse, lay-readable categories. A skill belongs to a domain only via a problem it has
+# been exercised in."
+#
+# Rebuilt 2026-11-05 from _system/vocabulary-map.md §4.2 and §4.3. The original file was
+# described but never committed.
+
+domains:
+  - id: ai-native-practice
+    name: AI-Native Practice
+    type: applied
+    # vocabulary-map.md §4.2: the capability taught is general professional practice, so the
+    # problems anchor here rather than in the scenario's sector.
+    provisional: true
+    provisional_reason: >
+      Proposed by this contribution so the three problems don't roll up into travel-tourism.
+      Pending upstream curation, and tied to open question Q2 (vocabulary-map.md §5).
+    # vocabulary-map.md §4.3: the substrate has no "program" object, so the programme-level
+    # capability lives here as prose. Build manual §1.1, Skill Pyramid Level 1.
+    capability_statement: >
+      AI-Native Professional Fluency — get original work from AI, delegate repeatable work to
+      safe agents, and stand behind every output.
+
+# The setting the problems are told in, recorded apart from the capability domain.
+# vocabulary-map.md §4.2 and upstream Q2.
+scenario_domains:
+  - id: travel-tourism
+    name: Travel & Tourism
+    note: >
+      Maya Gurung at Himalayan Getaways, Kathmandu. Narrative setting only; it says nothing
+      about sector experience.

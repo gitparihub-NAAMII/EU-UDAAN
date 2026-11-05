@@ -1,0 +1,31 @@
+# Escalation points — Tangible story §4.9
+# Each declares a trigger condition, a target, the context that travels, and the resumption
+# protocol.
+#
+# Rebuilt 2026-11-05 from _system/vocabulary-map.md §3.1 and build manual §1.5.
+
+escalations:
+  - id: esc.bright-line
+    name: The bright line
+    statement: "For a decision about a person, AI recommends and a named human decides."
+    trigger:
+      type: policy-rule
+      condition: >
+        The output is, or feeds, a decision about a person — hiring, shortlisting, scoring,
+        eligibility, or anything else that decides what happens to someone.
+    target:
+      type: named-human
+      description: >
+        A specific, named person who reads the recommendation and makes the call. Not a role,
+        not a team, not "a reviewer".
+    context_travels:
+      - the AI's recommendation, in full
+      - the sources and inputs it was given
+      - any checks already run (trace, swap test)
+    resumption: >
+      The named human decides and signs. The AI output stays a recommendation on record; it is
+      never the decision.
+    # Build manual §1.5: stated twice in Course 3. The validator checks these both ways.
+    referenced_by:
+      - scu.c3.u1.5   # The line that changes everything
+      - scu.c3.u3.4   # The line that keeps it fair

@@ -1,0 +1,177 @@
+# Skills and typed edges — Tangible story §4.2 and §4.5
+# A skill carries an id, a name, a cluster (loose grouping, not a hierarchy) and a provisional
+# flag. It carries no level: levels are declared per SCU.
+#
+# Rebuilt 2026-11-05. The original file was described but never committed.
+#   - The 20 pool skills come from the course skill pools in build manual §1.3–1.5
+#     (AI_Native_Skill_Pool_and_Pyramid.xlsx). `pool` records units-out-of-5 per course.
+#   - The 2 provisional skills are the sub-unit-grain skills quoted from
+#     AI_Native_Skill_Mapper.xlsx in build manual §1.6.
+#   - Edges are only those a source states or directly implies; each cites its basis.
+#     The original described 20 edges, which could not be recovered. Add more when the
+#     skill mapper lands, not before.
+
+clusters:
+  - id: ai-native-foundations
+    name: AI-Native foundations
+    note: Skills that run through all three courses
+  - id: context-engineering
+    name: Context engineering
+  - id: agentic-ai
+    name: Agentic AI
+  - id: responsible-ai
+    name: Responsible AI
+
+skills:
+  # ── Foundations: in every course's pool ─────────────────────────────────
+  - id: ai-literacy
+    name: AI Literacy
+    cluster: ai-native-foundations
+    pool: {c1: 4, c2: 4, c3: 5}
+  - id: ai-output-validation-contextual-auditing
+    name: AI Output Validation & Contextual Auditing
+    cluster: ai-native-foundations
+    pool: {c1: 4, c2: 1, c3: 4}
+  - id: secure-ai-prompting-practices
+    name: Secure AI Prompting Practices
+    cluster: ai-native-foundations
+    pool: {c1: 1, c2: 2, c3: 3}
+  - id: ai-tool-platform-literacy
+    name: AI Tool & Platform Literacy
+    cluster: ai-native-foundations
+    pool: {c1: 3, c2: 3}
+
+  # ── Context engineering ─────────────────────────────────────────────────
+  - id: designing-context-aware-ai-systems
+    name: Designing Context-Aware AI Systems
+    cluster: context-engineering
+    pool: {c1: 5}
+  - id: structured-prompt-engineering
+    name: Structured Prompt Engineering
+    cluster: context-engineering
+    pool: {c1: 5}
+  - id: reusable-prompt-framework-design
+    name: Reusable Prompt & Framework Design
+    cluster: context-engineering
+    pool: {c1: 2}
+  - id: audience-aware-ai-communication
+    name: Audience-Aware AI Communication
+    cluster: context-engineering
+    pool: {c1: 1}
+  - id: role-persona-specification
+    name: Role & Persona Specification
+    cluster: context-engineering
+    provisional: true
+    provisional_reason: >
+      Sub-unit-grain skill from the skill mapper (C1 2.1 The Role), finer than the course pool.
+      Kept to show the intended shape; curate when the full mapper is reconciled.
+  - id: source-grounding-hallucination-control
+    name: Source Grounding & Hallucination Control
+    cluster: context-engineering
+    provisional: true
+    provisional_reason: >
+      Sub-unit-grain skill from the skill mapper (C1 4.2 Fencing the AI inside the truth),
+      finer than the course pool. Curate when the full mapper is reconciled.
+
+  # ── Agentic AI ──────────────────────────────────────────────────────────
+  - id: task-decomposition-process-design
+    name: Task Decomposition & Process Design
+    cluster: agentic-ai
+    pool: {c2: 4}
+  - id: agent-design-configuration
+    name: Agent Design & Configuration
+    cluster: agentic-ai
+    pool: {c2: 4}
+  - id: automation-judgment-roi
+    name: Automation Judgment & ROI
+    cluster: agentic-ai
+    pool: {c2: 3}
+  - id: ai-automation-agent-building
+    name: AI Automation (Agent Building)
+    cluster: agentic-ai
+    pool: {c2: 2}
+  - id: ai-risk-oversight-management
+    name: AI Risk & Oversight Management
+    cluster: agentic-ai
+    pool: {c2: 2}
+  - id: workflow-automation-analysis
+    name: Workflow & Automation Analysis
+    cluster: agentic-ai
+    pool: {c2: 1}
+
+  # ── Responsible AI ──────────────────────────────────────────────────────
+  - id: responsible-ai-use-compliance
+    name: Responsible AI Use & Compliance
+    cluster: responsible-ai
+    pool: {c3: 5}
+  - id: ai-accountability-transparency
+    name: AI Accountability & Transparency
+    cluster: responsible-ai
+    pool: {c3: 3}
+  - id: ai-governance-risk-management
+    name: AI Governance & Risk Management
+    cluster: responsible-ai
+    pool: {c3: 3}
+  - id: ai-fairness-bias-auditing
+    name: AI Fairness & Bias Auditing
+    cluster: responsible-ai
+    pool: {c3: 1}
+  - id: confidential-information-handling
+    name: Confidential Information Handling
+    cluster: responsible-ai
+    pool: {c3: 1}
+  - id: data-sensitivity-classification
+    name: Data Sensitivity Classification
+    cluster: responsible-ai
+    pool: {c3: 1}
+
+edges:
+  # The course chain, as prereq edges between each course's spine skill.
+  # vocabulary-map.md §4.3; build manual §1.1 ("each course's opening trap is created by the
+  # previous course's success").
+  - from: designing-context-aware-ai-systems
+    to: agent-design-configuration
+    type: prereq
+    basis: Course 1 → Course 2 chain (build manual §1.1)
+  - from: agent-design-configuration
+    to: responsible-ai-use-compliance
+    type: prereq
+    basis: Course 2 → Course 3 chain (build manual §1.1)
+
+  # BRIEF's landmarks are parts of the brief. Build manual §1.3.
+  - from: role-persona-specification
+    to: structured-prompt-engineering
+    type: part-of
+    basis: R — Role is one of the five BRIEF landmarks (build manual §1.3)
+  - from: audience-aware-ai-communication
+    to: structured-prompt-engineering
+    type: part-of
+    basis: Audience is part of I — Intent in BRIEF (build manual §1.3, C1 2.3)
+  - from: source-grounding-hallucination-control
+    to: designing-context-aware-ai-systems
+    type: part-of
+    basis: Grounding deepens B — Background (build manual §1.3, C1 Unit 4)
+  - from: reusable-prompt-framework-design
+    to: structured-prompt-engineering
+    type: extends
+    basis: The reusable one-page BRIEF builds on the structured prompt (build manual §1.3, C1 5.2)
+
+  # AGENT: explicit steps come from decomposition. Build manual §1.4.
+  - from: ai-automation-agent-building
+    to: task-decomposition-process-design
+    type: uses
+    basis: E — Explicit steps; the agent runs the decomposed recipe (build manual §1.4, C2 Unit 3)
+  - from: automation-judgment-roi
+    to: workflow-automation-analysis
+    type: co-occurs
+    basis: Count the cost / what deserves an agent (build manual §1.4, C2 1.2 and 5.3)
+
+  # TRUST: classify first, paste second. Build manual §1.5, C3 4.4.
+  - from: data-sensitivity-classification
+    to: confidential-information-handling
+    type: prereq
+    basis: Classify first, paste second (build manual §1.5, C3 4.4)
+  - from: source-grounding-hallucination-control
+    to: ai-output-validation-contextual-auditing
+    type: co-occurs
+    basis: The invented answer is caught by grounding and by tracing (C1 Unit 4, C3 Unit 2)

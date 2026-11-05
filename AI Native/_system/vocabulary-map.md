@@ -335,7 +335,7 @@ Domain            ai-native-practice (provisional)  ← proposed second: banking
 | Read this when | Go to |
 |---|---|
 | You need the canonical substrate definitions | `tangible-story.md` §4 |
-| You need the UDAAN design method | `udaan-build-manual.md` Part III |
+| You need the UDAAN design method | `../1-how-we-built-it/build-manual.md` Part III |
 | You need to know why a mapping decision was made | this document |
-| You need institutional context, sources, bibliography | `udaan-context-and-sources.md` |
-| You are authoring | `../WORKFLOW.md` |
+| You need institutional context, sources, bibliography | `../1-how-we-built-it/sources-and-context.md` |
+| You are authoring | `../1-how-we-built-it/authoring-workflow.md` |
