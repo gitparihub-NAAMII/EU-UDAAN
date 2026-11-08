@@ -76,24 +76,7 @@ Each trainer runs 19 cohorts. Each cohort has 20 workshop hours over 2 weeks at 
 - **Workshops:** Each trainer runs 5 cohorts back to back (2 weeks each), about 10 weeks per wave. The next wave's self-study overlaps with this wave's workshops.
 - **Breaks:** A gap of a few weeks between waves covers Dashain/Tihar and exams.
 
-## 6. Dropout Adjustment
 
-- Expected dropout: 15-20%
-- Enrol ~1,750-1,800 to finish with 1,500
-- Cohorts needed: ~44-45 at 40 per cohort
-- Adds only a few weeks of workshop time; still fits within capacity.
 
-## 7. Risks and Gaps
 
-1. **Workshop quality:** Hands-on sessions with 40-50 people are harder than with 20. Add a teaching assistant per cohort, or split each cohort into two groups of 20 for workshops only.
-2. **Prep and grading:** Trainers need 3-5 hrs/week beyond contact time, so 10 hrs of contact is not the whole load.
-3. **Self-study is not free:** It needs a platform, quizzes, doubt-clearing sessions and progress tracking.
-4. **24 months is not 24 months of teaching:** Setup and closeout take 4-6 months.
-5. **Dense stages:** Stages 7 and 8 each have only 2 workshop hours for heavy topics, so the self-study material must be strong and the workshops hands-on.
-6. **Venue/platform limits:** Must handle 40-50 people per workshop.
 
-## 8. Open Decisions
-
-- Can the venue or platform handle 40-50 people in a workshop?
-- Is a teaching assistant or a third trainer available?
-- Is the 40 self-study / 20 workshop split final?
