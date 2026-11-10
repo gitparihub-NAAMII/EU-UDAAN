@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agritech Course Plan</title>
-<meta name="description" content="Agentic AI for Agriculture: course outline (60 hours) and foundation training plan for 1,500 participants over 24 months.">
+<title>AI Foundation Training</title>
+<meta name="description" content="AI Foundation training plan for 1,500 participants over 24 months, with the Agritech course outline as the first track.">
 <style>
 :root {
   --bg: #f7f6f2;
@@ -256,6 +256,38 @@ tr.hl td { background: var(--accent-soft); }
 details { margin: 10px 0 14px; }
 summary { cursor: pointer; font-weight: 600; color: var(--accent); }
 details[open] summary { margin-bottom: 10px; }
+.tracks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 8px 0 8px;
+}
+.track-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: var(--text);
+  text-decoration: none;
+}
+a.track-card:hover { border-color: var(--accent); }
+.track-card strong { font-size: 18px; }
+.track-card > span:last-child { font-size: 14px; color: var(--muted); }
+.status {
+  align-self: flex-start;
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.status.ready { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+h2.track-title { font-size: 30px; margin-top: 48px; }
+h2.track-title .eyebrow { display: block; margin-bottom: 4px; }
 footer {
   margin-top: 64px;
   padding-top: 18px;
@@ -287,49 +319,44 @@ footer {
 <div class="layout">
 
 <nav class="toc" aria-label="Contents">
-  <h2>Part A · Course Outline</h2>
-  <ol>
-    <li><a href="#overview">1. Course Overview</a></li>
-    <li><a href="#goals">2. Course Goals</a></li>
-    <li><a href="#learners">3. Target Learners</a></li>
-    <li><a href="#approach">4. Learning Approach</a></li>
-    <li><a href="#allocation">5. 60-Hour Allocation</a></li>
-    <li><a href="#modules">6. Course Modules</a>
-      <ol>
-        <li><a href="#m1">M1 Understanding Agriculture</a></li>
-        <li><a href="#m2">M2 U0 Problem Formulation</a></li>
-        <li><a href="#m3">M3 Infrastructure Setup</a></li>
-        <li><a href="#m4">M4 U1 Descriptive</a></li>
-        <li><a href="#m5">M5 U2 Diagnostic</a></li>
-        <li><a href="#m6">M6 U3 Predictive</a></li>
-        <li><a href="#m7">M7 RAG, Local LLM, Agents</a></li>
-        <li><a href="#m8">M8 Integration &amp; Deployment</a></li>
-        <li><a href="#m9">M9 Capstone &amp; Evaluation</a></li>
-      </ol>
-    </li>
-    <li><a href="#assessment">7. Assessment Strategy</a></li>
-    <li><a href="#outputs">8. Expected Outputs</a></li>
-    <li><a href="#confirm">9. Items to Confirm</a></li>
-  </ol>
-  <h2>Part B · Foundation Plan</h2>
+  <h2>Part A · Foundation Plan</h2>
   <ol>
     <li><a href="#parameters">1. Project Parameters</a></li>
-    <li><a href="#fp-curriculum">2. Curriculum Summary</a></li>
+    <li><a href="#fp-curriculum">2. 60-Hour Allocation</a></li>
     <li><a href="#capacity">3. Capacity Calculation</a></li>
     <li><a href="#cohorts">4. Cohort Size vs. Trainer Load</a></li>
+  </ol>
+  <h2>Part B · Course Tracks</h2>
+  <ol>
+    <li><a href="#tracks">Overview of tracks</a></li>
+    <li><a href="#agritech">Agritech</a>
+      <ol>
+        <li><a href="#overview">1. Course Overview</a></li>
+        <li><a href="#goals">2. Course Goals</a></li>
+        <li><a href="#learners">3. Target Learners</a></li>
+        <li><a href="#approach">4. Learning Approach</a></li>
+        <li><a href="#allocation">5. 60-Hour Allocation</a></li>
+        <li><a href="#modules">6. Course Modules</a></li>
+        <li><a href="#assessment">7. Assessment Strategy</a></li>
+        <li><a href="#outputs">8. Expected Outputs</a></li>
+        <li><a href="#confirm">9. Items to Confirm</a></li>
+      </ol>
+    </li>
+    <li><a href="#tracks">Fintech (to come)</a></li>
+    <li><a href="#tracks">Healthtech (to come)</a></li>
   </ol>
 </nav>
 
 <main>
 
 <header class="hero">
-  <div class="eyebrow">NAAMII · EU-UDAAN · AI Foundation</div>
-  <h1>Agentic AI for Agriculture (Agri-tech)</h1>
-  <p class="lead">Course outline and foundation training plan: a 60-hour course that takes learners from understanding an agricultural problem to an evaluated Agentic AI prototype, delivered to 1,500 participants over 24 months.</p>
+  <div class="eyebrow">NAAMII · EU-UDAAN</div>
+  <h1>AI Foundation Training</h1>
+  <p class="lead">Foundation training plan and course tracks: a 60-hour course that takes learners from understanding a sector problem to an evaluated Agentic AI prototype, delivered to 1,500 participants over 24 months. Agritech is the first track with a full outline; Fintech and Healthtech follow.</p>
   <div class="stats">
     <div class="stat"><div class="num">60 h</div><div class="lbl">Course length per learner</div></div>
     <div class="stat"><div class="num">40 / 20</div><div class="lbl">Self-study / workshop hours</div></div>
-    <div class="stat"><div class="num">9</div><div class="lbl">Modules</div></div>
+    <div class="stat"><div class="num">3</div><div class="lbl">Tracks: Agritech, Fintech, Healthtech</div></div>
     <div class="stat"><div class="num">1,500</div><div class="lbl">Target participants</div></div>
     <div class="stat"><div class="num">24 mo</div><div class="lbl">Project duration</div></div>
     <div class="stat"><div class="num">2</div><div class="lbl">Trainers (10 h/week each)</div></div>
@@ -337,7 +364,108 @@ footer {
 </header>
 
 <!-- ============================ PART A ============================ -->
-<h2 class="part">Part A · Course Outline</h2>
+<h2 class="part" id="foundation">Part A · Foundation Training Plan</h2>
+<p class="lead">Program-wide plan for all AI Foundation tracks: the 60-hour curriculum, plus capacity and cohort planning for 1,500 participants over 24 months.</p>
+
+<section id="parameters">
+  <h2>1. Project Parameters</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Item</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Total participants (target)</td><td>1,500</td></tr>
+      <tr><td>Project duration</td><td>24 months (~104 calendar weeks)</td></tr>
+      <tr><td>Trainers</td><td>2</td></tr>
+      <tr><td>Trainer capacity</td><td>10 hrs/week each (20 trainer-hrs/week combined)</td></tr>
+      <tr><td>Learner total hours</td><td>60 hrs (40 self-study / 20 workshop)</td></tr>
+      <tr><td>Goal</td><td>Fewest possible cohorts, minimal continuous teaching</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="fp-curriculum">
+  <h2>2. Curriculum: 60-Hour Allocation</h2>
+  <p>Stages below are those of the Agritech track, the first track with a full course outline.</p>
+  <p>The target is 40 hours of self-study plus 20 hours of workshops.</p>
+
+  <div class="legend"><span><i style="background:var(--self)"></i>Self-study</span><span><i style="background:var(--work)"></i>Workshop</span></div>
+  <div class="alloc" aria-hidden="true">
+    <div class="alloc-row"><span class="name">1. Understanding Agriculture/AI</span><div class="bar"><div class="s" style="width:40%"></div><div class="w" style="width:13.33%"></div></div><span class="h">8 h</span></div>
+    <div class="alloc-row"><span class="name">2. U0 Problem Formulation</span><div class="bar"><div class="s" style="width:26.67%"></div><div class="w" style="width:13.33%"></div></div><span class="h">6 h</span></div>
+    <div class="alloc-row"><span class="name">3. Infrastructure</span><div class="bar"><div class="s" style="width:13.33%"></div><div class="w" style="width:13.33%"></div></div><span class="h">4 h</span></div>
+    <div class="alloc-row"><span class="name">4. U1 Descriptive Analytics</span><div class="bar"><div class="s" style="width:33.33%"></div><div class="w" style="width:13.33%"></div></div><span class="h">7 h</span></div>
+    <div class="alloc-row"><span class="name">5. U2 Diagnostic Analytics</span><div class="bar"><div class="s" style="width:33.33%"></div><div class="w" style="width:13.33%"></div></div><span class="h">7 h</span></div>
+    <div class="alloc-row"><span class="name">6. U3 Predictive Analytics</span><div class="bar"><div class="s" style="width:33.33%"></div><div class="w" style="width:13.33%"></div></div><span class="h">7 h</span></div>
+    <div class="alloc-row"><span class="name">7. RAG, Local LLM and Agent Basics</span><div class="bar"><div class="s" style="width:40%"></div><div class="w" style="width:13.33%"></div></div><span class="h">8 h</span></div>
+    <div class="alloc-row"><span class="name">8. Integration, Markdown Workflow, Deployment</span><div class="bar"><div class="s" style="width:33.33%"></div><div class="w" style="width:13.33%"></div></div><span class="h">7 h</span></div>
+    <div class="alloc-row"><span class="name">9. Capstone and Evaluation</span><div class="bar"><div class="s" style="width:13.33%"></div><div class="w" style="width:26.67%"></div></div><span class="h">6 h</span></div>
+  </div>
+
+  <div class="table-wrap"><table>
+    <thead><tr><th>Stage</th><th class="n">Self study (h)</th><th class="n">Workshop (h)</th><th class="n">Total (h)</th></tr></thead>
+    <tbody>
+      <tr><td>1. Understanding Agriculture/AI</td><td class="n">6</td><td class="n">2</td><td class="n">8</td></tr>
+      <tr><td>2. U0 Problem Formulation</td><td class="n">4</td><td class="n">2</td><td class="n">6</td></tr>
+      <tr><td>3. Infrastructure</td><td class="n">2</td><td class="n">2</td><td class="n">4</td></tr>
+      <tr><td>4. U1 Descriptive Analytics</td><td class="n">5</td><td class="n">2</td><td class="n">7</td></tr>
+      <tr><td>5. U2 Diagnostic Analytics</td><td class="n">5</td><td class="n">2</td><td class="n">7</td></tr>
+      <tr><td>6. U3 Predictive Analytics</td><td class="n">5</td><td class="n">2</td><td class="n">7</td></tr>
+      <tr><td>7. RAG, Local LLM and Agent Basics</td><td class="n">6</td><td class="n">2</td><td class="n">8</td></tr>
+      <tr><td>8. Integration, Markdown-driven Workflow and Deployment</td><td class="n">5</td><td class="n">2</td><td class="n">7</td></tr>
+      <tr><td>9. Capstone and Evaluation</td><td class="n">2</td><td class="n">4</td><td class="n">6</td></tr>
+      <tr class="total"><td>Total</td><td class="n">40</td><td class="n">20</td><td class="n">60</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">U3 can be replaced with additional U1/U2 investigation and agentic workflow work if suitable historical data is unavailable.</p>
+    <p><strong>Changes from the first draft</strong></p>
+
+  <ul>
+    <li>The first draft summed to 46 hours, not 60 (26 self-study + 20 workshop). Self-study was raised to 40 hours.</li>
+    <li>Agentic AI and the Markdown-driven workflow were folded into stages 7 and 8.</li>
+    <li>The capstone workshop was raised from 2 to 4 hours, taking 1 hour each from stages 7 and 8.</li>
+    <li>Workshop hours stay at 20, so trainer load is unchanged.</li>
+    <li>Evaluation tip: run it in groups of 3–4 (20–25 minutes each), or two parallel sessions with one trainer each.</li>
+  </ul>
+</section>
+
+<section id="capacity">
+  <h2>3. Capacity Calculation</h2>
+  <div class="stats">
+    <div class="stat"><div class="num">~104</div><div class="lbl">Calendar weeks (24 months)</div></div>
+    <div class="stat"><div class="num">−24</div><div class="lbl">Setup, Dashain/Tihar, exams, final evaluation</div></div>
+    <div class="stat"><div class="num">~80</div><div class="lbl">Usable delivery weeks</div></div>
+    <div class="stat"><div class="num">~1,600</div><div class="lbl">Trainer-hours available (80 × 20)</div></div>
+  </div>
+  <p style="margin-top:16px">Only workshop hours use trainer time. Self-study hours do not.</p>
+</section>
+
+<section id="cohorts">
+  <h2>4. Cohort Size vs. Trainer Load</h2>
+  <p>Based on 20 workshop hours per participant.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th class="n">Cohort size</th><th class="n">Cohorts</th><th class="n">Trainer-hours needed</th><th class="n">Capacity used</th><th>Workshop weeks per trainer</th></tr></thead>
+    <tbody>
+      <tr><td class="n">20</td><td class="n">75</td><td class="n">1,500</td><td class="n">94%</td><td>~75 (nearly nonstop)</td></tr>
+      <tr><td class="n">30</td><td class="n">50</td><td class="n">1,000</td><td class="n">63%</td><td>~50</td></tr>
+      <tr class="hl"><td class="n">40</td><td class="n">38</td><td class="n">760</td><td class="n">48%</td><td>~38</td></tr>
+      <tr class="hl"><td class="n">50</td><td class="n">30</td><td class="n">600</td><td class="n">38%</td><td>~30</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>At 20 per cohort</strong>, you would use 94% of capacity with no room for dropouts, illness, festivals or reruns.</li>
+    <li><strong>At 40 to 50 per cohort</strong>, workshop delivery shrinks to 30–38 weeks per trainer, so it can run in waves with breaks.</li>
+  </ul>
+</section>
+
+<!-- ============================ PART B ============================ -->
+<h2 class="part" id="tracks">Part B · Course Tracks</h2>
+<p class="lead">Each track applies the same 60-hour foundation to a different sector.</p>
+<div class="tracks">
+  <a class="track-card" href="#agritech"><span class="status ready">Outline ready</span><strong>Agritech</strong><span>Agentic AI for Agriculture</span></a>
+  <div class="track-card"><span class="status">Not yet written</span><strong>Fintech</strong><span>Course outline to come</span></div>
+  <div class="track-card"><span class="status">Not yet written</span><strong>Healthtech</strong><span>Course outline to come</span></div>
+</div>
+
+<h2 class="track-title" id="agritech"><span class="eyebrow">Track · Agritech</span>Agentic AI for Agriculture</h2>
 
 <section id="overview">
   <h2>1. Course Overview</h2>
@@ -431,39 +559,9 @@ footer {
 </section>
 
 <section id="allocation">
-  <h2>5. Suggested 60-Hour Allocation</h2>
-  <p>The target is 40 hours of self-study plus 20 hours of workshops.</p>
-
-  <div class="legend"><span><i style="background:var(--self)"></i>Self-study</span><span><i style="background:var(--work)"></i>Workshop</span></div>
-  <div class="alloc" aria-hidden="true">
-    <div class="alloc-row"><span class="name">1. Understanding Agriculture/AI</span><div class="bar"><div class="s" style="width:40%"></div><div class="w" style="width:13.33%"></div></div><span class="h">8 h</span></div>
-    <div class="alloc-row"><span class="name">2. U0 Problem Formulation</span><div class="bar"><div class="s" style="width:26.67%"></div><div class="w" style="width:13.33%"></div></div><span class="h">6 h</span></div>
-    <div class="alloc-row"><span class="name">3. Infrastructure</span><div class="bar"><div class="s" style="width:13.33%"></div><div class="w" style="width:13.33%"></div></div><span class="h">4 h</span></div>
-    <div class="alloc-row"><span class="name">4. U1 Descriptive Analytics</span><div class="bar"><div class="s" style="width:33.33%"></div><div class="w" style="width:13.33%"></div></div><span class="h">7 h</span></div>
-    <div class="alloc-row"><span class="name">5. U2 Diagnostic Analytics</span><div class="bar"><div class="s" style="width:33.33%"></div><div class="w" style="width:13.33%"></div></div><span class="h">7 h</span></div>
-    <div class="alloc-row"><span class="name">6. U3 Predictive Analytics</span><div class="bar"><div class="s" style="width:33.33%"></div><div class="w" style="width:13.33%"></div></div><span class="h">7 h</span></div>
-    <div class="alloc-row"><span class="name">7. RAG, Local LLM and Agent Basics</span><div class="bar"><div class="s" style="width:40%"></div><div class="w" style="width:13.33%"></div></div><span class="h">8 h</span></div>
-    <div class="alloc-row"><span class="name">8. Integration, Markdown Workflow, Deployment</span><div class="bar"><div class="s" style="width:33.33%"></div><div class="w" style="width:13.33%"></div></div><span class="h">7 h</span></div>
-    <div class="alloc-row"><span class="name">9. Capstone and Evaluation</span><div class="bar"><div class="s" style="width:13.33%"></div><div class="w" style="width:26.67%"></div></div><span class="h">6 h</span></div>
-  </div>
-
-  <div class="table-wrap"><table>
-    <thead><tr><th>Stage</th><th class="n">Self study (h)</th><th class="n">Workshop (h)</th><th class="n">Total (h)</th></tr></thead>
-    <tbody>
-      <tr><td>1. Understanding Agriculture/AI</td><td class="n">6</td><td class="n">2</td><td class="n">8</td></tr>
-      <tr><td>2. U0 Problem Formulation</td><td class="n">4</td><td class="n">2</td><td class="n">6</td></tr>
-      <tr><td>3. Infrastructure</td><td class="n">2</td><td class="n">2</td><td class="n">4</td></tr>
-      <tr><td>4. U1 Descriptive Analytics</td><td class="n">5</td><td class="n">2</td><td class="n">7</td></tr>
-      <tr><td>5. U2 Diagnostic Analytics</td><td class="n">5</td><td class="n">2</td><td class="n">7</td></tr>
-      <tr><td>6. U3 Predictive Analytics</td><td class="n">5</td><td class="n">2</td><td class="n">7</td></tr>
-      <tr><td>7. RAG, Local LLM and Agent Basics</td><td class="n">6</td><td class="n">2</td><td class="n">8</td></tr>
-      <tr><td>8. Integration, Markdown-driven Workflow and Deployment</td><td class="n">5</td><td class="n">2</td><td class="n">7</td></tr>
-      <tr><td>9. Capstone and Evaluation</td><td class="n">2</td><td class="n">4</td><td class="n">6</td></tr>
-      <tr class="total"><td>Total</td><td class="n">40</td><td class="n">20</td><td class="n">60</td></tr>
-    </tbody>
-  </table></div>
+  <h2>5. 60-Hour Allocation</h2>
+  <p>Agritech follows the 40 h self-study + 20 h workshop allocation in <a href="#fp-curriculum">Part A, Section 2</a>, one stage per module below.</p>
   <p class="note">U3 can be replaced with additional U1/U2 investigation and agentic workflow work if suitable historical data is unavailable.</p>
-  <p>This allocation revises an earlier 10-stage draft that summed to 46 hours. Agentic AI and the Markdown-driven workflow are folded into stages 7 and 8. The capstone workshop is 4 hours, taken from stages 7 and 8. Workshop hours stay at 20, so trainer load is unchanged.</p>
 </section>
 
 <section id="modules">
@@ -822,7 +920,7 @@ footer {
   <article class="module" id="m9">
     <h3>Module 9: Capstone and Evaluation</h3>
     <div class="meta"><span class="pill">6 h total</span><span class="pill">2 h self-study</span><span class="pill">4 h workshop</span></div>
-    <p>Learners progress from problem understanding to an evaluated prototype, and are assessed on their ability to improve an agricultural workflow (see <a href="#assessment">Section 7</a>).</p>
+    <p>Learners progress from problem understanding to an evaluated prototype, and are assessed on their ability to improve an agricultural workflow (see <a href="#assessment">Section 7</a> of this track).</p>
     <p><strong>Expected result:</strong> a validated problem brief, a Problem Bank record, an architecture, and a functional learning prototype.</p>
     <p><strong>Evaluation tip:</strong> run it in groups of 3–4 (20–25 minutes each), or two parallel sessions with one trainer each.</p>
     <div class="outcome"><strong>Learning outcome:</strong> Present an integrated Agentic AI prototype for an agricultural workflow, with its problem brief, requirements, agent design, evaluation and limitations.</div>
@@ -876,70 +974,9 @@ footer {
   </ul>
 </section>
 
-<!-- ============================ PART B ============================ -->
-<h2 class="part">Part B · Foundation Training Plan</h2>
-<p class="lead">Curriculum (60 hours) plus capacity and cohort plan for 1,500 participants over 24 months.</p>
-
-<section id="parameters">
-  <h2>1. Project Parameters</h2>
-  <div class="table-wrap"><table>
-    <thead><tr><th>Item</th><th>Value</th></tr></thead>
-    <tbody>
-      <tr><td>Total participants (target)</td><td>1,500</td></tr>
-      <tr><td>Project duration</td><td>24 months (~104 calendar weeks)</td></tr>
-      <tr><td>Trainers</td><td>2</td></tr>
-      <tr><td>Trainer capacity</td><td>10 hrs/week each (20 trainer-hrs/week combined)</td></tr>
-      <tr><td>Learner total hours</td><td>60 hrs (40 self-study / 20 workshop)</td></tr>
-      <tr><td>Goal</td><td>Fewest possible cohorts, minimal continuous teaching</td></tr>
-    </tbody>
-  </table></div>
-</section>
-
-<section id="fp-curriculum">
-  <h2>2. Curriculum Summary</h2>
-  <p>Revised allocation: 40 h self-study + 20 h workshop = 60-hour course target. The stage-by-stage breakdown is in <a href="#allocation">Part A, Section 5</a>.</p>
-  <p><strong>Changes from the first draft</strong></p>
-  <ul>
-    <li>The first draft summed to 46 hours, not 60 (26 self-study + 20 workshop). Self-study was raised to 40 hours.</li>
-    <li>Agentic AI and the Markdown-driven workflow were folded into stages 7 and 8.</li>
-    <li>The capstone workshop was raised from 2 to 4 hours, taking 1 hour each from stages 7 and 8.</li>
-    <li>Workshop hours stay at 20, so trainer load is unchanged.</li>
-    <li>Evaluation tip: run it in groups of 3–4 (20–25 minutes each), or two parallel sessions with one trainer each.</li>
-  </ul>
-</section>
-
-<section id="capacity">
-  <h2>3. Capacity Calculation</h2>
-  <div class="stats">
-    <div class="stat"><div class="num">~104</div><div class="lbl">Calendar weeks (24 months)</div></div>
-    <div class="stat"><div class="num">−24</div><div class="lbl">Setup, Dashain/Tihar, exams, final evaluation</div></div>
-    <div class="stat"><div class="num">~80</div><div class="lbl">Usable delivery weeks</div></div>
-    <div class="stat"><div class="num">~1,600</div><div class="lbl">Trainer-hours available (80 × 20)</div></div>
-  </div>
-  <p style="margin-top:16px">Only workshop hours use trainer time. Self-study hours do not.</p>
-</section>
-
-<section id="cohorts">
-  <h2>4. Cohort Size vs. Trainer Load</h2>
-  <p>Based on 20 workshop hours per participant.</p>
-  <div class="table-wrap"><table>
-    <thead><tr><th class="n">Cohort size</th><th class="n">Cohorts</th><th class="n">Trainer-hours needed</th><th class="n">Capacity used</th><th>Workshop weeks per trainer</th></tr></thead>
-    <tbody>
-      <tr><td class="n">20</td><td class="n">75</td><td class="n">1,500</td><td class="n">94%</td><td>~75 (nearly nonstop)</td></tr>
-      <tr><td class="n">30</td><td class="n">50</td><td class="n">1,000</td><td class="n">63%</td><td>~50</td></tr>
-      <tr class="hl"><td class="n">40</td><td class="n">38</td><td class="n">760</td><td class="n">48%</td><td>~38</td></tr>
-      <tr class="hl"><td class="n">50</td><td class="n">30</td><td class="n">600</td><td class="n">38%</td><td>~30</td></tr>
-    </tbody>
-  </table></div>
-  <ul>
-    <li><strong>At 20 per cohort</strong>, you would use 94% of capacity with no room for dropouts, illness, festivals or reruns.</li>
-    <li><strong>At 40 to 50 per cohort</strong>, workshop delivery shrinks to 30–38 weeks per trainer, so it can run in waves with breaks.</li>
-  </ul>
-</section>
-
 <footer>
-  <p><strong>Document status:</strong> Course specification derived from the Naamii Agritech teaching-strategy deck (56 slides), combined with the foundation training plan.<br>
-  <strong>Next step:</strong> Resolve the items in Part A, Section 9, then convert each module into session-wise objectives, activities and rubrics.</p>
+  <p><strong>Document status:</strong> Foundation training plan, with the Agritech course specification derived from the Naamii Agritech teaching-strategy deck (56 slides).<br>
+  <strong>Next step:</strong> Resolve the Agritech items to confirm (Part B, Section 9), convert each module into session-wise objectives, activities and rubrics, and write the Fintech and Healthtech outlines.</p>
 </footer>
 
 </main>
