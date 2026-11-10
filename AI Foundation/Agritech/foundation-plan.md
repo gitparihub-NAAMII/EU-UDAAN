@@ -59,22 +59,6 @@ U3 can be replaced with additional U1/U2 investigation and agentic workflow work
 - **At 20 per cohort**, you would use 94% of capacity with no room for dropouts, illness, festivals or reruns.
 - **At 40 to 50 per cohort**, workshop delivery shrinks to 30-38 weeks per trainer, so it can run in waves with breaks.
 
-If the workshop were 30 hours instead of 20: 40 per cohort needs 1,140 trainer-hours (71%), 50 per cohort needs 900 (56%), and 20 per cohort needs 2,250 and does not fit.
-
-## 5. Recommended Plan: 40 per cohort, 38 cohorts
-
-Each trainer runs 19 cohorts. Each cohort has 20 workshop hours over 2 weeks at 10 hrs/week.
-
-| Phase | Timing | Activities |
-|---|---|---|
-| Setup | Months 1-3 | Build content, self-study platform, assessments; pilot one cohort |
-| Delivery | Months 4-21 | 4 waves of ~10 cohorts each (~5 per trainer per wave) |
-| Closeout | Months 22-24 | Make-up cohorts for dropouts, final assessment, impact report, handover |
-
-**Wave structure**
-- **Self-study:** All cohorts in a wave do their 40 self-study hours at the same time (~5 hrs/week over 8 weeks), with light doubt-clearing support.
-- **Workshops:** Each trainer runs 5 cohorts back to back (2 weeks each), about 10 weeks per wave. The next wave's self-study overlaps with this wave's workshops.
-- **Breaks:** A gap of a few weeks between waves covers Dashain/Tihar and exams.
 
 
 
