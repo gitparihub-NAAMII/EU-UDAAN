@@ -11474,8 +11474,12 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
 <!-- =====================================================================
      UDAAN add-on patch 18  (2026-11-13)
      PROGRAM MANAGEMENT tab, next to Project Tracking.
-       * Only the logins in PM_EDITORS (Sumi) see the tab, and only they
-         can add, edit or delete. Everyone else does not see it at all.
+       * PM_EDITORS (Sumi) see the whole tracker and are the only ones
+         who can add, edit or delete.
+       * PM_TEAM members see only "My updates": their own rows. What they
+         submit is merged into the main tracker automatically, and listed
+         on the owner's "Team updates" page.
+       * Everyone else does not see the tab at all.
        * Program Management lists the programmes. The first one is UDAAN.
        * Opening UDAAN shows the UDAAN Project Tracker (goals, weekly plan,
          targets, to-dos, deliverables, challenges, risks and decisions).
@@ -11504,6 +11508,27 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
   @media(max-width:560px){ .pm-form{ grid-template-columns:1fr; } #pmTab .pm-list{ columns:1; } }
   .pm-toast{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--charcoal); color:#fff; padding:10px 16px;
     border-radius:10px; font-size:13px; font-weight:600; z-index:90; box-shadow:var(--shadow); }
+  #pmTab .pm-muted{ color:var(--charcoal-soft); font-weight:600; font-size:12px; }
+  #pmTab .pm-hello{ background:linear-gradient(135deg,var(--paper),var(--cream)); box-shadow:inset 3px 0 0 var(--brand), var(--shadow); }
+  #pmTab .pm-mitem{ border:1px solid var(--line); border-radius:12px; padding:12px 13px 2px; margin-top:10px; background:var(--cream); }
+  #pmTab .pm-mitem.done{ opacity:.7; }
+  #pmTab .pm-mtitle{ font-size:13.5px; font-weight:700; color:var(--ink); line-height:1.45; }
+  #pmTab .pm-mctx{ font-size:11.5px; color:var(--charcoal-soft); font-weight:600; margin:3px 0 8px; }
+  #pmTab .pm-mitem .field input, #pmTab .pm-mitem .field select, #pmTab .pm-mitem .field textarea{ background:var(--paper); }
+  #pmTab .pm-addrow{ border-top:1px dashed var(--line); padding-top:10px; margin-top:6px; }
+  #pmTab .pm-addrow:first-of-type{ border-top:none; padding-top:0; }
+  #pmTab .pm-submitbar{ position:sticky; bottom:12px; z-index:5; display:flex; justify-content:space-between; align-items:center; gap:12px;
+    background:var(--charcoal); color:#fff; border-radius:14px; padding:10px 12px 10px 16px; box-shadow:0 14px 34px -12px rgba(16,19,24,.5); font-size:13px; font-weight:600; }
+  #pmTab .pm-submitbar .pm-btn.primary{ background:var(--brand); border-color:var(--brand); }
+  #pmTab .pm-submitbar .pm-btn[disabled]{ opacity:.5; cursor:default; }
+  #pmTab .pm-upd{ border-top:1px solid var(--line); padding:10px 0; font-size:12.5px; }
+  #pmTab .pm-upd:first-of-type{ border-top:none; }
+  #pmTab .pm-upd-h{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  #pmTab .pm-upd-h .pm-muted{ margin-left:auto; }
+  #pmTab .pm-upd ul{ margin:6px 0 4px; padding-left:18px; line-height:1.55; }
+  #pmTab .pm-upd i{ font-style:normal; font-weight:700; color:var(--confirmed-ink); }
+  #pmTab .pm-upd-note{ background:var(--cream); border-radius:8px; padding:7px 10px; margin:4px 0; }
+  #pmTab .pt-card h3 small.pm-muted{ font-size:12px; margin-left:4px; }
   #pmTab .pm-tools{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:-4px 0 14px; font-size:12.5px; color:var(--charcoal-soft); font-weight:600; }
   #pmTab .pm-btn{ display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:var(--paper); color:var(--charcoal);
     border-radius:9px; padding:6px 12px; font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; text-decoration:none; }
@@ -11572,18 +11597,51 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
 "use strict";
 /* ---------------------------------------------------------------------
    WHO CAN USE PROGRAM MANAGEMENT
-   Only these admin logins see the tab and can add, edit or delete rows.
-   The data is kept in Firestore, collection "udaan_program_management".
-   Add this to the Firestore rules (Firebase console > Firestore >
-   Rules) so nobody else can read or change it:
+   PM_EDITORS  : the owner(s). They see the whole UDAAN tracker and are
+                 the only ones who can add, edit or delete anything.
+   PM_TEAM     : team members. They see only "My updates" inside UDAAN:
+                 their own goals, weekly tasks, targets, to-dos,
+                 deliverables, challenges and follow-ups. What they submit
+                 is merged into the main tracker automatically (by the
+                 owner's dashboard, the next time it is open). They can
+                 only update rows where they are the Owner/Person.
+                 "match" = words that identify them in the Owner column.
+
+   Firestore rules (Firebase console > Firestore > Rules), inside
+   match /databases/{database}/documents { ... } :
 
      match /udaan_program_management/{d} {
        allow read, write: if request.auth != null
          && request.auth.token.email in ['sumi@naamii.org.np'];
      }
+     match /udaan_pm_people/{email} {
+       allow read: if request.auth != null
+         && (request.auth.token.email == email
+             || request.auth.token.email in ['sumi@naamii.org.np']);
+       allow write: if request.auth != null
+         && request.auth.token.email in ['sumi@naamii.org.np'];
+     }
+     match /udaan_pm_updates/{id} {
+       allow create: if request.auth != null
+         && request.resource.data.byEmail == request.auth.token.email
+         && request.resource.data.status == 'pending';
+       allow read: if request.auth != null
+         && (resource.data.byEmail == request.auth.token.email
+             || request.auth.token.email in ['sumi@naamii.org.np']);
+       allow update, delete: if request.auth != null
+         && request.auth.token.email in ['sumi@naamii.org.np'];
+     }
    --------------------------------------------------------------------- */
 var PM_EDITORS = ['sumi@naamii.org.np'];
+var PM_TEAM = [
+  { email:'drabid@naamii.org.np',  name:'Drabid Subedi',    match:['drabid'] },
+  { email:'ramesh@naamii.org.np',  name:'Ramesh Lama',      match:['ramesh'] },
+  { email:'pari@naamii.org.np',    name:'Pradip Chaudhary', match:['pradip', 'pradeep'] },
+  { email:'sandhya@naamii.org.np', name:'Unisa',            match:['unisa', 'sandhya'] }
+];
 var PM_COLLECTION = 'udaan_program_management';
+var PEOPLE_COLLECTION = 'udaan_pm_people';
+var UPDATES_COLLECTION = 'udaan_pm_updates';
 
 /* The programmes listed under Program Management. Add more here later. */
 var PROGRAMS = [
@@ -11610,6 +11668,11 @@ var SHEETS = [
   { k:'risk',  sheet:'Risks and Decisions', label:'Risks & decisions', one:'item',        ic:'🛡', first:'Type',
     cols:['Type','What','Owner','Date','Impact','Status','Notes'] }
 ];
+/* What a team member may change on their own rows, per sheet. */
+var MEMBER_EDIT = {
+  goals:['Progress','Status','Notes'], week:['Status','Blockers and notes'], targets:['Actual','Notes'],
+  todo:['Status','Notes'], deliv:['Status','Notes and link'], chal:['Status','Action or mitigation'], risk:['Status','Notes']
+};
 /* Dropdown choices (from the hidden "Lists" sheet). Values already used are added too. */
 var L = {
   status:['Not started','In progress','Done','Blocked','At risk'],
@@ -11637,7 +11700,9 @@ var MID  = /^(owner|team|role|person|which period)$/i;
 var BADGE_COLS = /^(status|priority|severity|impact|type|period)$/i;
 
 var st = { view:'home', page:'overview', q:'', status:'', owner:'', type:'', data:null, meta:null, loading:false, err:'', ruleErr:false,
-           preview:null, unsub:null, saving:false };
+           preview:null, unsub:null, saving:false,
+           updates:[], unsubUpd:null, unsubPend:null, merging:false, peopleSig:{},
+           mine:null, mineErr:'', unsubMine:null, myHist:[], unsubHist:null, mineLoading:false };
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function linkify(s){ return esc(s).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/&lt;br&gt;/gi, '<br>'); }
@@ -11646,15 +11711,22 @@ function adminOk(){ try{ return typeof isAdmin === 'function' ? isAdmin() : fals
 function curUser(){ try{ return (typeof fbUser !== 'undefined' && fbUser && !fbUser.isAnonymous) ? fbUser : null; }catch(e){ return null; } }
 function curEmail(){ var u = curUser(); return u ? low(u.email) : ''; }
 function pmAllowed(){ return adminOk() && PM_EDITORS.indexOf(curEmail()) >= 0; }
-window.pmAllowed = pmAllowed;
+function memberOf(email){ email = low(email); return PM_TEAM.find(function(m){ return low(m.email) === email; }) || null; }
+function pmMember(){ return adminOk() && !pmAllowed() && !!memberOf(curEmail()); }
+function pmVisible(){ return pmAllowed() || pmMember(); }
+window.pmAllowed = pmVisible;            // used by updateRoleUI to show the tab
 function getDb(){ try{ return (typeof db !== 'undefined' && db) ? db : null; }catch(e){ return null; } }
-function docRef(){ var d = getDb(); return d ? d.collection(PM_COLLECTION).doc('udaan') : null; }
+function col(name){ var d = getDb(); return d ? d.collection(name) : null; }
+function docRef(){ var c = col(PM_COLLECTION); return c ? c.doc('udaan') : null; }
+function stamp(){ try{ return firebase.firestore.FieldValue.serverTimestamp(); }catch(e){ return new Date(); } }
+function tsDate(t){ return t && t.toDate ? t.toDate() : (t instanceof Date ? t : null); }
+function whenStr(d){ return d ? d.toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : 'just now'; }
 
-function badgeClass(col, v){
+function badgeClass(c, v){
   var x = low(v); if(!x) return '';
-  if(/^(done|resolved|closed|completed)$/.test(x)) return 'g';
-  if(/^in progress$/.test(x)) return 'b';
-  if(/^(blocked|at risk|high)$/.test(x)) return 'r';
+  if(/^(done|resolved|closed|completed|merged)$/.test(x)) return 'g';
+  if(/^(in progress|pending)$/.test(x)) return 'b';
+  if(/^(blocked|at risk|high|skipped)$/.test(x)) return 'r';
   if(/^medium$/.test(x)) return 'y';
   if(/^low$/.test(x)) return 'g';
   if(x === 'risk') return 'r';
@@ -11663,7 +11735,7 @@ function badgeClass(col, v){
   if(/^(weekly|monthly|quarterly|yearly)/.test(x)) return 'p';
   return '';
 }
-function badge(col, v){ return v ? '<span class="pm-badge ' + badgeClass(col, v) + '">' + esc(v) + '</span>' : ''; }
+function badge(c, v){ return v ? '<span class="pm-badge ' + badgeClass(c, v) + '">' + esc(v) + '</span>' : ''; }
 function isDone(v){ return /^(done|resolved|closed|completed)$/.test(low(v)); }
 function pctOf(v){ if(v == null || v === '') return null; if(typeof v === 'number') return v <= 1.0001 ? v * 100 : v; var m = String(v).match(/-?[\d.]+/); return m ? parseFloat(m[0]) : null; }
 var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -11676,13 +11748,17 @@ function parseDate(s){
   m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/); if(m) return new Date(+m[1], +m[2] - 1, +m[3]);
   return null;
 }
+function thisMonday(){ var d = new Date(); d.setHours(0, 0, 0, 0); var wd = (d.getDay() + 6) % 7; d.setDate(d.getDate() - wd); return d; }
 function uid(){ return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function teamNames(){ return rowsOf('team').map(function(r){ return r.Name; }).filter(Boolean); }
 function rowsOf(k){ return (st.data && st.data[k] && st.data[k].rows) || []; }
 function sheetOf(k){ return (st.data && st.data[k]) || { cols:(SHEETS.find(function(s){ return s.k === k; }) || {}).cols || [], rows:[], desc:'' }; }
+function defOf(k){ return SHEETS.find(function(s){ return s.k === k; }); }
 function countOpen(k){ return rowsOf(k).filter(function(r){ return !isDone(r.Status); }).length; }
 function ownerOf(r){ return r.Owner || r.Person || ''; }
+function titleOf(k, r){ var d = defOf(k); return String(r[d.cols[k === 'risk' ? 1 : (k === 'targets' ? 3 : (k === 'week' ? 2 : 0))]] || '').replace(/<br>/gi, ' '); }
 function reachedFor(r){ var t = parseFloat(r.Target), a = parseFloat(r.Actual); return (t > 0 && !isNaN(a)) ? Math.round(a / t * 100) + '%' : ''; }
+function ownsRow(m, r){ var o = low(ownerOf(r)); return !!m && m.match.some(function(w){ return o.indexOf(low(w)) >= 0; }); }
 
 /* ---------- read an Excel file (import) ---------- */
 function parseWorkbook(wb){
@@ -11699,7 +11775,6 @@ function parseWorkbook(wb){
     found++;
     var head = txt[h].map(function(c){ return String(c).trim(); });
     for(var j = 1; j < h; j++){ var c0 = String(txt[j][0] || '').trim(); if(c0){ out[s.k].desc = c0; break; } }
-    // keep the standard columns, plus any extra column the team added
     head.forEach(function(c){ if(c && c !== 'Match name' && out[s.k].cols.indexOf(c) < 0) out[s.k].cols.push(c); });
     for(var r = h + 1; r < txt.length; r++){
       var t = txt[r] || [], w = raw[r] || [];
@@ -11733,7 +11808,7 @@ function exportExcel(){
   SHEETS.forEach(function(s){
     var sh = sheetOf(s.k);
     var aoa = [[s.label], [sh.desc || ''], [], sh.cols.slice()];
-    sh.rows.forEach(function(r){ aoa.push(sh.cols.map(function(c){ return r[c] || ''; })); });
+    sh.rows.forEach(function(r){ aoa.push(sh.cols.map(function(c){ return String(r[c] || '').replace(/<br>/gi, '\n'); })); });
     var ws = XLSX.utils.aoa_to_sheet(aoa);
     ws['!cols'] = sh.cols.map(function(c){ return { wch: LONG.test(c) ? 60 : 18 }; });
     XLSX.utils.book_append_sheet(wb, ws, s.sheet);
@@ -11742,8 +11817,29 @@ function exportExcel(){
   XLSX.writeFile(wb, 'UDAAN_Project_Tracker_' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '.xlsx');
 }
 
-/* ---------- the shared database ---------- */
-var RULE_TXT = "match /" + PM_COLLECTION + "/{d} {\n  allow read, write: if request.auth != null\n    && request.auth.token.email in ['" + PM_EDITORS.join("','") + "'];\n}";
+/* ---------- owner: the main tracker ---------- */
+var RULE_TXT = [
+  "match /" + PM_COLLECTION + "/{d} {",
+  "  allow read, write: if request.auth != null",
+  "    && request.auth.token.email in ['" + PM_EDITORS.join("','") + "'];",
+  "}",
+  "match /" + PEOPLE_COLLECTION + "/{email} {",
+  "  allow read: if request.auth != null",
+  "    && (request.auth.token.email == email",
+  "        || request.auth.token.email in ['" + PM_EDITORS.join("','") + "']);",
+  "  allow write: if request.auth != null",
+  "    && request.auth.token.email in ['" + PM_EDITORS.join("','") + "'];",
+  "}",
+  "match /" + UPDATES_COLLECTION + "/{id} {",
+  "  allow create: if request.auth != null",
+  "    && request.resource.data.byEmail == request.auth.token.email",
+  "    && request.resource.data.status == 'pending';",
+  "  allow read: if request.auth != null",
+  "    && (resource.data.byEmail == request.auth.token.email",
+  "        || request.auth.token.email in ['" + PM_EDITORS.join("','") + "']);",
+  "  allow update, delete: if request.auth != null",
+  "    && request.auth.token.email in ['" + PM_EDITORS.join("','") + "'];",
+  "}"].join('\n');
 function listen(){
   if(st.unsub || !pmAllowed()) return;
   var ref = docRef();
@@ -11751,25 +11847,39 @@ function listen(){
   st.loading = true; st.err = ''; st.ruleErr = false; render();
   st.unsub = ref.onSnapshot(function(snap){
     st.loading = false;
-    if(snap.exists){ var d = snap.data() || {}; st.data = d.sheets || null; st.meta = { at:d.updatedAt && d.updatedAt.toDate ? d.updatedAt.toDate() : null, by:d.updatedByName || d.updatedBy || '' }; }
+    if(snap.exists){ var d = snap.data() || {}; st.data = d.sheets || null; st.meta = { at:tsDate(d.updatedAt), by:d.updatedByName || d.updatedBy || '' }; }
     else { st.data = null; st.meta = null; }
     render();
+    if(st.data){ publishPeople(); mergePending(); }
   }, function(e){
     st.loading = false; st.unsub = null;
     st.ruleErr = e && e.code === 'permission-denied';
-    st.err = st.ruleErr ? 'The database refused access to Program Management. Add the rule below in Firebase (Firestore → Rules), then reload.'
+    st.err = st.ruleErr ? 'The database refused access to Program Management. Add the rules below in Firebase (Firestore → Rules), then reload.'
                         : 'Could not load Program Management: ' + (e && e.message || e);
     render();
   });
+  listenUpdates();
 }
-function stopListening(){ if(st.unsub){ try{ st.unsub(); }catch(e){} st.unsub = null; } st.data = null; st.meta = null; }
-function save(newData, what){
+function listenUpdates(){
+  var c = col(UPDATES_COLLECTION); if(!c || st.unsubUpd) return;
+  st.unsubUpd = c.orderBy('at', 'desc').limit(60).onSnapshot(function(s){
+    st.updates = s.docs.map(function(d){ var o = d.data() || {}; o._id = d.id; return o; });
+    if(st.page === 'updates') render();
+    mergePending();
+  }, function(e){ st.unsubUpd = null; console.warn('Team updates', e); });
+}
+function stopListening(){
+  [st.unsub, st.unsubUpd, st.unsubMine, st.unsubHist].forEach(function(u){ if(u){ try{ u(); }catch(e){} } });
+  st.unsub = st.unsubUpd = st.unsubMine = st.unsubHist = null;
+  st.data = null; st.meta = null; st.updates = []; st.mine = null; st.myHist = []; st.peopleSig = {};
+}
+function save(newData, what, quiet){
   var ref = docRef(); if(!ref || !pmAllowed()) return Promise.reject(new Error('Not allowed'));
   var name = (typeof adminName !== 'undefined' && adminName) || curEmail();
   st.saving = true;
-  var payload = { sheets:newData, updatedBy:curEmail(), updatedByName:name, updatedAt:firebase.firestore.FieldValue.serverTimestamp(), lastChange:what || '' };
-  return ref.set(payload).then(function(){ st.saving = false; toast('Saved: ' + (what || 'changes')); })
-    .catch(function(e){ st.saving = false; alert('Could not save.\n\n' + (e && e.message || e) + (e && e.code === 'permission-denied' ? '\n\nAdd the Program Management rule in Firebase (Firestore → Rules).' : '')); throw e; });
+  var payload = { sheets:newData, updatedBy:curEmail(), updatedByName:name, updatedAt:stamp(), lastChange:what || '' };
+  return ref.set(payload).then(function(){ st.saving = false; if(!quiet) toast('Saved: ' + (what || 'changes')); })
+    .catch(function(e){ st.saving = false; if(!quiet) alert('Could not save.\n\n' + (e && e.message || e) + (e && e.code === 'permission-denied' ? '\n\nAdd the Program Management rules in Firebase (Firestore → Rules).' : '')); throw e; });
 }
 function toast(msg){
   try{ if(typeof showToast === 'function'){ showToast(msg); return; } }catch(e){}
@@ -11778,9 +11888,193 @@ function toast(msg){
 }
 function cloneData(){ return JSON.parse(JSON.stringify(st.data || {})); }
 
-/* ---------- add / edit / delete ---------- */
+/* Each team member gets a private copy of ONLY their own rows to update. */
+function publishPeople(){
+  var c = col(PEOPLE_COLLECTION); if(!c || !st.data || !pmAllowed()) return;
+  PM_TEAM.forEach(function(m){
+    var sheets = {};
+    Object.keys(MEMBER_EDIT).forEach(function(k){ sheets[k] = { cols:sheetOf(k).cols, rows:rowsOf(k).filter(function(r){ return ownsRow(m, r); }) }; });
+    var sig = JSON.stringify(sheets);
+    if(st.peopleSig[m.email] === sig) return;
+    st.peopleSig[m.email] = sig;
+    c.doc(low(m.email)).set({ name:m.name, email:low(m.email), sheets:sheets, updatedAt:stamp() })
+      .catch(function(e){ delete st.peopleSig[m.email]; console.warn('Could not share rows with ' + m.email, e); });
+  });
+}
+/* Merge every pending team update into the main tracker (owner's browser only). */
+function mergePending(){
+  if(st.merging || !st.data || !pmAllowed()) return;
+  st.mergedIds = st.mergedIds || {};
+  var pend = st.updates.filter(function(u){ return u.status === 'pending' && !st.mergedIds[u._id]; });
+  if(!pend.length) return;
+  st.merging = true;
+  pend.forEach(function(u){ st.mergedIds[u._id] = 1; });     // never merge the same update twice
+  var nd = cloneData(), results = [];
+  pend.slice().reverse().forEach(function(u){
+    var m = memberOf(u.byEmail), applied = 0, skipped = 0, notes = [];
+    if(!m){ results.push({ u:u, status:'skipped', summary:'Not on the team list' }); return; }
+    (u.patches || []).forEach(function(p){
+      var sh = nd[p.k], allowed = MEMBER_EDIT[p.k] || [];
+      var row = sh && sh.rows.find(function(r){ return r.id === p.id; });
+      if(!row || !ownsRow(m, row)){ skipped++; notes.push('“' + (p.title || 'item') + '” no longer exists or is not theirs'); return; }
+      Object.keys(p.fields || {}).forEach(function(f){ if(allowed.indexOf(f) >= 0) row[f] = String(p.fields[f]); });
+      if(p.k === 'targets') row.Reached = reachedFor(row);
+      applied++;
+    });
+    (u.adds || []).forEach(function(a){
+      if(['week', 'chal', 'todo'].indexOf(a.k) < 0 || !a.row || !a.row.id) { skipped++; return; }
+      if(!nd[a.k]) nd[a.k] = { cols:(defOf(a.k) || {}).cols || [], rows:[], desc:'' };
+      if(nd[a.k].rows.some(function(r){ return r.id === a.row.id; })) return;            // already merged
+      var r = {}; Object.keys(a.row).forEach(function(f){ r[f] = String(a.row[f] == null ? '' : a.row[f]); });
+      r.Owner = m.name;
+      if(a.k === 'chal' && !r.Raised) r.Raised = fmtDate(new Date());
+      nd[a.k].rows.push(r); applied++;
+    });
+    results.push({ u:u, status: applied || !skipped ? 'merged' : 'skipped', summary: applied + ' change' + (applied === 1 ? '' : 's') + ' merged' + (skipped ? ', ' + skipped + ' skipped' : ''), notes:notes });
+  });
+  var names = pend.map(function(u){ return u.byName || u.byEmail; }).filter(function(v, i, a){ return a.indexOf(v) === i; }).join(', ');
+  save(nd, 'merged updates from ' + names, true).then(function(){
+    var c = col(UPDATES_COLLECTION);
+    return Promise.all(results.map(function(r){ return c.doc(r.u._id).update({ status:r.status, result:r.summary, resultNotes:r.notes || [], mergedAt:stamp() }); }));
+  }).then(function(){ toast('Merged ' + pend.length + ' team update' + (pend.length === 1 ? '' : 's') + ' from ' + names); })
+    .catch(function(e){ console.warn('Merging team updates failed', e); pend.forEach(function(u){ delete st.mergedIds[u._id]; }); })
+    .then(function(){ st.merging = false; });
+}
+
+/* ---------- team member: their own rows ---------- */
+function listenMine(){
+  if(st.unsubMine || !pmMember()) return;
+  var c = col(PEOPLE_COLLECTION), u = col(UPDATES_COLLECTION);
+  if(!c){ st.mineErr = 'The shared database is not connected. Reload the page and sign in again.'; render(); return; }
+  st.mineLoading = true; st.mineErr = ''; render();
+  st.unsubMine = c.doc(curEmail()).onSnapshot(function(s){
+    st.mineLoading = false; st.mine = s.exists ? (s.data() || {}) : { empty:true }; render();
+  }, function(e){
+    st.mineLoading = false; st.unsubMine = null;
+    st.mineErr = e && e.code === 'permission-denied' ? 'The database refused access. Ask Sumi to add the Program Management rules in Firebase.' : 'Could not load your items: ' + (e && e.message || e);
+    render();
+  });
+  if(u && !st.unsubHist){
+    st.unsubHist = u.where('byEmail', '==', curEmail()).onSnapshot(function(s){
+      st.myHist = s.docs.map(function(d){ var o = d.data() || {}; o._id = d.id; return o; })
+        .sort(function(a, b){ return (tsDate(b.at) || new Date()) - (tsDate(a.at) || new Date()); });
+      render();
+    }, function(e){ st.unsubHist = null; console.warn('My updates history', e); });
+  }
+}
+function memberRows(k){ return (st.mine && st.mine.sheets && st.mine.sheets[k] && st.mine.sheets[k].rows) || []; }
+function fieldInput(k, c, v, attrs){
+  var ch = choicesFor(k, c), a = attrs || '';
+  if(ch){ var opts = ch.slice(); if(v && opts.indexOf(v) < 0) opts.push(v);
+    return '<select ' + a + '><option value=""></option>' + opts.map(function(o){ return '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>'; }
+  if(c === 'Progress'){ var p = pctOf(v); return '<input type="number" min="0" max="100" step="1" ' + a + ' value="' + (p == null ? '' : Math.round(p)) + '" placeholder="%">'; }
+  if(DATE_COLS.test(c)) return '<input type="date" ' + a + ' value="' + toIso(v) + '">';
+  if(LONG.test(c)) return '<textarea rows="2" ' + a + '>' + esc(String(v || '').replace(/<br>/gi, '\n')) + '</textarea>';
+  return '<input type="text" ' + a + ' value="' + esc(v) + '">';
+}
+function normVal(c, el){
+  var v = el.value.trim();
+  if(c === 'Progress') return v === '' ? '' : Math.max(0, Math.min(100, Math.round(+v))) + '%';
+  if(el.type === 'date') return v ? fmtDate(parseDate(v)) : '';
+  if(el.tagName === 'TEXTAREA') return v.replace(/\r?\n/g, '<br>');
+  return v;
+}
+function memberItemsHtml(k){
+  var def = defOf(k), rows = memberRows(k).slice(), edit = MEMBER_EDIT[k];
+  if(!rows.length) return '';
+  rows.sort(function(a, b){ return (isDone(a.Status) ? 1 : 0) - (isDone(b.Status) ? 1 : 0); });
+  var items = rows.map(function(r){
+    var ctx = [];
+    ['Due', 'Week of', 'Priority', 'Severity', 'Impact', 'Type', 'Which period', 'Target', 'Unit', 'Deliverable'].forEach(function(c){ if(r[c] && edit.indexOf(c) < 0) ctx.push(esc(c) + ': ' + esc(String(r[c]).replace(/<br>/gi, ' '))); });
+    var fields = edit.map(function(c){
+      return '<div class="field' + (LONG.test(c) ? ' pm-full' : '') + '"><label>' + esc(c) + (c === 'Progress' ? ' (%)' : '') + '</label>'
+        + fieldInput(k, c, r[c] || '', 'data-mk="' + k + '" data-mid="' + esc(r.id) + '" data-mcol="' + esc(c) + '" data-orig="' + esc(r[c] || '') + '"') + '</div>';
+    }).join('');
+    return '<div class="pm-mitem' + (isDone(r.Status) ? ' done' : '') + '"><div class="pm-mtitle">' + esc(titleOf(k, r)) + ' ' + badge('Status', r.Status) + '</div>'
+      + (ctx.length ? '<div class="pm-mctx">' + ctx.join(' · ') + '</div>' : '') + '<div class="pm-form">' + fields + '</div></div>';
+  }).join('');
+  return '<div class="pt-card"><h3>' + def.ic + ' My ' + esc(def.label.toLowerCase()) + ' <small class="pm-muted">' + rows.length + '</small></h3>' + items + '</div>';
+}
+function memberAddHtml(){
+  var mon = fmtDate(thisMonday());
+  var weekRows = [0, 1].map(function(i){
+    return '<div class="pm-form pm-addrow" data-add="week">'
+      + '<div class="field pm-full"><label>Task' + (i ? '' : ' for the week of ' + esc(mon)) + '</label><input type="text" data-af="Task" placeholder="What will you do this week?"></div>'
+      + '<div class="field"><label>Deliverable</label><input type="text" data-af="Deliverable" placeholder="What will exist when it is done?"></div>'
+      + '<div class="field"><label>Status</label>' + fieldInput('week', 'Status', 'Not started', 'data-af="Status"') + '</div></div>';
+  }).join('');
+  return '<div class="pt-card"><h3>➕ Add this week’s tasks</h3><div class="sub">Leave empty if you have nothing new. Each task is added to the Weekly plan for the week of ' + esc(mon) + '.</div>' + weekRows + '</div>'
+    + '<div class="pt-card"><h3>⚠ Raise a challenge</h3><div class="sub">Something getting in the way? It is added to Challenges with you as the owner.</div>'
+    + '<div class="pm-form pm-addrow" data-add="chal"><div class="field pm-full"><label>Challenge</label><textarea rows="2" data-af="Challenge"></textarea></div>'
+    + '<div class="field"><label>Severity</label>' + fieldInput('chal', 'Severity', 'Medium', 'data-af="Severity"') + '</div>'
+    + '<div class="field"><label>Action or mitigation</label><input type="text" data-af="Action or mitigation"></div></div></div>'
+    + '<div class="pt-card"><h3>💬 Note to Sumi</h3><div class="field" style="margin:0"><textarea rows="2" id="pmNote" placeholder="Anything else Sumi should know (optional)"></textarea></div></div>';
+}
+function pageMyUpdates(){
+  var m = memberOf(curEmail());
+  if(st.mineErr) return '<div class="pt-note">' + esc(st.mineErr) + '</div>';
+  if(st.mineLoading || !st.mine) return '<div class="pt-note">Loading your items…</div>';
+  var sections = Object.keys(MEMBER_EDIT).map(memberItemsHtml).join('');
+  var intro = '<div class="pt-card pm-hello"><h3>Hi ' + esc(m ? m.name.split(' ')[0] : '') + ', update your UDAAN work</h3><div class="sub">These are the items where you are the owner. Change what has moved, add this week’s tasks, then press <b>Submit my update</b>. Your update goes into Sumi’s main tracker automatically.</div>'
+    + (st.mine.empty ? '<div class="pt-note">Sumi has not shared your items yet. You can still add this week’s tasks or raise a challenge.</div>' : '') + '</div>';
+  return intro + sections + memberAddHtml()
+    + '<div class="pm-submitbar"><span id="pmChangeCount">No changes yet</span><button class="pm-btn primary" id="pmSubmit" disabled>Submit my update</button></div>';
+}
+function pageMyHistory(){
+  if(!st.myHist.length) return '<div class="pt-card"><h3>My submitted updates</h3><div class="pm-empty">You have not submitted an update yet.</div></div>';
+  return '<div class="pt-card"><h3>My submitted updates</h3><div class="sub">“Pending” updates go into the main tracker the next time Sumi’s dashboard is open.</div>'
+    + st.myHist.slice(0, 30).map(updateCardHtml).join('') + '</div>';
+}
+function updateCardHtml(u){
+  var lines = (u.patches || []).map(function(p){
+    var d = defOf(p.k) || { label:p.k };
+    return '<li><b>' + esc(d.label) + ':</b> ' + esc(p.title || '') + ' → ' + Object.keys(p.fields || {}).map(function(f){ return esc(f) + ' <i>' + esc(String(p.fields[f]).replace(/<br>/gi, ' ')) + '</i>'; }).join(', ') + '</li>';
+  }).concat((u.adds || []).map(function(a){ var d = defOf(a.k) || { one:a.k }; return '<li><b>New ' + esc(d.one) + ':</b> ' + esc(titleOf(a.k, a.row || {})) + '</li>'; }));
+  return '<div class="pm-upd"><div class="pm-upd-h"><b>' + esc(u.byName || u.byEmail) + '</b> ' + badge('Status', u.status === 'pending' ? 'Pending' : (u.status === 'merged' ? 'Merged' : 'Skipped'))
+    + '<span class="pm-muted">' + esc(whenStr(tsDate(u.at))) + '</span></div>'
+    + (lines.length ? '<ul>' + lines.join('') + '</ul>' : '')
+    + (u.note ? '<div class="pm-upd-note">💬 ' + esc(u.note) + '</div>' : '')
+    + (u.result ? '<div class="pm-muted" style="font-size:11.5px">' + esc(u.result) + (u.resultNotes && u.resultNotes.length ? ' (' + esc(u.resultNotes.join('; ')) + ')' : '') + '</div>' : '')
+    + '</div>';
+}
+function collectMemberUpdate(box){
+  var patches = {}, adds = [];
+  box.querySelectorAll('[data-mcol]').forEach(function(el){
+    var v = normVal(el.dataset.mcol, el), o = el.dataset.orig || '';
+    if(el.dataset.mcol === 'Progress'){ var po = pctOf(o); o = po == null ? '' : Math.round(po) + '%'; }
+    if(el.type === 'date') o = o ? fmtDate(parseDate(o)) || o : '';
+    if(el.tagName === 'TEXTAREA') o = o.trim().replace(/\r?\n/g, '<br>');
+    if(v === o) return;
+    var key = el.dataset.mk + ':' + el.dataset.mid;
+    if(!patches[key]){ var row = memberRows(el.dataset.mk).find(function(r){ return r.id === el.dataset.mid; }) || {}; patches[key] = { k:el.dataset.mk, id:el.dataset.mid, title:titleOf(el.dataset.mk, row), fields:{} }; }
+    patches[key].fields[el.dataset.mcol] = v;
+  });
+  box.querySelectorAll('.pm-addrow').forEach(function(g){
+    var k = g.dataset.add, row = { id:uid() }, any = false;
+    g.querySelectorAll('[data-af]').forEach(function(el){ var v = normVal(el.dataset.af, el); row[el.dataset.af] = v; });
+    var main = k === 'week' ? row.Task : row.Challenge;
+    if(!main) return;
+    if(k === 'week'){ row['Week of'] = fmtDate(thisMonday()); }
+    if(k === 'chal'){ row.Status = 'Open'; row.Raised = fmtDate(new Date()); }
+    adds.push({ k:k, row:row });
+  });
+  var noteEl = box.querySelector('#pmNote');
+  return { patches:Object.keys(patches).map(function(k){ return patches[k]; }), adds:adds, note:noteEl ? noteEl.value.trim() : '' };
+}
+function submitMemberUpdate(box){
+  var u = collectMemberUpdate(box), c = col(UPDATES_COLLECTION), m = memberOf(curEmail());
+  if(!u.patches.length && !u.adds.length && !u.note) return;
+  if(!c || !m) return;
+  var btn = box.querySelector('#pmSubmit'); btn.disabled = true; btn.textContent = 'Submitting…';
+  c.add({ byEmail:curEmail(), byName:m.name, at:stamp(), status:'pending', patches:u.patches, adds:u.adds, note:u.note })
+    .then(function(){ toast('Update sent. It goes into the main tracker automatically.'); st.page = 'history'; render(); })
+    .catch(function(e){ btn.disabled = false; btn.textContent = 'Submit my update';
+      alert('Could not submit.\n\n' + (e && e.message || e) + (e && e.code === 'permission-denied' ? '\n\nAsk Sumi to add the Program Management rules in Firebase.' : '')); });
+}
+
+/* ---------- add / edit / delete (owner) ---------- */
 function openEditor(k, id){
-  var def = SHEETS.find(function(s){ return s.k === k; }); if(!def || !pmAllowed()) return;
+  var def = defOf(k); if(!def || !pmAllowed()) return;
   var sh = sheetOf(k), row = id ? sh.rows.find(function(r){ return r.id === id; }) : null;
   if(id && !row) return;
   var vals = row || {};
@@ -11853,23 +12147,23 @@ function setBrand(on){
   if(!origBrand) origBrand = { p:p.innerHTML, h:h.innerHTML };
   if(on){
     p.innerHTML = st.view === 'home' ? 'NAAMII · Programmes' : 'EU UDAAN · Program Management';
-    h.textContent = st.view === 'home' ? 'Program Management' : 'UDAAN Project Tracker';
+    h.textContent = st.view === 'home' ? 'Program Management' : (pmMember() ? 'UDAAN · My updates' : 'UDAAN Project Tracker');
   }else{ p.innerHTML = origBrand.p; h.innerHTML = origBrand.h; }
 }
 window.pmOnTabChange = function(tab){
   setBrand(tab === 'pm');
-  if(tab === 'pm'){ listen(); render(); }
+  if(tab === 'pm'){ if(pmAllowed()) listen(); else if(pmMember()) listenMine(); render(); }
 };
 
-/* ---------- show the tab only to the allowed login ---------- */
+/* ---------- show the tab only to the owner and the team ---------- */
+var lastRole = '';
 function syncTabButton(){
   var b = document.getElementById('pmTabBtn'); if(!b) return;
-  var ok = pmAllowed();
-  b.style.display = ok ? '' : 'none';
-  if(!ok){
-    if(st.unsub || st.data) stopListening();
-    if(b.classList.contains('active')){ var c = document.querySelector('.tab-btn[data-tab="cal"]'); if(c) c.click(); }
-  }
+  var role = pmAllowed() ? 'owner' : (pmMember() ? 'member:' + curEmail() : '');
+  if(role !== lastRole){ stopListening(); st.view = 'home'; st.page = 'overview'; lastRole = role; }
+  b.style.display = role ? '' : 'none';
+  if(!role && b.classList.contains('active')){ var c = document.querySelector('.tab-btn[data-tab="cal"]'); if(c) c.click(); }
+  if(role === 'owner' && !st.err) listen();        // keeps merging team updates while the owner is signed in, on any tab
 }
 if(typeof updateRoleUI === 'function'){
   var _uru = updateRoleUI;
@@ -11878,19 +12172,19 @@ if(typeof updateRoleUI === 'function'){
 syncTabButton();
 setInterval(syncTabButton, 1500);
 
-/* ---------- pages ---------- */
+/* ---------- owner pages ---------- */
 function kpi(n, l, sub, go, accent, pct){
   return '<div class="kpi' + (accent ? ' k-accent' : '') + '" data-go="' + go + '"><div class="kn">' + n + '</div><div class="kl">' + l + '</div>'
     + (sub ? '<div class="ks">' + sub + '</div>' : '')
     + (pct != null ? '<div class="kbar"><i style="width:' + Math.max(0, Math.min(100, pct)).toFixed(0) + '%;background:var(--available)"></i></div>' : '') + '</div>';
 }
 var STACK_COLORS = { g:'var(--available)', b:'var(--confirmed)', r:'var(--cancelled)', y:'var(--proposed)', p:'var(--reserved)', '':'var(--coolgrey)' };
-function stackRow(label, rows, col){
+function stackRow(label, rows, c){
   var counts = {}, order = [];
-  rows.forEach(function(r){ var v = r[col] || 'Not set'; if(!(v in counts)){ counts[v] = 0; order.push(v); } counts[v]++; });
+  rows.forEach(function(r){ var v = r[c] || 'Not set'; if(!(v in counts)){ counts[v] = 0; order.push(v); } counts[v]++; });
   var total = rows.length || 1;
-  var bar = order.map(function(v){ return '<i title="' + esc(v) + ': ' + counts[v] + '" style="width:' + (counts[v] / total * 100) + '%;background:' + STACK_COLORS[badgeClass(col, v)] + '"></i>'; }).join('');
-  var leg = order.map(function(v){ return '<span><i style="background:' + STACK_COLORS[badgeClass(col, v)] + '"></i>' + esc(v) + ' ' + counts[v] + '</span>'; }).join('');
+  var bar = order.map(function(v){ return '<i title="' + esc(v) + ': ' + counts[v] + '" style="width:' + (counts[v] / total * 100) + '%;background:' + STACK_COLORS[badgeClass(c, v)] + '"></i>'; }).join('');
+  var leg = order.map(function(v){ return '<span><i style="background:' + STACK_COLORS[badgeClass(c, v)] + '"></i>' + esc(v) + ' ' + counts[v] + '</span>'; }).join('');
   return '<div class="pm-stackrow"><div class="h">' + esc(label) + '<small>' + rows.length + ' items</small></div><div class="pm-stack">' + bar + '</div><div class="chart-legend" style="margin-top:4px">' + leg + '</div></div>';
 }
 function avgGoal(){ var gp = rowsOf('goals').map(function(g){ return pctOf(g.Progress); }).filter(function(x){ return x != null; }); return gp.length ? gp.reduce(function(a, b){ return a + b; }, 0) / gp.length : 0; }
@@ -11902,6 +12196,7 @@ function pageOverview(){
   var openChal = chal.filter(function(r){ return !isDone(r.Status); });
   var openRisk = risk.filter(function(r){ return low(r.Type) === 'risk' && !isDone(r.Status); });
   var openFu = risk.filter(function(r){ return low(r.Type) === 'follow-up' && !isDone(r.Status); });
+  var recent = st.updates.filter(function(u){ var d = tsDate(u.at); return !d || (Date.now() - d) < 7 * 864e5; }).length;
   var html = '<div class="kpi-grid">'
     + kpi(avg.toFixed(0) + '%', 'Average goal progress', goals.length + ' goals', 'goals', true, avg)
     + kpi(team.length, 'Team members', '', 'team')
@@ -11910,7 +12205,7 @@ function pageOverview(){
     + kpi(delDone + ' / ' + deliv.length, 'Deliverables done', '', 'deliv', false, deliv.length ? delDone / deliv.length * 100 : 0)
     + kpi(openChal.length, 'Open challenges', openChal.filter(function(r){ return low(r.Severity) === 'high'; }).length + ' high severity', 'chal')
     + kpi(openRisk.length, 'Open risks', openRisk.filter(function(r){ return low(r.Impact) === 'high'; }).length + ' high impact', 'risk')
-    + kpi(openFu.length, 'Open follow-ups', '', 'risk')
+    + kpi(recent, 'Team updates this week', openFu.length + ' open follow-ups', 'updates')
     + '</div>';
   var grows = goals.map(function(g){
     var p = pctOf(g.Progress) || 0, t = strip(g.Goal);
@@ -11940,6 +12235,18 @@ function pageOverview(){
     +   '<div class="pt-card"><h3>Open items per person</h3><div class="sub">Weekly tasks, to-dos, deliverables, challenges, risks and follow-ups that are not done or closed.</div>' + ownHtml + '</div>'
     + '</div>';
 }
+function pageTeamUpdates(){
+  var team = PM_TEAM.map(function(m){
+    var last = st.updates.find(function(u){ return low(u.byEmail) === low(m.email); });
+    return '<div class="prow"><div class="pr-name">' + esc(m.name) + '<small>' + esc(m.email) + '</small></div><div></div><div class="pr-fig">'
+      + (last ? esc(whenStr(tsDate(last.at))) + '<small>last update</small>' : '<span class="pm-muted">No update yet</span>') + '</div></div>';
+  }).join('');
+  var list = st.updates.length ? st.updates.map(updateCardHtml).join('') : '<div class="pm-empty">No team updates yet. Team members send them from Program Management → UDAAN → My updates.</div>';
+  return '<div class="pt-2col"><div class="pt-card"><h3>Team</h3><div class="sub">Who can send updates. To change this list, edit PM_TEAM in the page code.</div>' + team + '</div>'
+    + '<div class="pt-card"><h3>How it works</h3><div class="sub" style="line-height:1.6">Each person sees only the rows where they are the Owner, and can change progress, status, actuals and notes, add weekly tasks and raise challenges. '
+    + 'When they press Submit, their update is merged into this tracker automatically while your dashboard is open (on any tab). Updates sent while you are away are merged the next time you sign in.</div></div></div>'
+    + '<div class="pt-card"><h3>Recent updates</h3><div class="sub">Newest first. Everything here has already been applied to the sheets unless it says Pending or Skipped.</div>' + list + '</div>';
+}
 function addBtn(k, def){ return '<button class="pm-btn primary" data-add="' + k + '">+ Add ' + esc(def.one) + '</button>'; }
 function pageTeam(def, sh){
   var cards = sh.rows.map(function(p){
@@ -11958,15 +12265,15 @@ function pageTeam(def, sh){
   return '<div class="pt-card"><div class="pm-card-head"><div><h3>Team and roles</h3><div class="sub">' + esc(sh.desc || 'Who does what.') + '</div></div>' + addBtn('team', def) + '</div>'
     + '<div class="pm-team">' + (cards || '<div class="pm-empty">No team members yet.</div>') + '</div></div>';
 }
-function cellHtml(col, r){
-  var v = r[col];
-  if(/^progress$|^reached$/i.test(col)){
+function cellHtml(c, r){
+  var v = r[c];
+  if(/^progress$|^reached$/i.test(c)){
     var p = pctOf(v); if(p == null) return '<td></td>';
     return '<td><div class="pm-mini"><div class="pr-track"><i class="' + (p >= 100 ? 'done' : '') + '" style="width:' + Math.min(100, p) + '%"></i></div><b>' + p.toFixed(0) + '%</b></div></td>';
   }
-  if(BADGE_COLS.test(col)) return '<td>' + badge(col, v) + '</td>';
-  if(WIDE.test(col)) return '<td class="wrap">' + linkify(v) + '</td>';
-  if(MID.test(col)) return '<td class="mid">' + esc(v) + '</td>';
+  if(BADGE_COLS.test(c)) return '<td>' + badge(c, v) + '</td>';
+  if(WIDE.test(c)) return '<td class="wrap">' + linkify(v) + '</td>';
+  if(MID.test(c)) return '<td class="mid">' + esc(v) + '</td>';
   return '<td>' + esc(v) + '</td>';
 }
 function pageSheet(def, sh){
@@ -12012,50 +12319,65 @@ function pageImport(){
     + '<div style="margin-top:10px"><button class="pm-btn" id="pmStartBlank">Or start with empty sheets</button></div></div>';
 }
 function pageHome(){
-  var sub = '';
-  if(st.data){
+  var sub = '', member = pmMember();
+  if(!member && st.data){
     sub = '<div class="pm-prog-stats"><div><b>' + avgGoal().toFixed(0) + '%</b>Goal progress</div><div><b>' + countOpen('todo') + '</b>To-dos open</div>'
       + '<div><b>' + countOpen('chal') + '</b>Challenges</div><div><b>' + rowsOf('risk').filter(function(r){ return low(r.Type) === 'risk' && !isDone(r.Status); }).length + '</b>Risks</div></div>';
   }else if(st.loading){ sub = '<p>Loading…</p>'; }
   var cards = PROGRAMS.map(function(p){
-    return '<div class="pt-card pm-prog" data-open="' + p.key + '" role="button" tabindex="0"><div class="pm-prog-top"><div class="pm-prog-ic">' + esc(p.abbr) + '</div><div><h3>' + esc(p.name) + '</h3><p>Project tracker</p></div></div>'
-      + '<p>' + esc(p.desc) + '</p>' + sub + '<div><button class="pm-btn primary" data-open="' + p.key + '">Open UDAAN tracking →</button></div></div>';
+    return '<div class="pt-card pm-prog" data-open="' + p.key + '" role="button" tabindex="0"><div class="pm-prog-top"><div class="pm-prog-ic">' + esc(p.abbr) + '</div><div><h3>' + esc(p.name) + '</h3><p>' + (member ? 'My updates' : 'Project tracker') + '</p></div></div>'
+      + '<p>' + (member ? 'Update your goals, weekly tasks, targets, to-dos and deliverables for UDAAN. Your update goes straight into the main tracker.' : esc(p.desc)) + '</p>' + sub
+      + '<div><button class="pm-btn primary" data-open="' + p.key + '">' + (member ? 'Update my UDAAN work →' : 'Open UDAAN tracking →') + '</button></div></div>';
   }).join('')
-  + '<div class="pt-card pm-prog soon"><div class="pm-prog-top"><div class="pm-prog-ic" style="background:var(--coolgrey)">+</div><div><h3>More programmes</h3><p>Coming later</p></div></div><p>Other NAAMII programmes can be added here with their own tracker.</p></div>';
-  return '<div class="pt-card"><h3>Programmes</h3><div class="sub">Choose a programme to see its tracking. Only you can see and change Program Management.</div><div class="pm-prog-grid">' + cards + '</div></div>';
+  + (member ? '' : '<div class="pt-card pm-prog soon"><div class="pm-prog-top"><div class="pm-prog-ic" style="background:var(--coolgrey)">+</div><div><h3>More programmes</h3><p>Coming later</p></div></div><p>Other NAAMII programmes can be added here with their own tracker.</p></div>');
+  return '<div class="pt-card"><h3>Programmes</h3><div class="sub">' + (member ? 'Choose a programme to update your work.' : 'Choose a programme to see its tracking. Only you can change the tracker; the team sends updates that merge in automatically.') + '</div><div class="pm-prog-grid">' + cards + '</div></div>';
 }
 
 /* ---------- shell ---------- */
 function render(){
   var box = document.getElementById('pmTab'); if(!box || box.style.display === 'none') return;
-  if(!pmAllowed()){ box.innerHTML = '<div class="master-banner">Program Management is only available to its owner’s login.</div>'; return; }
+  if(!pmVisible()){ box.innerHTML = '<div class="master-banner">Program Management is not available for this login.</div>'; return; }
   setBrand(true);
+  var member = pmMember();
   var nav, page, title, tools = '';
   if(st.view === 'home'){
     nav = '<div class="pt-nav-item active" data-pmnav="home"><span class="ic">📁</span><span class="pt-nav-label">All programmes</span></div>'
       + '<div class="pm-nav-sep"></div>'
       + PROGRAMS.map(function(p){ return '<div class="pt-nav-item" data-open="' + p.key + '"><span class="ic">✈</span><span class="pt-nav-label">' + esc(p.name) + '</span></div>'; }).join('');
     title = 'Program Management'; page = pageHome();
+  }else if(member){
+    if(st.page !== 'mine' && st.page !== 'history') st.page = 'mine';
+    var pend = st.myHist.filter(function(u){ return u.status === 'pending'; }).length;
+    nav = '<div class="pt-nav-item" data-pmnav="home"><span class="ic">←</span><span class="pt-nav-label">All programmes</span></div><div class="pm-nav-sep"></div>'
+      + '<div class="pt-nav-item' + (st.page === 'mine' ? ' active' : '') + '" data-pg="mine"><span class="ic">✍</span><span class="pt-nav-label">My updates</span></div>'
+      + '<div class="pt-nav-item' + (st.page === 'history' ? ' active' : '') + '" data-pg="history"><span class="ic">🕒</span><span class="pt-nav-label">Submitted' + (pend ? ' <small style="opacity:.7">' + pend + ' pending</small>' : '') + '</span></div>';
+    title = st.page === 'history' ? 'UDAAN · Submitted updates' : 'UDAAN · My updates';
+    page = st.page === 'history' ? pageMyHistory() : pageMyUpdates();
   }else{
+    var pendO = st.updates.filter(function(u){ return u.status === 'pending'; }).length;
     nav = '<div class="pt-nav-item" data-pmnav="home"><span class="ic">←</span><span class="pt-nav-label">All programmes</span></div><div class="pm-nav-sep"></div>'
       + '<div class="pt-nav-item' + (st.page === 'overview' ? ' active' : '') + '" data-pg="overview"><span class="ic">📊</span><span class="pt-nav-label">Overview</span></div>'
+      + '<div class="pt-nav-item' + (st.page === 'updates' ? ' active' : '') + '" data-pg="updates"><span class="ic">📥</span><span class="pt-nav-label">Team updates' + (pendO ? ' <small style="opacity:.7">' + pendO + '</small>' : '') + '</span></div>'
       + SHEETS.map(function(s){
           var n = st.data ? rowsOf(s.k).length : '';
           return '<div class="pt-nav-item' + (st.page === s.k ? ' active' : '') + '" data-pg="' + s.k + '"><span class="ic">' + s.ic + '</span><span class="pt-nav-label">' + esc(s.label) + (n !== '' ? ' <small style="opacity:.6;font-weight:600">' + n + '</small>' : '') + '</span></div>';
         }).join('');
-    var def = SHEETS.find(function(s){ return s.k === st.page; });
-    title = 'UDAAN · ' + (def ? def.label : 'Overview');
+    var def = defOf(st.page);
+    title = 'UDAAN · ' + (def ? def.label : (st.page === 'updates' ? 'Team updates' : 'Overview'));
     if(st.err) page = '<div class="pt-note">' + esc(st.err) + (st.ruleErr ? '<pre class="pm-rule">' + esc(RULE_TXT) + '</pre>' : '') + '</div>';
     else if(st.loading) page = '<div class="pt-note">Loading UDAAN Program Management…</div>';
     else if(!st.data || st.preview){ page = pageImport(); title = 'UDAAN · Load the tracker'; }
+    else if(st.page === 'updates') page = pageTeamUpdates();
     else page = def ? pageSheet(def, sheetOf(def.k)) : pageOverview();
     if(st.data && !st.preview){
-      var when = st.meta && st.meta.at ? st.meta.at.toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
-      tools = '<div class="pm-tools"><span>' + (when ? 'Last saved ' + esc(when) + (st.meta.by ? ' by ' + esc(st.meta.by) : '') : 'Saved in the shared database') + '</span>'
+      tools = '<div class="pm-tools"><span>' + (st.meta && st.meta.at ? 'Last saved ' + esc(whenStr(st.meta.at)) + (st.meta.by ? ' by ' + esc(st.meta.by) : '') : 'Saved in the shared database') + '</span>'
         + '<button class="pm-btn" id="pmExport" title="Download everything as an Excel file">⬇ Export to Excel</button>'
         + '<button class="pm-btn" id="pmReplace" title="Replace all UDAAN data with an Excel file">Replace from Excel…</button></div>';
     }
   }
+  // keep what a team member has typed if the page redraws
+  var typed = {};
+  box.querySelectorAll('[data-mcol],[data-af],#pmNote').forEach(function(el, i){ typed[el.dataset.mk ? el.dataset.mk + ':' + el.dataset.mid + ':' + el.dataset.mcol : (el.id || 'a' + i)] = el.value; });
   var keepScroll = box.querySelector('.pt-side') ? box.querySelector('.pt-side').scrollTop : 0;
   var focusQ = document.activeElement && document.activeElement.id === 'pmQ', caret = focusQ ? document.activeElement.selectionStart : 0;
   box.innerHTML = '<div class="pt-shell"><div class="pt-side' + (st.collapsed ? ' collapsed' : '') + '">'
@@ -12063,6 +12385,7 @@ function render(){
     + '<div class="pt-nav">' + nav + '</div></div>'
     + '<div class="pt-main"><div class="pt-page-title">' + esc(title) + '</div>' + tools + page + '</div></div>'
     + '<input type="file" id="pmFile" accept=".xlsx,.xls" hidden>';
+  box.querySelectorAll('[data-mcol],[data-af],#pmNote').forEach(function(el, i){ var key = el.dataset.mk ? el.dataset.mk + ':' + el.dataset.mid + ':' + el.dataset.mcol : (el.id || 'a' + i); if(key in typed) el.value = typed[key]; });
   var side = box.querySelector('.pt-side'); if(side) side.scrollTop = keepScroll;
   if(focusQ){ var qi = box.querySelector('#pmQ'); if(qi){ qi.focus(); try{ qi.setSelectionRange(caret, caret); }catch(e){} } }
   wire(box);
@@ -12073,18 +12396,27 @@ function pickFile(box){
   fi.onchange = function(){ if(fi.files && fi.files[0]) readExcelFile(fi.files[0], function(data, name){ st.preview = { data:data, name:name }; render(); }); };
   fi.click();
 }
+function refreshChangeCount(box){
+  var lab = box.querySelector('#pmChangeCount'), btn = box.querySelector('#pmSubmit'); if(!lab || !btn) return;
+  var u = collectMemberUpdate(box), n = u.patches.reduce(function(a, p){ return a + Object.keys(p.fields).length; }, 0) + u.adds.length + (u.note ? 1 : 0);
+  lab.textContent = n ? n + ' change' + (n === 1 ? '' : 's') + ' ready to submit' : 'No changes yet';
+  btn.disabled = !n;
+}
 function wire(box){
   box.querySelectorAll('[data-open]').forEach(function(el){
-    var open = function(e){ if(e) e.stopPropagation(); st.view = 'program'; st.prog = el.dataset.open; listen(); go('overview'); };
+    var open = function(e){ if(e) e.stopPropagation(); st.view = 'program'; st.prog = el.dataset.open;
+      if(pmMember()){ listenMine(); go('mine'); } else { listen(); go('overview'); } };
     el.addEventListener('click', open);
     el.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(e); } });
   });
   box.querySelectorAll('[data-pmnav="home"]').forEach(function(el){ el.addEventListener('click', function(){ st.view = 'home'; st.preview = null; render(); }); });
   box.querySelectorAll('.pt-nav-item[data-pg]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.pg); }); });
   box.querySelectorAll('.kpi[data-go]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.go); }); });
-  box.querySelectorAll('[data-edit]').forEach(function(el){ el.addEventListener('click', function(e){
-    if(e.target.closest('a')) return; e.stopPropagation(); var p = el.dataset.edit.split(':'); openEditor(p[0], p[1]); }); });
-  box.querySelectorAll('[data-add]').forEach(function(el){ el.addEventListener('click', function(){ openEditor(el.dataset.add, null); }); });
+  if(pmAllowed()){
+    box.querySelectorAll('[data-edit]').forEach(function(el){ el.addEventListener('click', function(e){
+      if(e.target.closest('a')) return; e.stopPropagation(); var p = el.dataset.edit.split(':'); openEditor(p[0], p[1]); }); });
+    box.querySelectorAll('button[data-add]').forEach(function(el){ el.addEventListener('click', function(){ openEditor(el.dataset.add, null); }); });
+  }
   var cb = box.querySelector('#pmCollapse'); if(cb) cb.addEventListener('click', function(){ st.collapsed = !st.collapsed; render(); });
   var ex = box.querySelector('#pmExport'); if(ex) ex.addEventListener('click', exportExcel);
   var rp = box.querySelector('#pmReplace'); if(rp) rp.addEventListener('click', function(){ pickFile(box); });
@@ -12108,6 +12440,12 @@ function wire(box){
   if(q) q.addEventListener('input', function(){ clearTimeout(tmr); tmr = setTimeout(function(){ st.q = q.value; render(); }, 180); });
   [['pmStatus', 'status'], ['pmOwner', 'owner'], ['pmType', 'type']].forEach(function(x){ var s = box.querySelector('#' + x[0]); if(s) s.addEventListener('change', function(){ st[x[1]] = s.value; render(); }); });
   var rs = box.querySelector('#pmReset'); if(rs) rs.addEventListener('click', function(){ st.q = st.status = st.owner = st.type = ''; render(); });
+  // team member form
+  if(box.querySelector('#pmSubmit')){
+    box.querySelectorAll('[data-mcol],[data-af],#pmNote').forEach(function(el){ el.addEventListener('input', function(){ refreshChangeCount(box); }); el.addEventListener('change', function(){ refreshChangeCount(box); }); });
+    box.querySelector('#pmSubmit').addEventListener('click', function(){ submitMemberUpdate(box); });
+    refreshChangeCount(box);
+  }
 }
 
 try{ console.info('UDAAN add-on patch 18 (2026-11-13) Program Management loaded'); }catch(e){}
