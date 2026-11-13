@@ -1346,6 +1346,7 @@ body.cx-open{ overflow:hidden; }
         <button class="tab-btn" data-tab="list">Milestone monitor</button>
         <button class="tab-btn" data-tab="master" id="masterTabBtn" style="display:none;">Master</button>
         <button class="tab-btn" data-tab="track" id="trackTabBtn" style="display:none;">Project Tracking</button>
+        <button class="tab-btn" data-tab="pm" id="pmTabBtn" style="display:none;">Program Management</button>
       </div>
       <div class="role-box" id="userBox" style="display:none;">
         <span class="user-chip" id="userChip"><span class="u-dot"></span><span id="userChipName">-</span></span>
@@ -1421,6 +1422,8 @@ body.cx-open{ overflow:hidden; }
   <div id="masterTab" style="display:none;"></div>
 
   <div id="trackTab" style="display:none;"></div>
+
+  <div id="pmTab" style="display:none;"></div>
 
   <p class="made-by">&copy; 2026 NAAMII. All rights reserved. <span id="appVersionTag" style="opacity:.6;"></span></p>
 
@@ -1980,6 +1983,7 @@ function updateRoleUI(){
     listTabBtn.style.display = '';
     { const _mtb=document.getElementById('masterTabBtn'); if(_mtb) _mtb.style.display=''; }
     { const _ttb=document.getElementById('trackTabBtn'); if(_ttb) _ttb.style.display=''; }
+    { const _ptb=document.getElementById('pmTabBtn'); if(_ptb) _ptb.style.display=(typeof window.pmAllowed==='function' && window.pmAllowed()) ? '' : 'none'; }
     permNote.textContent = 'As admin, you can see every detail, mark dates available, set them as booked, reserved, confirmed or completed, cancel/remove dates, and change past dates. Marking a cohort completed updates the people-trained totals automatically.';
     sharedNote.textContent = 'This calendar is shared. Proposer names and contact details are only visible to admins.';
   }else{
@@ -1989,10 +1993,11 @@ function updateRoleUI(){
     listTabBtn.style.display = 'none';
     { const _mtb=document.getElementById('masterTabBtn'); if(_mtb) _mtb.style.display='none'; }
     { const _ttb=document.getElementById('trackTabBtn'); if(_ttb) _ttb.style.display='none'; }
+    { const _ptb=document.getElementById('pmTabBtn'); if(_ptb) _ptb.style.display='none'; }
     permNote.textContent = 'You can propose a date and edit or remove your own proposals any time - they are tagged with your name and a dark ring so you can spot them. You can\u2019t edit other partners\u2019 dates, and booking, reserving, marking a date available, and cancelling are handled by the NAAMII admin team.';
     sharedNote.textContent = 'This calendar is shared. For everyone\u2019s privacy, proposer names and contact details are only visible to admins.';
     const _actTab = document.querySelector('.tab-btn.active');
-    if(_actTab && (_actTab.dataset.tab==='list' || _actTab.dataset.tab==='master' || _actTab.dataset.tab==='track')){
+    if(_actTab && (_actTab.dataset.tab==='list' || _actTab.dataset.tab==='master' || _actTab.dataset.tab==='track' || _actTab.dataset.tab==='pm')){
       document.querySelector('.tab-btn[data-tab="cal"]').click();
     }
   }
@@ -3583,7 +3588,10 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     document.getElementById('listTab').style.display = tab==='list' ? 'block' : 'none';
     { const _mt=document.getElementById('masterTab'); if(_mt) _mt.style.display = tab==='master' ? 'block' : 'none'; }
     { const _tt=document.getElementById('trackTab'); if(_tt) _tt.style.display = tab==='track' ? 'block' : 'none'; }
-    document.body.classList.toggle('tracking-mode', tab==='track');
+    { const _pt=document.getElementById('pmTab'); if(_pt) _pt.style.display = tab==='pm' ? 'block' : 'none'; }
+    document.body.classList.toggle('tracking-mode', tab==='track' || tab==='pm');
+    document.body.classList.toggle('pm-mode', tab==='pm');
+    if(typeof window.pmOnTabChange === 'function') window.pmOnTabChange(tab);
     if(tab==='list') renderList();
     if(tab==='master'){ initMasterListeners(); renderMaster(); }
     if(tab==='track'){ initMasterListeners(); initTargetsListener(); renderTracking(); }
@@ -11459,6 +11467,650 @@ setInterval(function(){
 }, 60000);
 
 try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
+})();
+</script>
+
+
+<!-- =====================================================================
+     UDAAN add-on patch 18  (2026-11-13)
+     PROGRAM MANAGEMENT tab, next to Project Tracking.
+       * Only the logins in PM_EDITORS (Sumi) see the tab, and only they
+         can add, edit or delete. Everyone else does not see it at all.
+       * Program Management lists the programmes. The first one is UDAAN.
+       * Opening UDAAN shows the UDAAN Project Tracker (goals, weekly plan,
+         targets, to-dos, deliverables, challenges, risks and decisions).
+         It is loaded once from UDAAN_Project_Tracker.xlsx and then kept
+         in the private Firestore collection "udaan_program_management".
+         It can be exported back to Excel at any time.
+       * Same layout as Project Tracking: frozen sidebar, KPI cards,
+         section cards and tables.
+     ===================================================================== -->
+<style id="udaan-addon18-css">
+  body.pm-mode .cal-sync-switch, body.pm-mode #addBtn{ display:none !important; }
+  #pmTab .pm-card-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+  #pmTab .pm-icon{ border:1px solid var(--line); background:var(--paper); color:var(--charcoal-soft); width:28px; height:28px; border-radius:8px;
+    cursor:pointer; font-size:14px; line-height:1; padding:0; flex:none; }
+  #pmTab .pm-icon:hover{ border-color:var(--brand); color:var(--brand); }
+  #pmTab .pt-table tbody tr{ cursor:pointer; }
+  #pmTab .prow[data-edit], #pmTab .pm-att[data-edit]{ cursor:pointer; }
+  #pmTab .pm-att[data-edit]:hover{ background:var(--cream); }
+  #pmTab .pm-person-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  #pmTab .pm-list{ margin:0 0 14px; padding-left:18px; font-size:13px; line-height:1.7; columns:2; }
+  #pmTab .pm-rule{ background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:10px 12px; font-size:12px; margin:10px 0 0; white-space:pre-wrap; }
+  .pm-modal{ width:640px; }
+  .pm-form{ display:grid; grid-template-columns:1fr 1fr; gap:0 12px; }
+  .pm-form .pm-full{ grid-column:1 / -1; }
+  .pm-hint{ font-size:11px; color:var(--charcoal-soft); margin-top:3px; }
+  @media(max-width:560px){ .pm-form{ grid-template-columns:1fr; } #pmTab .pm-list{ columns:1; } }
+  .pm-toast{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--charcoal); color:#fff; padding:10px 16px;
+    border-radius:10px; font-size:13px; font-weight:600; z-index:90; box-shadow:var(--shadow); }
+  #pmTab .pm-tools{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:-4px 0 14px; font-size:12.5px; color:var(--charcoal-soft); font-weight:600; }
+  #pmTab .pm-btn{ display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:var(--paper); color:var(--charcoal);
+    border-radius:9px; padding:6px 12px; font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; text-decoration:none; }
+  #pmTab .pm-btn:hover{ border-color:var(--brand); color:var(--brand); }
+  #pmTab .pm-btn.primary{ background:var(--charcoal); color:#fff; border-color:var(--charcoal); }
+  #pmTab .pm-btn.primary:hover{ background:var(--brand); border-color:var(--brand); color:#fff; }
+  #pmTab .pm-nav-sep{ height:1px; background:var(--line); margin:6px 4px; }
+  #pmTab .pm-prog-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+  #pmTab .pm-prog{ cursor:pointer; transition:border-color .15s, transform .15s; display:flex; flex-direction:column; gap:10px; }
+  #pmTab .pm-prog:hover{ border-color:var(--brand); transform:translateY(-1px); }
+  #pmTab .pm-prog .pm-prog-top{ display:flex; align-items:center; gap:10px; }
+  #pmTab .pm-prog .pm-prog-ic{ width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,var(--charcoal),#3a414c); color:#fff; font-weight:900; font-size:15px; flex:none; box-shadow:inset 0 -3px 0 var(--brand); }
+  #pmTab .pm-prog h3{ margin:0; }
+  #pmTab .pm-prog p{ margin:0; font-size:12.5px; color:var(--charcoal-soft); line-height:1.5; }
+  #pmTab .pm-prog-stats{ display:flex; gap:16px; flex-wrap:wrap; }
+  #pmTab .pm-prog-stats div{ font-size:11px; color:var(--charcoal-soft); font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+  #pmTab .pm-prog-stats b{ display:block; font-size:19px; color:var(--ink); text-transform:none; letter-spacing:-.01em; }
+  #pmTab .pm-prog.soon{ cursor:default; opacity:.6; border-style:dashed; box-shadow:none; }
+  #pmTab .pm-prog.soon:hover{ transform:none; border-color:var(--line); }
+  #pmTab .pm-badge{ display:inline-block; font-size:10.5px; font-weight:800; padding:2px 9px; border-radius:20px; white-space:nowrap;
+    background:var(--cream); color:var(--charcoal-soft); border:1px solid var(--line); }
+  #pmTab .pm-badge.g{ background:var(--available-bg); color:var(--available-ink); border-color:transparent; }
+  #pmTab .pm-badge.b{ background:var(--confirmed-bg); color:var(--confirmed-ink); border-color:transparent; }
+  #pmTab .pm-badge.y{ background:var(--proposed-bg); color:var(--proposed-ink); border-color:transparent; }
+  #pmTab .pm-badge.r{ background:var(--cancelled-bg); color:var(--cancelled-ink); border-color:transparent; }
+  #pmTab .pm-badge.p{ background:var(--reserved-bg); color:var(--reserved-ink); border-color:transparent; }
+  #pmTab .pt-table td.wrap{ white-space:normal; min-width:220px; max-width:440px; line-height:1.45; }
+  #pmTab .pt-table td.mid{ white-space:normal; min-width:120px; max-width:200px; line-height:1.4; }
+  #pmTab .pt-table th{ cursor:default; position:sticky; top:0; background:var(--paper); }
+  #pmTab .pt-table td{ vertical-align:top; }
+  #pmTab .pt-table a{ color:var(--confirmed-ink); }
+  #pmTab .pm-mini{ display:flex; align-items:center; gap:8px; min-width:120px; }
+  #pmTab .pm-mini .pr-track{ flex:1; height:8px; border-radius:6px; background:var(--line); overflow:hidden; }
+  #pmTab .pm-mini .pr-track>i{ display:block; height:100%; border-radius:6px; background:linear-gradient(90deg,var(--confirmed),var(--confirmed-ink)); }
+  #pmTab .pm-mini .pr-track>i.done{ background:linear-gradient(90deg,var(--available),var(--available-ink)); }
+  #pmTab .pm-mini b{ font-size:12px; min-width:34px; text-align:right; }
+  #pmTab .prow{ cursor:default; grid-template-columns:minmax(150px,2fr) minmax(90px,1fr) auto; }
+  #pmTab .prow .pr-name{ font-weight:600; line-height:1.35; }
+  #pmTab .pm-stack{ display:flex; height:14px; border-radius:8px; overflow:hidden; background:var(--line); margin:6px 0 4px; }
+  #pmTab .pm-stack i{ display:block; height:100%; }
+  #pmTab .pm-stackrow{ padding:8px 0; border-top:1px solid var(--line); }
+  #pmTab .pm-stackrow:first-of-type{ border-top:none; }
+  #pmTab .pm-stackrow .h{ display:flex; justify-content:space-between; font-size:13px; font-weight:700; }
+  #pmTab .pm-stackrow .h small{ color:var(--charcoal-soft); font-weight:600; }
+  #pmTab .pm-att{ display:flex; gap:10px; padding:9px 0; border-top:1px solid var(--line); font-size:12.5px; align-items:flex-start; }
+  #pmTab .pm-att:first-of-type{ border-top:none; }
+  #pmTab .pm-att .t{ flex:1; line-height:1.45; }
+  #pmTab .pm-att .t small{ display:block; color:var(--charcoal-soft); font-weight:600; font-size:11px; margin-top:2px; }
+  #pmTab .pm-empty{ padding:18px; text-align:center; color:var(--charcoal-soft); font-size:12.5px; }
+  #pmTab .pm-count{ font-size:12px; color:var(--charcoal-soft); font-weight:600; margin:0 0 8px; }
+  #pmTab .kpi{ cursor:pointer; }
+  #pmTab .kpi:hover{ border-color:var(--brand); }
+  #pmTab .kpi .ks{ font-size:11px; color:var(--charcoal-soft); margin-top:4px; font-weight:600; }
+  #pmTab .kpi.k-accent .ks{ color:#D7DAE0; }
+  #pmTab .pm-team{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+  #pmTab .pm-person{ border:1px solid var(--line); border-radius:12px; padding:13px 14px; background:var(--cream); }
+  #pmTab .pm-person h4{ margin:0; font-size:14px; font-weight:800; color:var(--ink); }
+  #pmTab .pm-person .role{ font-size:12px; color:var(--brand); font-weight:700; margin:2px 0 8px; }
+  #pmTab .pm-person p{ margin:0 0 6px; font-size:12.5px; line-height:1.5; color:var(--charcoal); }
+  #pmTab .pm-person p b{ display:block; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--charcoal-soft); }
+  #pmTab .pm-person .load{ display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+</style>
+<script>
+(function(){
+"use strict";
+/* ---------------------------------------------------------------------
+   WHO CAN USE PROGRAM MANAGEMENT
+   Only these admin logins see the tab and can add, edit or delete rows.
+   The data is kept in Firestore, collection "udaan_program_management".
+   Add this to the Firestore rules (Firebase console > Firestore >
+   Rules) so nobody else can read or change it:
+
+     match /udaan_program_management/{d} {
+       allow read, write: if request.auth != null
+         && request.auth.token.email in ['sumi@naamii.org.np'];
+     }
+   --------------------------------------------------------------------- */
+var PM_EDITORS = ['sumi@naamii.org.np'];
+var PM_COLLECTION = 'udaan_program_management';
+
+/* The programmes listed under Program Management. Add more here later. */
+var PROGRAMS = [
+  { key:'udaan', name:'UDAAN', abbr:'U',
+    desc:'EU UDAAN project tracker: goals, weekly plan, targets, to-dos, deliverables, challenges, risks and decisions for the Education and Outreach team.' }
+];
+
+/* One entry per sheet of the UDAAN Project Tracker Excel. first = first column heading. */
+var SHEETS = [
+  { k:'team',  sheet:'Team',                label:'Team',              one:'person',      ic:'👥', first:'Name',
+    cols:['Name','Team','Role','Responsible for','Current focus'] },
+  { k:'goals', sheet:'Goals',               label:'Goals',             one:'goal',        ic:'🎯', first:'Goal',
+    cols:['Goal','Period','Team','Owner','Due','Progress','Status','Notes'] },
+  { k:'week',  sheet:'Weekly Plan',         label:'Weekly plan',       one:'weekly task', ic:'🗓', first:'Week of',
+    cols:['Week of','Owner','Task','Deliverable','Status','Blockers and notes'] },
+  { k:'targets', sheet:'Targets',           label:'Targets',           one:'target',      ic:'📈', first:'Person',
+    cols:['Person','Period','Which period','Target for','Target','Actual','Unit','Reached','Notes'] },
+  { k:'todo',  sheet:'To-Do',               label:'To-do',             one:'to-do',       ic:'☑',       first:'Task',
+    cols:['Task','Priority','Owner','Team','Due','Status','Notes'] },
+  { k:'deliv', sheet:'Deliverables',        label:'Deliverables',      one:'deliverable', ic:'📦', first:'Deliverable',
+    cols:['Deliverable','Team','Owner','Due','Status','Notes and link'] },
+  { k:'chal',  sheet:'Challenges',          label:'Challenges',        one:'challenge',   ic:'⚠',       first:'Challenge',
+    cols:['Challenge','Team','Owner','Severity','Status','Action or mitigation','Raised'] },
+  { k:'risk',  sheet:'Risks and Decisions', label:'Risks & decisions', one:'item',        ic:'🛡', first:'Type',
+    cols:['Type','What','Owner','Date','Impact','Status','Notes'] }
+];
+/* Dropdown choices (from the hidden "Lists" sheet). Values already used are added too. */
+var L = {
+  status:['Not started','In progress','Done','Blocked','At risk'],
+  team:['Education and Outreach','Education + Outreach','Education','Outreach','Leadership','Tangible'],
+  period:['Weekly','Weekly (Mondays)','Monthly','Quarterly','Yearly'],
+  tperiod:['Weekly','Monthly','Quarterly','Yearly'],
+  level:['Low','Medium','High'],
+  cstatus:['Open','In progress','Resolved'],
+  kind:['Risk','Decision','Follow-up'],
+  lstatus:['Open','In progress','Closed']
+};
+function choicesFor(k, col){
+  if(col === 'Status') return k === 'chal' ? L.cstatus : (k === 'risk' ? L.lstatus : L.status);
+  if(col === 'Team') return L.team;
+  if(col === 'Period') return k === 'targets' ? L.tperiod : L.period;
+  if(col === 'Priority' || col === 'Severity' || col === 'Impact') return L.level;
+  if(col === 'Type' && k === 'risk') return L.kind;
+  if(col === 'Owner' || col === 'Person') return teamNames();
+  return null;
+}
+var DATE_COLS = /^(due|date|week of|raised)$/i;
+var LONG = /^(goal|task|challenge|what|notes|notes and link|action or mitigation|blockers and notes|responsible for|current focus)$/i;
+var WIDE = /^(goal|task|challenge|what|deliverable|notes|notes and link|action or mitigation|blockers and notes|responsible for|current focus|target for)$/i;
+var MID  = /^(owner|team|role|person|which period)$/i;
+var BADGE_COLS = /^(status|priority|severity|impact|type|period)$/i;
+
+var st = { view:'home', page:'overview', q:'', status:'', owner:'', type:'', data:null, meta:null, loading:false, err:'', ruleErr:false,
+           preview:null, unsub:null, saving:false };
+
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function linkify(s){ return esc(s).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/&lt;br&gt;/gi, '<br>'); }
+function low(s){ return String(s == null ? '' : s).trim().toLowerCase(); }
+function adminOk(){ try{ return typeof isAdmin === 'function' ? isAdmin() : false; }catch(e){ return false; } }
+function curUser(){ try{ return (typeof fbUser !== 'undefined' && fbUser && !fbUser.isAnonymous) ? fbUser : null; }catch(e){ return null; } }
+function curEmail(){ var u = curUser(); return u ? low(u.email) : ''; }
+function pmAllowed(){ return adminOk() && PM_EDITORS.indexOf(curEmail()) >= 0; }
+window.pmAllowed = pmAllowed;
+function getDb(){ try{ return (typeof db !== 'undefined' && db) ? db : null; }catch(e){ return null; } }
+function docRef(){ var d = getDb(); return d ? d.collection(PM_COLLECTION).doc('udaan') : null; }
+
+function badgeClass(col, v){
+  var x = low(v); if(!x) return '';
+  if(/^(done|resolved|closed|completed)$/.test(x)) return 'g';
+  if(/^in progress$/.test(x)) return 'b';
+  if(/^(blocked|at risk|high)$/.test(x)) return 'r';
+  if(/^medium$/.test(x)) return 'y';
+  if(/^low$/.test(x)) return 'g';
+  if(x === 'risk') return 'r';
+  if(x === 'decision') return 'b';
+  if(x === 'follow-up') return 'y';
+  if(/^(weekly|monthly|quarterly|yearly)/.test(x)) return 'p';
+  return '';
+}
+function badge(col, v){ return v ? '<span class="pm-badge ' + badgeClass(col, v) + '">' + esc(v) + '</span>' : ''; }
+function isDone(v){ return /^(done|resolved|closed|completed)$/.test(low(v)); }
+function pctOf(v){ if(v == null || v === '') return null; if(typeof v === 'number') return v <= 1.0001 ? v * 100 : v; var m = String(v).match(/-?[\d.]+/); return m ? parseFloat(m[0]) : null; }
+var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(d){ return d instanceof Date && !isNaN(d) ? d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear() : ''; }
+function toIso(s){ var d = parseDate(s); if(!d) return ''; return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function parseDate(s){
+  s = String(s || '').trim(); if(!s) return null;
+  var m = s.match(/^(\d{1,2})\s+([A-Za-z]{3})[a-z]*\.?\s+(\d{4})$/);
+  if(m){ var mi = MONTHS.indexOf(m[2].charAt(0).toUpperCase() + m[2].slice(1, 3).toLowerCase()); if(mi >= 0) return new Date(+m[3], mi, +m[1]); }
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/); if(m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  return null;
+}
+function uid(){ return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function teamNames(){ return rowsOf('team').map(function(r){ return r.Name; }).filter(Boolean); }
+function rowsOf(k){ return (st.data && st.data[k] && st.data[k].rows) || []; }
+function sheetOf(k){ return (st.data && st.data[k]) || { cols:(SHEETS.find(function(s){ return s.k === k; }) || {}).cols || [], rows:[], desc:'' }; }
+function countOpen(k){ return rowsOf(k).filter(function(r){ return !isDone(r.Status); }).length; }
+function ownerOf(r){ return r.Owner || r.Person || ''; }
+function reachedFor(r){ var t = parseFloat(r.Target), a = parseFloat(r.Actual); return (t > 0 && !isNaN(a)) ? Math.round(a / t * 100) + '%' : ''; }
+
+/* ---------- read an Excel file (import) ---------- */
+function parseWorkbook(wb){
+  var out = {}, found = 0;
+  SHEETS.forEach(function(s){
+    var ws = wb.Sheets[s.sheet];
+    out[s.k] = { cols:s.cols.slice(), rows:[], desc:'' };
+    if(!ws) return;
+    var txt = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:'', blankrows:false });
+    var raw = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:'', blankrows:false });
+    var h = -1;
+    for(var i = 0; i < Math.min(txt.length, 15); i++){ if(low(txt[i][0]) === low(s.first)){ h = i; break; } }
+    if(h < 0) return;
+    found++;
+    var head = txt[h].map(function(c){ return String(c).trim(); });
+    for(var j = 1; j < h; j++){ var c0 = String(txt[j][0] || '').trim(); if(c0){ out[s.k].desc = c0; break; } }
+    // keep the standard columns, plus any extra column the team added
+    head.forEach(function(c){ if(c && c !== 'Match name' && out[s.k].cols.indexOf(c) < 0) out[s.k].cols.push(c); });
+    for(var r = h + 1; r < txt.length; r++){
+      var t = txt[r] || [], w = raw[r] || [];
+      if(!t.some(function(x){ return String(x).trim() !== ''; })) continue;
+      var o = { id:uid() };
+      head.forEach(function(c, ci){
+        if(!c || c === 'Match name') return;
+        var v = String(t[ci] == null ? '' : t[ci]).trim(), rv = w[ci];
+        if((c === 'Progress' || c === 'Reached') && typeof rv === 'number') v = Math.round(rv <= 1.0001 ? rv * 100 : rv) + '%';
+        if(DATE_COLS.test(c) && rv instanceof Date && !/[A-Za-z]/.test(v)) v = fmtDate(rv);
+        o[c] = v;
+      });
+      if(out[s.k].cols.some(function(c){ return o[c]; })) out[s.k].rows.push(o);
+    }
+  });
+  if(!found) throw new Error('No UDAAN tracker sheets (Goals, To-Do, Challenges…) were found in this file.');
+  return out;
+}
+function readExcelFile(file, cb){
+  if(typeof XLSX === 'undefined'){ alert('The Excel reader did not load. Check the internet connection and reload the page.'); return; }
+  var fr = new FileReader();
+  fr.onload = function(){
+    try{ cb(parseWorkbook(XLSX.read(new Uint8Array(fr.result), { type:'array', cellDates:true })), file.name); }
+    catch(e){ alert('That file could not be read as the UDAAN tracker.\n\n' + (e && e.message || e)); }
+  };
+  fr.readAsArrayBuffer(file);
+}
+function exportExcel(){
+  if(typeof XLSX === 'undefined' || !st.data) return;
+  var wb = XLSX.utils.book_new();
+  SHEETS.forEach(function(s){
+    var sh = sheetOf(s.k);
+    var aoa = [[s.label], [sh.desc || ''], [], sh.cols.slice()];
+    sh.rows.forEach(function(r){ aoa.push(sh.cols.map(function(c){ return r[c] || ''; })); });
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = sh.cols.map(function(c){ return { wch: LONG.test(c) ? 60 : 18 }; });
+    XLSX.utils.book_append_sheet(wb, ws, s.sheet);
+  });
+  var d = new Date();
+  XLSX.writeFile(wb, 'UDAAN_Project_Tracker_' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '.xlsx');
+}
+
+/* ---------- the shared database ---------- */
+var RULE_TXT = "match /" + PM_COLLECTION + "/{d} {\n  allow read, write: if request.auth != null\n    && request.auth.token.email in ['" + PM_EDITORS.join("','") + "'];\n}";
+function listen(){
+  if(st.unsub || !pmAllowed()) return;
+  var ref = docRef();
+  if(!ref){ st.err = 'The shared database is not connected, so Program Management cannot load. Reload the page and sign in again.'; render(); return; }
+  st.loading = true; st.err = ''; st.ruleErr = false; render();
+  st.unsub = ref.onSnapshot(function(snap){
+    st.loading = false;
+    if(snap.exists){ var d = snap.data() || {}; st.data = d.sheets || null; st.meta = { at:d.updatedAt && d.updatedAt.toDate ? d.updatedAt.toDate() : null, by:d.updatedByName || d.updatedBy || '' }; }
+    else { st.data = null; st.meta = null; }
+    render();
+  }, function(e){
+    st.loading = false; st.unsub = null;
+    st.ruleErr = e && e.code === 'permission-denied';
+    st.err = st.ruleErr ? 'The database refused access to Program Management. Add the rule below in Firebase (Firestore → Rules), then reload.'
+                        : 'Could not load Program Management: ' + (e && e.message || e);
+    render();
+  });
+}
+function stopListening(){ if(st.unsub){ try{ st.unsub(); }catch(e){} st.unsub = null; } st.data = null; st.meta = null; }
+function save(newData, what){
+  var ref = docRef(); if(!ref || !pmAllowed()) return Promise.reject(new Error('Not allowed'));
+  var name = (typeof adminName !== 'undefined' && adminName) || curEmail();
+  st.saving = true;
+  var payload = { sheets:newData, updatedBy:curEmail(), updatedByName:name, updatedAt:firebase.firestore.FieldValue.serverTimestamp(), lastChange:what || '' };
+  return ref.set(payload).then(function(){ st.saving = false; toast('Saved: ' + (what || 'changes')); })
+    .catch(function(e){ st.saving = false; alert('Could not save.\n\n' + (e && e.message || e) + (e && e.code === 'permission-denied' ? '\n\nAdd the Program Management rule in Firebase (Firestore → Rules).' : '')); throw e; });
+}
+function toast(msg){
+  try{ if(typeof showToast === 'function'){ showToast(msg); return; } }catch(e){}
+  var t = document.createElement('div'); t.className = 'pm-toast'; t.textContent = msg; document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 2200);
+}
+function cloneData(){ return JSON.parse(JSON.stringify(st.data || {})); }
+
+/* ---------- add / edit / delete ---------- */
+function openEditor(k, id){
+  var def = SHEETS.find(function(s){ return s.k === k; }); if(!def || !pmAllowed()) return;
+  var sh = sheetOf(k), row = id ? sh.rows.find(function(r){ return r.id === id; }) : null;
+  if(id && !row) return;
+  var vals = row || {};
+  var fields = sh.cols.filter(function(c){ return c !== 'Reached'; }).map(function(c){
+    var v = vals[c] || '', fid = 'pmf_' + c.replace(/[^a-z0-9]/gi, '_');
+    var ch = choicesFor(k, c), input;
+    if(ch){
+      var opts = ch.slice(); sh.rows.forEach(function(r){ if(r[c] && opts.indexOf(r[c]) < 0) opts.push(r[c]); }); if(v && opts.indexOf(v) < 0) opts.push(v);
+      input = '<select id="' + fid + '" data-col="' + esc(c) + '"><option value=""></option>' + opts.map(function(o){ return '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
+    }else if(DATE_COLS.test(c)){
+      var iso = toIso(v);
+      input = '<input type="date" id="' + fid + '" data-col="' + esc(c) + '" data-kind="date" value="' + iso + '"' + (v && !iso ? ' data-orig="' + esc(v) + '"' : '') + '>'
+        + (v && !iso ? '<div class="pm-hint">Currently: ' + esc(v) + '</div>' : '');
+    }else if(c === 'Progress'){
+      var p = pctOf(v);
+      input = '<input type="number" min="0" max="100" step="1" id="' + fid + '" data-col="' + esc(c) + '" data-kind="pct" value="' + (p == null ? '' : Math.round(p)) + '" placeholder="0 to 100">';
+    }else if(LONG.test(c)){
+      input = '<textarea id="' + fid + '" data-col="' + esc(c) + '" rows="' + (c === def.cols[0] || c === 'What' ? 3 : 2) + '">' + esc(String(v).replace(/<br>/gi, '\n')) + '</textarea>';
+    }else{
+      input = '<input type="text" id="' + fid + '" data-col="' + esc(c) + '" value="' + esc(v) + '">';
+    }
+    return '<div class="field' + (LONG.test(c) ? ' pm-full' : '') + '"><label for="' + fid + '">' + esc(c) + (c === 'Progress' ? ' (%)' : '') + '</label>' + input + '</div>';
+  }).join('');
+  var ov = document.createElement('div'); ov.className = 'overlay pm-overlay';
+  ov.innerHTML = '<div class="modal pm-modal" role="dialog" aria-modal="true"><h3>' + (row ? 'Edit ' : 'Add ') + esc(def.one) + ' · ' + esc(def.label) + '</h3>'
+    + '<div class="pm-form">' + fields + '</div>'
+    + '<div class="err" id="pmErr"></div>'
+    + '<div class="modal-actions">' + (row ? '<button class="btn btn-danger" id="pmDel">Delete</button>' : '<span></span>')
+    + '<div style="display:flex;gap:8px"><button class="btn btn-ghost" id="pmCancel">Cancel</button><button class="btn btn-primary" id="pmSave">' + (row ? 'Save changes' : 'Add') + '</button></div></div></div>';
+  document.body.appendChild(ov);
+  var close = function(){ ov.remove(); document.removeEventListener('keydown', onKey); };
+  var onKey = function(e){ if(e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  ov.addEventListener('mousedown', function(e){ if(e.target === ov) close(); });
+  ov.querySelector('#pmCancel').addEventListener('click', close);
+  var first = ov.querySelector('.pm-form [data-col]'); if(first) setTimeout(function(){ first.focus(); }, 30);
+  ov.querySelector('#pmSave').addEventListener('click', function(){
+    var o = { id: row ? row.id : uid() };
+    sh.cols.forEach(function(c){ if(row && row[c] != null) o[c] = row[c]; });
+    ov.querySelectorAll('[data-col]').forEach(function(el){
+      var c = el.dataset.col, v = el.value.trim();
+      if(el.dataset.kind === 'date') v = v ? fmtDate(parseDate(v)) : (el.dataset.orig || '');
+      else if(el.dataset.kind === 'pct') v = v === '' ? '' : Math.max(0, Math.min(100, Math.round(+v))) + '%';
+      else if(el.tagName === 'TEXTAREA') v = v.replace(/\r?\n/g, '<br>');
+      o[c] = v;
+    });
+    if(sh.cols.indexOf('Reached') >= 0) o.Reached = reachedFor(o);
+    var titleCol = def.cols[def.k === 'risk' ? 1 : 0];
+    if(!o[titleCol]){ var er = ov.querySelector('#pmErr'); er.textContent = 'Please fill in ' + titleCol + '.'; er.style.display = 'block'; return; }
+    var nd = cloneData(); if(!nd[k]) nd[k] = { cols:sh.cols.slice(), rows:[], desc:sh.desc || '' };
+    if(row){ nd[k].rows = nd[k].rows.map(function(r){ return r.id === row.id ? o : r; }); }
+    else nd[k].rows.push(o);
+    var btn = ov.querySelector('#pmSave'); btn.disabled = true; btn.textContent = 'Saving…';
+    save(nd, (row ? 'edited ' : 'added ') + def.one).then(close).catch(function(){ btn.disabled = false; btn.textContent = row ? 'Save changes' : 'Add'; });
+  });
+  var del = ov.querySelector('#pmDel');
+  if(del) del.addEventListener('click', function(){
+    var titleCol = def.cols[def.k === 'risk' ? 1 : 0];
+    if(!confirm('Delete this ' + def.one + '?\n\n' + String(row[titleCol] || '').replace(/<br>/gi, ' ').slice(0, 160) + '\n\nThis cannot be undone (export to Excel first if you want a copy).')) return;
+    var nd = cloneData(); nd[k].rows = nd[k].rows.filter(function(r){ return r.id !== row.id; });
+    save(nd, 'deleted ' + def.one).then(close).catch(function(){});
+  });
+}
+
+/* ---------- header title ---------- */
+var origBrand = null;
+function setBrand(on){
+  var p = document.querySelector('header.top .bar-brand .pt-eyebrow'), h = document.querySelector('header.top .bar-brand h2');
+  if(!p || !h) return;
+  if(!origBrand) origBrand = { p:p.innerHTML, h:h.innerHTML };
+  if(on){
+    p.innerHTML = st.view === 'home' ? 'NAAMII · Programmes' : 'EU UDAAN · Program Management';
+    h.textContent = st.view === 'home' ? 'Program Management' : 'UDAAN Project Tracker';
+  }else{ p.innerHTML = origBrand.p; h.innerHTML = origBrand.h; }
+}
+window.pmOnTabChange = function(tab){
+  setBrand(tab === 'pm');
+  if(tab === 'pm'){ listen(); render(); }
+};
+
+/* ---------- show the tab only to the allowed login ---------- */
+function syncTabButton(){
+  var b = document.getElementById('pmTabBtn'); if(!b) return;
+  var ok = pmAllowed();
+  b.style.display = ok ? '' : 'none';
+  if(!ok){
+    if(st.unsub || st.data) stopListening();
+    if(b.classList.contains('active')){ var c = document.querySelector('.tab-btn[data-tab="cal"]'); if(c) c.click(); }
+  }
+}
+if(typeof updateRoleUI === 'function'){
+  var _uru = updateRoleUI;
+  updateRoleUI = function(){ var r = _uru.apply(this, arguments); try{ syncTabButton(); }catch(e){} return r; };
+}
+syncTabButton();
+setInterval(syncTabButton, 1500);
+
+/* ---------- pages ---------- */
+function kpi(n, l, sub, go, accent, pct){
+  return '<div class="kpi' + (accent ? ' k-accent' : '') + '" data-go="' + go + '"><div class="kn">' + n + '</div><div class="kl">' + l + '</div>'
+    + (sub ? '<div class="ks">' + sub + '</div>' : '')
+    + (pct != null ? '<div class="kbar"><i style="width:' + Math.max(0, Math.min(100, pct)).toFixed(0) + '%;background:var(--available)"></i></div>' : '') + '</div>';
+}
+var STACK_COLORS = { g:'var(--available)', b:'var(--confirmed)', r:'var(--cancelled)', y:'var(--proposed)', p:'var(--reserved)', '':'var(--coolgrey)' };
+function stackRow(label, rows, col){
+  var counts = {}, order = [];
+  rows.forEach(function(r){ var v = r[col] || 'Not set'; if(!(v in counts)){ counts[v] = 0; order.push(v); } counts[v]++; });
+  var total = rows.length || 1;
+  var bar = order.map(function(v){ return '<i title="' + esc(v) + ': ' + counts[v] + '" style="width:' + (counts[v] / total * 100) + '%;background:' + STACK_COLORS[badgeClass(col, v)] + '"></i>'; }).join('');
+  var leg = order.map(function(v){ return '<span><i style="background:' + STACK_COLORS[badgeClass(col, v)] + '"></i>' + esc(v) + ' ' + counts[v] + '</span>'; }).join('');
+  return '<div class="pm-stackrow"><div class="h">' + esc(label) + '<small>' + rows.length + ' items</small></div><div class="pm-stack">' + bar + '</div><div class="chart-legend" style="margin-top:4px">' + leg + '</div></div>';
+}
+function avgGoal(){ var gp = rowsOf('goals').map(function(g){ return pctOf(g.Progress); }).filter(function(x){ return x != null; }); return gp.length ? gp.reduce(function(a, b){ return a + b; }, 0) / gp.length : 0; }
+function strip(s){ return String(s || '').replace(/<br>/gi, ' '); }
+function pageOverview(){
+  var goals = rowsOf('goals'), todo = rowsOf('todo'), deliv = rowsOf('deliv'), chal = rowsOf('chal'), risk = rowsOf('risk'), team = rowsOf('team'), week = rowsOf('week');
+  var avg = avgGoal();
+  var delDone = deliv.filter(function(r){ return isDone(r.Status); }).length;
+  var openChal = chal.filter(function(r){ return !isDone(r.Status); });
+  var openRisk = risk.filter(function(r){ return low(r.Type) === 'risk' && !isDone(r.Status); });
+  var openFu = risk.filter(function(r){ return low(r.Type) === 'follow-up' && !isDone(r.Status); });
+  var html = '<div class="kpi-grid">'
+    + kpi(avg.toFixed(0) + '%', 'Average goal progress', goals.length + ' goals', 'goals', true, avg)
+    + kpi(team.length, 'Team members', '', 'team')
+    + kpi(countOpen('week'), 'Weekly tasks open', week.length + ' planned', 'week')
+    + kpi(countOpen('todo'), 'To-dos open', todo.filter(function(r){ return low(r.Priority) === 'high' && !isDone(r.Status); }).length + ' high priority', 'todo')
+    + kpi(delDone + ' / ' + deliv.length, 'Deliverables done', '', 'deliv', false, deliv.length ? delDone / deliv.length * 100 : 0)
+    + kpi(openChal.length, 'Open challenges', openChal.filter(function(r){ return low(r.Severity) === 'high'; }).length + ' high severity', 'chal')
+    + kpi(openRisk.length, 'Open risks', openRisk.filter(function(r){ return low(r.Impact) === 'high'; }).length + ' high impact', 'risk')
+    + kpi(openFu.length, 'Open follow-ups', '', 'risk')
+    + '</div>';
+  var grows = goals.map(function(g){
+    var p = pctOf(g.Progress) || 0, t = strip(g.Goal);
+    return '<div class="prow" data-edit="goals:' + g.id + '"><div class="pr-name">' + esc(t.length > 110 ? t.slice(0, 107) + '…' : t) + '<small>' + esc(g.Owner) + (g.Due ? ' · due ' + esc(g.Due) : '') + '</small></div>'
+      + '<div class="pr-track"><i class="' + (p >= 100 ? 'done' : '') + '" style="width:' + Math.min(100, p) + '%"></i></div>'
+      + '<div class="pr-fig">' + p.toFixed(0) + '%<small>' + esc(g.Status) + '</small></div></div>';
+  }).join('') || '<div class="pm-empty">No goals yet.</div>';
+  var att = [];
+  openChal.filter(function(r){ return low(r.Severity) === 'high'; }).forEach(function(r){ att.push({ e:'chal:' + r.id, b:'<span class="pm-badge r">Challenge</span>', t:r.Challenge, s:r.Owner + (r['Action or mitigation'] ? ' · ' + r['Action or mitigation'] : '') }); });
+  risk.filter(function(r){ return low(r.Impact) === 'high' && !isDone(r.Status) && low(r.Type) !== 'decision'; }).forEach(function(r){ att.push({ e:'risk:' + r.id, b:badge('Type', r.Type), t:r.What, s:r.Owner + (r.Notes ? ' · ' + r.Notes : '') }); });
+  todo.filter(function(r){ return low(r.Priority) === 'high' && !isDone(r.Status); }).forEach(function(r){ att.push({ e:'todo:' + r.id, b:'<span class="pm-badge y">To-do</span>', t:r.Task, s:r.Owner + (r.Due ? ' · due ' + r.Due : '') }); });
+  var attHtml = att.map(function(a){ return '<div class="pm-att" data-edit="' + a.e + '">' + a.b + '<div class="t">' + esc(strip(a.t)) + '<small>' + esc(strip(a.s)) + '</small></div></div>'; }).join('') || '<div class="pm-empty">Nothing high priority is open.</div>';
+  var stacks = stackRow('Goals', goals, 'Status') + stackRow('Weekly plan', week, 'Status') + stackRow('To-do', todo, 'Status')
+    + stackRow('Deliverables', deliv, 'Status') + stackRow('Challenges', chal, 'Status') + stackRow('Risks, decisions & follow-ups', risk, 'Status');
+  var per = {};
+  ['week', 'todo', 'deliv', 'chal', 'risk'].forEach(function(k){ rowsOf(k).forEach(function(r){ if(isDone(r.Status)) return; var o = ownerOf(r); if(!o) return; per[o] = (per[o] || 0) + 1; }); });
+  var owners = Object.keys(per).sort(function(a, b){ return per[b] - per[a]; });
+  var maxL = owners.length ? per[owners[0]] : 1;
+  var ownHtml = owners.map(function(o){ return '<div class="prow"><div class="pr-name">' + esc(o) + '</div><div class="pr-track"><i style="width:' + (per[o] / maxL * 100) + '%"></i></div><div class="pr-fig">' + per[o] + '<small>open items</small></div></div>'; }).join('') || '<div class="pm-empty">No open items.</div>';
+  return html
+    + '<div class="pt-2col">'
+    +   '<div class="pt-card"><h3>Goal progress</h3><div class="sub">Click a goal to update its progress or status.</div>' + grows + '</div>'
+    +   '<div class="pt-card"><h3>Needs attention</h3><div class="sub">Open high-severity challenges, high-impact risks and follow-ups, and high-priority to-dos. Click one to edit it.</div>' + attHtml + '</div>'
+    + '</div>'
+    + '<div class="pt-2col">'
+    +   '<div class="pt-card"><h3>Status by sheet</h3><div class="sub">How many items are in each status.</div>' + stacks + '</div>'
+    +   '<div class="pt-card"><h3>Open items per person</h3><div class="sub">Weekly tasks, to-dos, deliverables, challenges, risks and follow-ups that are not done or closed.</div>' + ownHtml + '</div>'
+    + '</div>';
+}
+function addBtn(k, def){ return '<button class="pm-btn primary" data-add="' + k + '">+ Add ' + esc(def.one) + '</button>'; }
+function pageTeam(def, sh){
+  var cards = sh.rows.map(function(p){
+    var open = {}, key = low(String(p.Name || '').split(' ')[0]);
+    [['week', 'weekly'], ['todo', 'to-do'], ['deliv', 'deliverables'], ['chal', 'challenges'], ['risk', 'risks/follow-ups']].forEach(function(x){
+      var n = key ? rowsOf(x[0]).filter(function(r){ return !isDone(r.Status) && low(ownerOf(r)).indexOf(key) >= 0; }).length : 0;
+      if(n) open[x[1]] = n;
+    });
+    var chips = Object.keys(open).map(function(k){ return '<span class="pm-badge">' + open[k] + ' ' + esc(k) + '</span>'; }).join('');
+    return '<div class="pm-person"><div class="pm-person-top"><h4>' + esc(p.Name) + '</h4><button class="pm-icon" data-edit="team:' + p.id + '" title="Edit">✎</button></div>'
+      + '<div class="role">' + esc(p.Role) + (p.Team ? ' · ' + esc(p.Team) : '') + '</div>'
+      + (p['Responsible for'] ? '<p><b>Responsible for</b>' + linkify(p['Responsible for']) + '</p>' : '')
+      + (p['Current focus'] ? '<p><b>Current focus</b>' + linkify(p['Current focus']) + '</p>' : '')
+      + (chips ? '<div class="load">' + chips + '</div>' : '') + '</div>';
+  }).join('');
+  return '<div class="pt-card"><div class="pm-card-head"><div><h3>Team and roles</h3><div class="sub">' + esc(sh.desc || 'Who does what.') + '</div></div>' + addBtn('team', def) + '</div>'
+    + '<div class="pm-team">' + (cards || '<div class="pm-empty">No team members yet.</div>') + '</div></div>';
+}
+function cellHtml(col, r){
+  var v = r[col];
+  if(/^progress$|^reached$/i.test(col)){
+    var p = pctOf(v); if(p == null) return '<td></td>';
+    return '<td><div class="pm-mini"><div class="pr-track"><i class="' + (p >= 100 ? 'done' : '') + '" style="width:' + Math.min(100, p) + '%"></i></div><b>' + p.toFixed(0) + '%</b></div></td>';
+  }
+  if(BADGE_COLS.test(col)) return '<td>' + badge(col, v) + '</td>';
+  if(WIDE.test(col)) return '<td class="wrap">' + linkify(v) + '</td>';
+  if(MID.test(col)) return '<td class="mid">' + esc(v) + '</td>';
+  return '<td>' + esc(v) + '</td>';
+}
+function pageSheet(def, sh){
+  if(def.k === 'team') return pageTeam(def, sh);
+  var cols = sh.cols;
+  var hasStatus = cols.indexOf('Status') >= 0, ownerCol = cols.indexOf('Owner') >= 0 ? 'Owner' : (cols.indexOf('Person') >= 0 ? 'Person' : ''), hasType = cols.indexOf('Type') >= 0;
+  var uniq = function(c){ var s = {}; sh.rows.forEach(function(r){ if(r[c]) s[r[c]] = 1; }); return Object.keys(s).sort(); };
+  var q = low(st.q);
+  var rows = sh.rows.filter(function(r){
+    if(st.status && r.Status !== st.status) return false;
+    if(st.owner && ownerCol && r[ownerCol] !== st.owner) return false;
+    if(st.type && hasType && r.Type !== st.type) return false;
+    if(q && !cols.some(function(c){ return low(r[c]).indexOf(q) >= 0; })) return false;
+    return true;
+  });
+  var sel = function(id, label, val, opts){ return '<div class="pt-filt"><label>' + label + '</label><select id="' + id + '"><option value="">All</option>'
+    + opts.map(function(o){ return '<option' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select></div>'; };
+  var filters = '<div class="pt-filters">'
+    + '<div class="pt-filt" style="flex:1 1 200px"><label>Search</label><input id="pmQ" type="search" placeholder="Search this sheet" value="' + esc(st.q) + '" style="width:100%"></div>'
+    + (hasType ? sel('pmType', 'Type', st.type, uniq('Type')) : '')
+    + (hasStatus ? sel('pmStatus', 'Status', st.status, uniq('Status')) : '')
+    + (ownerCol ? sel('pmOwner', ownerCol, st.owner, uniq(ownerCol)) : '')
+    + ((st.q || st.status || st.owner || st.type) ? '<button class="pt-filt-reset" id="pmReset">Clear</button>' : '')
+    + '</div>';
+  var table = rows.length ? '<div class="pt-scroll"><table class="pt-table"><thead><tr>' + cols.map(function(c){ return '<th>' + esc(c) + '</th>'; }).join('') + '<th></th></tr></thead><tbody>'
+    + rows.map(function(r){ return '<tr data-edit="' + def.k + ':' + r.id + '">' + cols.map(function(c){ return cellHtml(c, r); }).join('') + '<td><button class="pm-icon" data-edit="' + def.k + ':' + r.id + '" title="Edit">✎</button></td></tr>'; }).join('') + '</tbody></table></div>'
+    : '<div class="pm-empty">' + (sh.rows.length ? 'No rows match these filters.' : 'Nothing here yet. Use “+ Add ' + esc(def.one) + '”.') + '</div>';
+  var summary = hasStatus && sh.rows.length ? '<div class="pt-card"><h3>Status</h3>' + stackRow(def.label, sh.rows, 'Status') + '</div>' : '';
+  return filters + summary
+    + '<div class="pt-card"><div class="pm-card-head"><div><h3>' + esc(def.label) + '</h3><div class="sub">' + esc(sh.desc) + '</div></div>' + addBtn(def.k, def) + '</div>'
+    + '<p class="pm-count">Showing ' + rows.length + ' of ' + sh.rows.length + '. Click a row to edit or delete it.</p>' + table + '</div>';
+}
+function pageImport(){
+  var pv = st.preview;
+  if(pv){
+    var list = SHEETS.map(function(s){ return '<li><b>' + esc(s.label) + ':</b> ' + pv.data[s.k].rows.length + ' rows</li>'; }).join('');
+    return '<div class="pt-card"><h3>Check the Excel before saving</h3><div class="sub">From <b>' + esc(pv.name) + '</b>.'
+      + (st.data ? ' This <b>replaces everything</b> currently in UDAAN Program Management.' : '') + '</div><ul class="pm-list">' + list + '</ul>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="pm-btn primary" id="pmImportSave">Save to Program Management</button><button class="pm-btn" id="pmImportCancel">Cancel</button></div></div>';
+  }
+  return '<div class="pt-card"><h3>Load the UDAAN Project Tracker</h3><div class="sub">There is no UDAAN data here yet. Open <b>UDAAN_Project_Tracker.xlsx</b> from your computer once. After that you add and edit everything here, and can export it back to Excel any time.</div>'
+    + '<div class="upload-zone" id="pmDrop"><div class="uz-ic">📄</div><div><b>Choose the Excel file</b> or drop it here</div><div style="font-size:12px;color:var(--charcoal-soft);margin-top:4px">.xlsx</div></div>'
+    + '<div style="margin-top:10px"><button class="pm-btn" id="pmStartBlank">Or start with empty sheets</button></div></div>';
+}
+function pageHome(){
+  var sub = '';
+  if(st.data){
+    sub = '<div class="pm-prog-stats"><div><b>' + avgGoal().toFixed(0) + '%</b>Goal progress</div><div><b>' + countOpen('todo') + '</b>To-dos open</div>'
+      + '<div><b>' + countOpen('chal') + '</b>Challenges</div><div><b>' + rowsOf('risk').filter(function(r){ return low(r.Type) === 'risk' && !isDone(r.Status); }).length + '</b>Risks</div></div>';
+  }else if(st.loading){ sub = '<p>Loading…</p>'; }
+  var cards = PROGRAMS.map(function(p){
+    return '<div class="pt-card pm-prog" data-open="' + p.key + '" role="button" tabindex="0"><div class="pm-prog-top"><div class="pm-prog-ic">' + esc(p.abbr) + '</div><div><h3>' + esc(p.name) + '</h3><p>Project tracker</p></div></div>'
+      + '<p>' + esc(p.desc) + '</p>' + sub + '<div><button class="pm-btn primary" data-open="' + p.key + '">Open UDAAN tracking →</button></div></div>';
+  }).join('')
+  + '<div class="pt-card pm-prog soon"><div class="pm-prog-top"><div class="pm-prog-ic" style="background:var(--coolgrey)">+</div><div><h3>More programmes</h3><p>Coming later</p></div></div><p>Other NAAMII programmes can be added here with their own tracker.</p></div>';
+  return '<div class="pt-card"><h3>Programmes</h3><div class="sub">Choose a programme to see its tracking. Only you can see and change Program Management.</div><div class="pm-prog-grid">' + cards + '</div></div>';
+}
+
+/* ---------- shell ---------- */
+function render(){
+  var box = document.getElementById('pmTab'); if(!box || box.style.display === 'none') return;
+  if(!pmAllowed()){ box.innerHTML = '<div class="master-banner">Program Management is only available to its owner’s login.</div>'; return; }
+  setBrand(true);
+  var nav, page, title, tools = '';
+  if(st.view === 'home'){
+    nav = '<div class="pt-nav-item active" data-pmnav="home"><span class="ic">📁</span><span class="pt-nav-label">All programmes</span></div>'
+      + '<div class="pm-nav-sep"></div>'
+      + PROGRAMS.map(function(p){ return '<div class="pt-nav-item" data-open="' + p.key + '"><span class="ic">✈</span><span class="pt-nav-label">' + esc(p.name) + '</span></div>'; }).join('');
+    title = 'Program Management'; page = pageHome();
+  }else{
+    nav = '<div class="pt-nav-item" data-pmnav="home"><span class="ic">←</span><span class="pt-nav-label">All programmes</span></div><div class="pm-nav-sep"></div>'
+      + '<div class="pt-nav-item' + (st.page === 'overview' ? ' active' : '') + '" data-pg="overview"><span class="ic">📊</span><span class="pt-nav-label">Overview</span></div>'
+      + SHEETS.map(function(s){
+          var n = st.data ? rowsOf(s.k).length : '';
+          return '<div class="pt-nav-item' + (st.page === s.k ? ' active' : '') + '" data-pg="' + s.k + '"><span class="ic">' + s.ic + '</span><span class="pt-nav-label">' + esc(s.label) + (n !== '' ? ' <small style="opacity:.6;font-weight:600">' + n + '</small>' : '') + '</span></div>';
+        }).join('');
+    var def = SHEETS.find(function(s){ return s.k === st.page; });
+    title = 'UDAAN · ' + (def ? def.label : 'Overview');
+    if(st.err) page = '<div class="pt-note">' + esc(st.err) + (st.ruleErr ? '<pre class="pm-rule">' + esc(RULE_TXT) + '</pre>' : '') + '</div>';
+    else if(st.loading) page = '<div class="pt-note">Loading UDAAN Program Management…</div>';
+    else if(!st.data || st.preview){ page = pageImport(); title = 'UDAAN · Load the tracker'; }
+    else page = def ? pageSheet(def, sheetOf(def.k)) : pageOverview();
+    if(st.data && !st.preview){
+      var when = st.meta && st.meta.at ? st.meta.at.toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+      tools = '<div class="pm-tools"><span>' + (when ? 'Last saved ' + esc(when) + (st.meta.by ? ' by ' + esc(st.meta.by) : '') : 'Saved in the shared database') + '</span>'
+        + '<button class="pm-btn" id="pmExport" title="Download everything as an Excel file">⬇ Export to Excel</button>'
+        + '<button class="pm-btn" id="pmReplace" title="Replace all UDAAN data with an Excel file">Replace from Excel…</button></div>';
+    }
+  }
+  var keepScroll = box.querySelector('.pt-side') ? box.querySelector('.pt-side').scrollTop : 0;
+  var focusQ = document.activeElement && document.activeElement.id === 'pmQ', caret = focusQ ? document.activeElement.selectionStart : 0;
+  box.innerHTML = '<div class="pt-shell"><div class="pt-side' + (st.collapsed ? ' collapsed' : '') + '">'
+    + '<div class="pt-side-head"><span class="pt-side-title">' + (st.view === 'home' ? 'Programmes' : 'UDAAN') + '</span><button class="pt-collapse" id="pmCollapse" title="Collapse">' + (st.collapsed ? '»' : '«') + '</button></div>'
+    + '<div class="pt-nav">' + nav + '</div></div>'
+    + '<div class="pt-main"><div class="pt-page-title">' + esc(title) + '</div>' + tools + page + '</div></div>'
+    + '<input type="file" id="pmFile" accept=".xlsx,.xls" hidden>';
+  var side = box.querySelector('.pt-side'); if(side) side.scrollTop = keepScroll;
+  if(focusQ){ var qi = box.querySelector('#pmQ'); if(qi){ qi.focus(); try{ qi.setSelectionRange(caret, caret); }catch(e){} } }
+  wire(box);
+}
+function go(page){ st.page = page; st.q = ''; st.status = ''; st.owner = ''; st.type = ''; render(); try{ window.scrollTo({ top:0 }); }catch(e){} }
+function pickFile(box){
+  var fi = box.querySelector('#pmFile'); if(!fi) return;
+  fi.onchange = function(){ if(fi.files && fi.files[0]) readExcelFile(fi.files[0], function(data, name){ st.preview = { data:data, name:name }; render(); }); };
+  fi.click();
+}
+function wire(box){
+  box.querySelectorAll('[data-open]').forEach(function(el){
+    var open = function(e){ if(e) e.stopPropagation(); st.view = 'program'; st.prog = el.dataset.open; listen(); go('overview'); };
+    el.addEventListener('click', open);
+    el.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(e); } });
+  });
+  box.querySelectorAll('[data-pmnav="home"]').forEach(function(el){ el.addEventListener('click', function(){ st.view = 'home'; st.preview = null; render(); }); });
+  box.querySelectorAll('.pt-nav-item[data-pg]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.pg); }); });
+  box.querySelectorAll('.kpi[data-go]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.go); }); });
+  box.querySelectorAll('[data-edit]').forEach(function(el){ el.addEventListener('click', function(e){
+    if(e.target.closest('a')) return; e.stopPropagation(); var p = el.dataset.edit.split(':'); openEditor(p[0], p[1]); }); });
+  box.querySelectorAll('[data-add]').forEach(function(el){ el.addEventListener('click', function(){ openEditor(el.dataset.add, null); }); });
+  var cb = box.querySelector('#pmCollapse'); if(cb) cb.addEventListener('click', function(){ st.collapsed = !st.collapsed; render(); });
+  var ex = box.querySelector('#pmExport'); if(ex) ex.addEventListener('click', exportExcel);
+  var rp = box.querySelector('#pmReplace'); if(rp) rp.addEventListener('click', function(){ pickFile(box); });
+  var dz = box.querySelector('#pmDrop');
+  if(dz){
+    dz.addEventListener('click', function(){ pickFile(box); });
+    dz.addEventListener('dragover', function(e){ e.preventDefault(); dz.classList.add('drag'); });
+    dz.addEventListener('dragleave', function(){ dz.classList.remove('drag'); });
+    dz.addEventListener('drop', function(e){ e.preventDefault(); dz.classList.remove('drag'); var f = e.dataTransfer.files && e.dataTransfer.files[0]; if(f) readExcelFile(f, function(data, name){ st.preview = { data:data, name:name }; render(); }); });
+  }
+  var sb = box.querySelector('#pmStartBlank'); if(sb) sb.addEventListener('click', function(){
+    var blank = {}; SHEETS.forEach(function(s){ blank[s.k] = { cols:s.cols.slice(), rows:[], desc:'' }; });
+    save(blank, 'started empty sheets').catch(function(){});
+  });
+  var is = box.querySelector('#pmImportSave'); if(is) is.addEventListener('click', function(){
+    is.disabled = true; is.textContent = 'Saving…';
+    save(st.preview.data, 'loaded ' + st.preview.name).then(function(){ st.preview = null; go('overview'); }).catch(function(){ is.disabled = false; is.textContent = 'Save to Program Management'; });
+  });
+  var ic = box.querySelector('#pmImportCancel'); if(ic) ic.addEventListener('click', function(){ st.preview = null; render(); });
+  var q = box.querySelector('#pmQ'), tmr;
+  if(q) q.addEventListener('input', function(){ clearTimeout(tmr); tmr = setTimeout(function(){ st.q = q.value; render(); }, 180); });
+  [['pmStatus', 'status'], ['pmOwner', 'owner'], ['pmType', 'type']].forEach(function(x){ var s = box.querySelector('#' + x[0]); if(s) s.addEventListener('change', function(){ st[x[1]] = s.value; render(); }); });
+  var rs = box.querySelector('#pmReset'); if(rs) rs.addEventListener('click', function(){ st.q = st.status = st.owner = st.type = ''; render(); });
+}
+
+try{ console.info('UDAAN add-on patch 18 (2026-11-13) Program Management loaded'); }catch(e){}
 })();
 </script>
 
