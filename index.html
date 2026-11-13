@@ -11711,7 +11711,13 @@ function adminOk(){ try{ return typeof isAdmin === 'function' ? isAdmin() : fals
 function curUser(){ try{ return (typeof fbUser !== 'undefined' && fbUser && !fbUser.isAnonymous) ? fbUser : null; }catch(e){ return null; } }
 function curEmail(){ var u = curUser(); return u ? low(u.email) : ''; }
 function pmAllowed(){ return adminOk() && PM_EDITORS.indexOf(curEmail()) >= 0; }
-function memberOf(email){ email = low(email); return PM_TEAM.find(function(m){ return low(m.email) === email; }) || null; }
+function memberOf(email){
+  email = low(email);
+  var m = PM_TEAM.find(function(x){ return low(x.email) === email; });
+  // an owner signed in with another of their addresses (e.g. sumi@ vs sumi.dhakal@) is the same team member
+  if(!m && PM_EDITORS.indexOf(email) >= 0) m = PM_TEAM.find(function(x){ return PM_EDITORS.indexOf(low(x.email)) >= 0; });
+  return m || null;
+}
 function pmMember(){ return adminOk() && !pmAllowed() && !!memberOf(curEmail()); }
 function pmVisible(){ return pmAllowed() || pmMember(); }
 window.pmAllowed = pmVisible;            // used by updateRoleUI to show the tab
@@ -12004,6 +12010,15 @@ function memberAddHtml(){
       + '<div class="field"><label>Status</label>' + fieldInput('week', 'Status', 'Not started', 'data-af="Status"') + '</div></div>';
   }).join('');
   return '<div class="pt-card"><h3>➕ Add this week’s tasks</h3><div class="sub">Leave empty if you have nothing new. Each task is added to the Weekly plan for the week of ' + esc(mon) + '.</div>' + weekRows + '</div>'
+    + '<div class="pt-card"><h3>☑ Add a to-do</h3><div class="sub">New tasks go straight into the To-do list with you as the owner.</div>'
+    + [0, 1].map(function(){
+        return '<div class="pm-form pm-addrow" data-add="todo">'
+          + '<div class="field pm-full"><label>Task</label><input type="text" data-af="Task" placeholder="What needs to be done?"></div>'
+          + '<div class="field"><label>Priority</label>' + fieldInput('todo', 'Priority', 'Medium', 'data-af="Priority"') + '</div>'
+          + '<div class="field"><label>Due</label><input type="date" data-af="Due"></div>'
+          + '<div class="field"><label>Status</label>' + fieldInput('todo', 'Status', 'Not started', 'data-af="Status"') + '</div>'
+          + '<div class="field"><label>Notes</label><input type="text" data-af="Notes"></div></div>';
+      }).join('') + '</div>'
     + '<div class="pt-card"><h3>⚠ Raise a challenge</h3><div class="sub">Something getting in the way? It is added to Challenges with you as the owner.</div>'
     + '<div class="pm-form pm-addrow" data-add="chal"><div class="field pm-full"><label>Challenge</label><textarea rows="2" data-af="Challenge"></textarea></div>'
     + '<div class="field"><label>Severity</label>' + fieldInput('chal', 'Severity', 'Medium', 'data-af="Severity"') + '</div>'
@@ -12015,7 +12030,8 @@ function pageMyUpdates(){
   if(st.mineErr) return '<div class="pt-note">' + esc(st.mineErr) + '</div>';
   if(st.mineLoading || !st.mine) return '<div class="pt-note">Loading your items…</div>';
   var sections = Object.keys(MEMBER_EDIT).map(memberItemsHtml).join('');
-  var intro = '<div class="pt-card pm-hello"><h3>Hi ' + esc(m ? m.name.split(' ')[0] : '') + ', update your UDAAN work</h3><div class="sub">These are the items where you are the owner. Change what has moved, add this week’s tasks, then press <b>Submit my update</b>. Your update goes into Sumi’s main tracker automatically.</div>'
+  var intro = '<div class="pt-card pm-hello"><h3>Hi ' + esc(m ? m.name.split(' ')[0] : '') + ', update your UDAAN work</h3><div class="sub">These are the items where you are the owner. Change what has moved, add this week’s tasks, then press <b>Submit my update</b>. '
+    + (pmAllowed() ? 'It is applied to the tracker straight away and listed on Team updates under your name.' : 'Your update goes into Sumi’s main tracker automatically.') + '</div>'
     + (st.mine.empty ? '<div class="pt-note">Sumi has not shared your items yet. You can still add this week’s tasks or raise a challenge.</div>' : '') + '</div>';
   return intro + sections + memberAddHtml()
     + '<div class="pm-submitbar"><span id="pmChangeCount">No changes yet</span><button class="pm-btn primary" id="pmSubmit" disabled>Submit my update</button></div>';
@@ -12052,9 +12068,10 @@ function collectMemberUpdate(box){
   box.querySelectorAll('.pm-addrow').forEach(function(g){
     var k = g.dataset.add, row = { id:uid() }, any = false;
     g.querySelectorAll('[data-af]').forEach(function(el){ var v = normVal(el.dataset.af, el); row[el.dataset.af] = v; });
-    var main = k === 'week' ? row.Task : row.Challenge;
+    var main = k === 'chal' ? row.Challenge : row.Task;
     if(!main) return;
     if(k === 'week'){ row['Week of'] = fmtDate(thisMonday()); }
+    if(k === 'todo' && !row.Status){ row.Status = 'Not started'; }
     if(k === 'chal'){ row.Status = 'Open'; row.Raised = fmtDate(new Date()); }
     adds.push({ k:k, row:row });
   });
@@ -12067,7 +12084,7 @@ function submitMemberUpdate(box){
   if(!c || !m) return;
   var btn = box.querySelector('#pmSubmit'); btn.disabled = true; btn.textContent = 'Submitting…';
   c.add({ byEmail:curEmail(), byName:m.name, at:stamp(), status:'pending', patches:u.patches, adds:u.adds, note:u.note })
-    .then(function(){ toast('Update sent. It goes into the main tracker automatically.'); st.page = 'history'; render(); })
+    .then(function(){ toast('Update sent. It goes into the main tracker automatically.'); st.page = pmAllowed() ? 'updates' : 'history'; render(); })
     .catch(function(e){ btn.disabled = false; btn.textContent = 'Submit my update';
       alert('Could not submit.\n\n' + (e && e.message || e) + (e && e.code === 'permission-denied' ? '\n\nAsk Sumi to add the Program Management rules in Firebase.' : '')); });
 }
@@ -12237,7 +12254,7 @@ function pageOverview(){
 }
 function pageTeamUpdates(){
   var team = PM_TEAM.map(function(m){
-    var last = st.updates.find(function(u){ return low(u.byEmail) === low(m.email); });
+    var last = st.updates.find(function(u){ return memberOf(u.byEmail) === m; });
     return '<div class="prow"><div class="pr-name">' + esc(m.name) + '<small>' + esc(m.email) + '</small></div><div></div><div class="pr-fig">'
       + (last ? esc(whenStr(tsDate(last.at))) + '<small>last update</small>' : '<span class="pm-muted">No update yet</span>') + '</div></div>';
   }).join('');
@@ -12358,16 +12375,24 @@ function render(){
     nav = '<div class="pt-nav-item" data-pmnav="home"><span class="ic">←</span><span class="pt-nav-label">All programmes</span></div><div class="pm-nav-sep"></div>'
       + '<div class="pt-nav-item' + (st.page === 'overview' ? ' active' : '') + '" data-pg="overview"><span class="ic">📊</span><span class="pt-nav-label">Overview</span></div>'
       + '<div class="pt-nav-item' + (st.page === 'updates' ? ' active' : '') + '" data-pg="updates"><span class="ic">📥</span><span class="pt-nav-label">Team updates' + (pendO ? ' <small style="opacity:.7">' + pendO + '</small>' : '') + '</span></div>'
+      + (memberOf(curEmail()) ? '<div class="pt-nav-item' + (st.page === 'mine' ? ' active' : '') + '" data-pg="mine"><span class="ic">✍</span><span class="pt-nav-label">My updates</span></div>' : '')
       + SHEETS.map(function(s){
           var n = st.data ? rowsOf(s.k).length : '';
           return '<div class="pt-nav-item' + (st.page === s.k ? ' active' : '') + '" data-pg="' + s.k + '"><span class="ic">' + s.ic + '</span><span class="pt-nav-label">' + esc(s.label) + (n !== '' ? ' <small style="opacity:.6;font-weight:600">' + n + '</small>' : '') + '</span></div>';
         }).join('');
     var def = defOf(st.page);
-    title = 'UDAAN · ' + (def ? def.label : (st.page === 'updates' ? 'Team updates' : 'Overview'));
+    title = 'UDAAN · ' + (def ? def.label : (st.page === 'updates' ? 'Team updates' : (st.page === 'mine' ? 'My updates' : 'Overview')));
     if(st.err) page = '<div class="pt-note">' + esc(st.err) + (st.ruleErr ? '<pre class="pm-rule">' + esc(RULE_TXT) + '</pre>' : '') + '</div>';
     else if(st.loading) page = '<div class="pt-note">Loading UDAAN Program Management…</div>';
     else if(!st.data || st.preview){ page = pageImport(); title = 'UDAAN · Load the tracker'; }
     else if(st.page === 'updates') page = pageTeamUpdates();
+    else if(st.page === 'mine' && memberOf(curEmail())){
+      // the owner's own items, taken straight from the tracker
+      var me = memberOf(curEmail()), mine = {};
+      Object.keys(MEMBER_EDIT).forEach(function(k){ mine[k] = { cols:sheetOf(k).cols, rows:rowsOf(k).filter(function(r){ return ownsRow(me, r); }) }; });
+      st.mine = { sheets:mine }; st.mineErr = ''; st.mineLoading = false;
+      page = pageMyUpdates();
+    }
     else page = def ? pageSheet(def, sheetOf(def.k)) : pageOverview();
     if(st.data && !st.preview){
       tools = '<div class="pm-tools"><span>' + (st.meta && st.meta.at ? 'Last saved ' + esc(whenStr(st.meta.at)) + (st.meta.by ? ' by ' + esc(st.meta.by) : '') : 'Saved in the shared database') + '</span>'
