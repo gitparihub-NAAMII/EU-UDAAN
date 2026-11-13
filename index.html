@@ -11612,14 +11612,14 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
 
      match /udaan_program_management/{d} {
        allow read, write: if request.auth != null
-         && request.auth.token.email in ['sumi@naamii.org.np'];
+         && request.auth.token.email in ['sumi@naamii.org.np', 'sumi.dhakal@naamii.org.np'];
      }
      match /udaan_pm_people/{email} {
        allow read: if request.auth != null
          && (request.auth.token.email == email
-             || request.auth.token.email in ['sumi@naamii.org.np']);
+             || request.auth.token.email in ['sumi@naamii.org.np', 'sumi.dhakal@naamii.org.np']);
        allow write: if request.auth != null
-         && request.auth.token.email in ['sumi@naamii.org.np'];
+         && request.auth.token.email in ['sumi@naamii.org.np', 'sumi.dhakal@naamii.org.np'];
      }
      match /udaan_pm_updates/{id} {
        allow create: if request.auth != null
@@ -11627,17 +11627,16 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
          && request.resource.data.status == 'pending';
        allow read: if request.auth != null
          && (resource.data.byEmail == request.auth.token.email
-             || request.auth.token.email in ['sumi@naamii.org.np']);
+             || request.auth.token.email in ['sumi@naamii.org.np', 'sumi.dhakal@naamii.org.np']);
        allow update, delete: if request.auth != null
-         && request.auth.token.email in ['sumi@naamii.org.np'];
+         && request.auth.token.email in ['sumi@naamii.org.np', 'sumi.dhakal@naamii.org.np'];
      }
    --------------------------------------------------------------------- */
-var PM_EDITORS = ['sumi@naamii.org.np'];
+var PM_EDITORS = ['sumi@naamii.org.np', 'sumi.dhakal@naamii.org.np'];
 var PM_TEAM = [
   { email:'drabid@naamii.org.np',  name:'Drabid Subedi',    match:['drabid'] },
   { email:'ramesh@naamii.org.np',  name:'Ramesh Lama',      match:['ramesh'] },
-  { email:'pari@naamii.org.np',    name:'Pradip Chaudhary', match:['pradip', 'pradeep'] },
-  { email:'sandhya@naamii.org.np', name:'Unisa',            match:['unisa', 'sandhya'] }
+  { email:'pari@naamii.org.np',    name:'Pradip Chaudhary', match:['pradip', 'pradeep'] }
 ];
 var PM_COLLECTION = 'udaan_program_management';
 var PEOPLE_COLLECTION = 'udaan_pm_people';
