@@ -11651,7 +11651,9 @@ var PROGRAMS = [
 
 /* One entry per sheet of the UDAAN Project Tracker Excel. first = first column heading. */
 var SHEETS = [
-  { k:'team',  sheet:'Team',                label:'Team',              one:'person',      ic:'👥', first:'Name',
+  { k:'cohorts', sheet:'Cohort Map',        label:'Cohort map',        one:'cohort',      ic:'📅', first:'ID', title:'Partner',
+    cols:['ID','Programme','Date','End date','Partner','Sector','Format','Learners','Lead','Depends on','Status','Notes'] },
+  { k:'team',  sheet:'Team',               label:'Team',              one:'person',      ic:'👥', first:'Name',
     cols:['Name','Team','Role','Responsible for','Current focus'] },
   { k:'goals', sheet:'Goals',               label:'Goals',             one:'goal',        ic:'🎯', first:'Goal',
     cols:['Goal','Period','Team','Owner','Due','Progress','Status','Notes'] },
@@ -11684,7 +11686,19 @@ var L = {
   kind:['Risk','Decision','Follow-up'],
   lstatus:['Open','In progress','Closed']
 };
+L.programme = ['AI Native','AI Foundation','AI Deep'];
+L.cstat = ['Delivered','Confirmed','Planned','Tentative','To confirm','Onboarding','Pilot','MoU in progress','Partner to find','To verify','Postponed','Cancelled'];
+L.sector = ['Education','Science & engineering','Health','Municipality','Government organisation','Fintech','Hospitality','Small enterprises','Policymakers / MPs','Public (open cohort)','Out-of-valley (online)','Youth organisation','Mixed','Agritech','Healthtech'];
+L.format = ['In person','Online','Hybrid'];
 function choicesFor(k, col){
+  if(k === 'cohorts'){
+    if(col === 'Programme') return L.programme;
+    if(col === 'Status') return L.cstat;
+    if(col === 'Sector') return L.sector;
+    if(col === 'Format') return L.format;
+    if(col === 'Lead') return teamNames();
+    return null;
+  }
   if(col === 'Status') return k === 'chal' ? L.cstatus : (k === 'risk' ? L.lstatus : L.status);
   if(col === 'Team') return L.team;
   if(col === 'Period') return k === 'targets' ? L.tperiod : L.period;
@@ -11693,11 +11707,11 @@ function choicesFor(k, col){
   if(col === 'Owner' || col === 'Person') return teamNames();
   return null;
 }
-var DATE_COLS = /^(due|date|week of|raised)$/i;
-var LONG = /^(goal|task|challenge|what|notes|notes and link|action or mitigation|blockers and notes|responsible for|current focus)$/i;
-var WIDE = /^(goal|task|challenge|what|deliverable|notes|notes and link|action or mitigation|blockers and notes|responsible for|current focus|target for)$/i;
-var MID  = /^(owner|team|role|person|which period)$/i;
-var BADGE_COLS = /^(status|priority|severity|impact|type|period)$/i;
+var DATE_COLS = /^(due|date|end date|week of|raised)$/i;
+var LONG = /^(goal|task|challenge|what|notes|notes and link|action or mitigation|blockers and notes|responsible for|current focus|depends on)$/i;
+var WIDE = /^(goal|task|challenge|what|deliverable|notes|notes and link|action or mitigation|blockers and notes|responsible for|current focus|target for|partner|depends on)$/i;
+var MID  = /^(owner|team|role|person|which period|lead|sector)$/i;
+var BADGE_COLS = /^(status|priority|severity|impact|type|period|programme)$/i;
 
 var st = { view:'home', page:'overview', q:'', status:'', owner:'', type:'', data:null, meta:null, loading:false, err:'', ruleErr:false,
            preview:null, unsub:null, saving:false,
@@ -11730,6 +11744,13 @@ function whenStr(d){ return d ? d.toLocaleString('en-GB', { day:'numeric', month
 
 function badgeClass(c, v){
   var x = low(v); if(!x) return '';
+  if(/^(delivered|confirmed)$/.test(x)) return 'g';
+  if(/^(planned|onboarding|pilot)$/.test(x)) return 'b';
+  if(/^(tentative|to confirm|mou in progress|to verify|postponed)$/.test(x)) return 'y';
+  if(/^(partner to find|cancelled)$/.test(x)) return 'r';
+  if(x === 'ai native') return 'b';
+  if(x === 'ai foundation') return 'p';
+  if(x === 'ai deep') return 'g';
   if(/^(done|resolved|closed|completed|merged)$/.test(x)) return 'g';
   if(/^(in progress|pending)$/.test(x)) return 'b';
   if(/^(blocked|at risk|high|skipped)$/.test(x)) return 'r';
@@ -12139,7 +12160,7 @@ function openEditor(k, id){
       o[c] = v;
     });
     if(sh.cols.indexOf('Reached') >= 0) o.Reached = reachedFor(o);
-    var titleCol = def.cols[def.k === 'risk' ? 1 : 0];
+    var titleCol = def.title || def.cols[def.k === 'risk' ? 1 : 0];
     if(!o[titleCol]){ var er = ov.querySelector('#pmErr'); er.textContent = 'Please fill in ' + titleCol + '.'; er.style.display = 'block'; return; }
     var nd = cloneData(); if(!nd[k]) nd[k] = { cols:sh.cols.slice(), rows:[], desc:sh.desc || '' };
     if(row){ nd[k].rows = nd[k].rows.map(function(r){ return r.id === row.id ? o : r; }); }
@@ -12149,7 +12170,7 @@ function openEditor(k, id){
   });
   var del = ov.querySelector('#pmDel');
   if(del) del.addEventListener('click', function(){
-    var titleCol = def.cols[def.k === 'risk' ? 1 : 0];
+    var titleCol = def.title || def.cols[def.k === 'risk' ? 1 : 0];
     if(!confirm('Delete this ' + def.one + '?\n\n' + String(row[titleCol] || '').replace(/<br>/gi, ' ').slice(0, 160) + '\n\nThis cannot be undone (export to Excel first if you want a copy).')) return;
     var nd = cloneData(); nd[k].rows = nd[k].rows.filter(function(r){ return r.id !== row.id; });
     save(nd, 'deleted ' + def.one).then(close).catch(function(){});
@@ -12293,24 +12314,123 @@ function cellHtml(c, r){
   if(MID.test(c)) return '<td class="mid">' + esc(v) + '</td>';
   return '<td>' + esc(v) + '</td>';
 }
+/* ---------- Cohort map ---------- */
+var SEED_COHORTS = [
+  ['N1–N4','AI Native','26 Jul 2026','31 Aug 2026',"Sunway College (26 Jul); St. Xavier's College (10 & 17 Aug); Yuwalaya (27 Aug); Konjyosom Rural Municipality (31 Aug)",'Education','In person','280','Drabid Subedi','','Delivered','Jul–Aug total; per-cohort counts are in the August report'],
+  ['N5','AI Native','2 Sep 2026','','Khwopa College of Engineering, Bhaktapur','Science & engineering','In person','50','Drabid Subedi','','Delivered',''],
+  ['N6','AI Native','7 Sep 2026','','NAAMII staff','Education','In person','15','Drabid Subedi','','Delivered',''],
+  ['N7','AI Native','9 Sep 2026','','Municipality Fellows (with Heifer Nepal and YI-Lab)','Municipality','In person','11','Drabid Subedi','','Delivered','Fellows Residential Program, Hotel Maya Manor'],
+  ['N8','AI Native','10 Sep 2026','','Sunway College','Education','In person','35','Drabid Subedi','','Delivered',''],
+  ['–','AI Native','19 Sep 2026','','Jyoti Life Insurance','Fintech','In person','','Drabid Subedi','','To verify','On the calendar as completed but in no report'],
+  ['N10','AI Native','24 Sep 2026','','MIT College Nepal','Education','In person','40','Drabid Subedi','','Delivered',''],
+  ['N9','AI Native','28 Sep 2026','','Sunway College','Education','In person','15','Drabid Subedi','','Delivered',''],
+  ['Open-1','AI Native','28 Sep 2026','','Open cohort #1 (at Sunway College)','Public (open cohort)','In person','20','Pradip Chaudary','','Delivered',''],
+  ['N11','AI Native','8 Oct 2026','','Manmohan Memorial Institute of Health Sciences','Health','In person','42','Drabid Subedi','','Delivered','Sept report said 60; Oct report 42'],
+  ['N12','AI Native','12 Oct 2026','','Lord Buddha Education Foundation, Maitidevi','Mixed','In person','38','Drabid Subedi','','Delivered',''],
+  ['N13','AI Native','16 Nov 2026','','ISMT College','Education','In person','40','Pradip Chaudary','Focal briefing','To confirm',''],
+  ['N14','AI Native','18 Nov 2026','','Uniglobe College','Education','In person','40','Pradip Chaudary','Focal briefing','To confirm',''],
+  ['N15','AI Native','20 Nov 2026','','Open cohort #2','Public (open cohort)','In person','40','Pradip Chaudary','Onboarding','Onboarding',''],
+  ['N16','AI Native','23 Nov 2026','','Global College','Education','In person','40','Pradip Chaudary','Focal briefing','To confirm',''],
+  ['N17','AI Native','25 Nov 2026','','MBL Bank','Fintech','In person','30','Pradip Chaudary','Training plan agreed','Planned','New sector'],
+  ['N18','AI Native','27 Nov 2026','','NEA','Government organisation','In person','30','Pradip Chaudary','Training plan agreed','Planned','New sector'],
+  ['N19','AI Native','2 Dec 2026','','Online cohort #1 (pilot)','Out-of-valley (online)','Online','60','Ramesh Lama','Online delivery artifact (due 30 Nov)','Pilot',''],
+  ['N20','AI Native','4 Dec 2026','','Budhanilkantha Municipality','Municipality','In person','40','Sumi Dhakal','MoU signed','MoU in progress',''],
+  ['N21','AI Native','7 Dec 2026','','Hospitality partner (hotel association or hospitality institute)','Hospitality','In person','40','Pradip Chaudary','Partner from the pipeline','Partner to find','New sector'],
+  ['N22','AI Native','9 Dec 2026','','Small-business partner (chamber, cooperatives or women-led SMEs)','Small enterprises','In person','40','Pradip Chaudary','Partner from the pipeline','Partner to find','New sector'],
+  ['N23','AI Native','11 Dec 2026','','Online cohort #2','Out-of-valley (online)','Online','60','Ramesh Lama','Pilot N19 reviewed','Tentative',''],
+  ['N24','AI Native','14 Dec 2026','','Policymakers / MPs orientation','Policymakers / MPs','In person','20','Sumi Dhakal','Industry dept., Singha Durbar talks','Tentative','Short briefing format; new sector'],
+  ['N25','AI Native','16 Dec 2026','',"College from MoU drafts (King's College, ACEM or St. Xavier's)",'Education','In person','40','Pradip Chaudary','MoU signed','Tentative',''],
+  ['N26','AI Native','18 Dec 2026','','Open cohort #3','Public (open cohort)','In person','40','Pradip Chaudary','Call for applications','Tentative',''],
+  ['N27','AI Native','21 Dec 2026','','Second college from MoU drafts','Education','In person','40','Pradip Chaudary','MoU signed','Tentative',''],
+  ['N28','AI Native','23 Dec 2026','','Online cohort #3','Out-of-valley (online)','Online','60','Ramesh Lama','Online cohorts running','Tentative',''],
+  ['F1','AI Foundation','30 Nov 2026','22 Jan 2027','Agritech pilot (40 IT students who completed AI Native)','Agritech','Hybrid','40','Ramesh Lama','Trainer onboarding; repo and datasets; Tangible skill map','Planned','8 weeks; pilot review by 31 Jan 2027'],
+  ['F2','AI Foundation','1 Feb 2027','26 Mar 2027','Agritech cohort','Agritech','Hybrid','40','Ramesh Lama','F1 pilot review','Tentative',''],
+  ['F3','AI Foundation','15 Feb 2027','9 Apr 2027','Fintech cohort','Fintech','Hybrid','40','Ramesh Lama','F1 pilot review; Fintech action plan','Tentative',''],
+  ['F4','AI Foundation','1 Mar 2027','23 Apr 2027','Healthtech cohort','Healthtech','Hybrid','40','Ramesh Lama','F1 pilot review; Healthtech action plan','Tentative',''],
+  ['F5','AI Foundation','15 Mar 2027','7 May 2027','Agritech cohort','Agritech','Hybrid','40','Ramesh Lama','','Tentative',''],
+  ['F6','AI Foundation','29 Mar 2027','21 May 2027','Fintech cohort','Fintech','Hybrid','40','Ramesh Lama','','Tentative',''],
+  ['F7','AI Foundation','12 Apr 2027','4 Jun 2027','Healthtech cohort','Healthtech','Hybrid','40','Ramesh Lama','','Tentative',''],
+  ['F8','AI Foundation','26 Apr 2027','18 Jun 2027','Agritech cohort','Agritech','Hybrid','40','Ramesh Lama','','Tentative',''],
+  ['F9','AI Foundation','10 May 2027','2 Jul 2027','Fintech cohort','Fintech','Hybrid','40','Ramesh Lama','','Tentative',''],
+  ['F10','AI Foundation','24 May 2027','16 Jul 2027','Healthtech cohort','Healthtech','Hybrid','40','Ramesh Lama','','Tentative',''],
+  ['F11','AI Foundation','7 Jun 2027','30 Jul 2027','Agritech cohort','Agritech','Hybrid','40','Ramesh Lama','','Tentative',''],
+  ['F12','AI Foundation','21 Jun 2027','13 Aug 2027','Fintech cohort','Fintech','Hybrid','40','Ramesh Lama','','Tentative','']
+];
+function seedCohortRows(){
+  var cols = defOf('cohorts').cols;
+  return SEED_COHORTS.map(function(a){ var o = { id:uid() }; cols.forEach(function(c, i){ o[c] = a[i] || ''; }); return o; });
+}
+function learnersOf(r){ var n = parseInt(String(r.Learners || '').replace(/[^\d]/g, ''), 10); return isNaN(n) ? 0 : n; }
+function cohortDone(r){ return low(r.Status) === 'delivered'; }
+function cohortLive(r){ return !/^(cancelled|delivered)$/.test(low(r.Status)); }
+function cohortSummaryHtml(sh){
+  var rows = sh.rows, today = new Date(); today.setHours(0, 0, 0, 0);
+  var sum = function(list){ return list.reduce(function(a, r){ return a + learnersOf(r); }, 0); };
+  var prog = function(p){ return rows.filter(function(r){ return r.Programme === p; }); };
+  var nat = prog('AI Native'), fnd = prog('AI Foundation');
+  var natDone = sum(nat.filter(cohortDone)), natPlan = sum(nat.filter(cohortLive));
+  var fndDone = sum(fnd.filter(cohortDone)), fndPlan = sum(fnd.filter(cohortLive));
+  var in2026 = function(r){ var d = parseDate(r.Date); return d && d.getFullYear() === 2026; };
+  var nat26 = sum(nat.filter(function(r){ return in2026(r) && (cohortDone(r) || cohortLive(r)); }));
+  var attention = rows.filter(function(r){ var d = parseDate(r.Date); return cohortLive(r) && /^(partner to find|to verify|mou in progress|to confirm)$/.test(low(r.Status)) && d && d - today < 31 * 864e5; });
+  var soon = rows.filter(function(r){ var d = parseDate(r.Date); return cohortLive(r) && d && d >= today && d - today <= 21 * 864e5; })
+    .sort(function(a, b){ return parseDate(a.Date) - parseDate(b.Date); });
+  var html = '<div class="kpi-grid">'
+    + kpi(natDone.toLocaleString(), 'AI Native learners delivered', nat.filter(cohortDone).length + ' cohorts · grant target 20,000', 'cohorts', true, natDone / 200)
+    + kpi(natPlan.toLocaleString(), 'AI Native learners planned', nat.filter(cohortLive).length + ' upcoming cohorts', 'cohorts')
+    + kpi(nat26.toLocaleString() + ' / 2,000', 'AI Native 2026 (delivered + planned)', Math.round(nat26 / 20) + '% of the 2026 goal', 'cohorts', false, nat26 / 20)
+    + kpi(fndDone + ' / 1,500', 'AI Foundation learners delivered', fnd.filter(cohortLive).length + ' cohorts planned · ' + fndPlan + ' learners', 'cohorts', false, fndDone / 15)
+    + kpi(soon.length, 'Cohorts in the next 3 weeks', '', 'cohorts')
+    + kpi(attention.length, 'Need attention this month', 'partner, MoU or date to confirm', 'cohorts')
+    + '</div>';
+  var soonHtml = soon.map(function(r){
+    return '<div class="pm-att" data-edit="cohorts:' + r.id + '">' + badge('Programme', r.Programme) + '<div class="t"><b>' + esc(r.Date) + '</b> · ' + esc(r.ID) + ' · ' + esc(r.Partner)
+      + '<small>' + esc([r.Sector, r.Format, r.Learners ? r.Learners + ' learners' : '', r.Lead].filter(Boolean).join(' · ')) + (r['Depends on'] ? ' · depends on: ' + esc(r['Depends on']) : '') + '</small></div>' + badge('Status', r.Status) + '</div>';
+  }).join('') || '<div class="pm-empty">No cohorts in the next three weeks.</div>';
+  // month by month
+  var months = {}, order = [];
+  rows.forEach(function(r){ var d = parseDate(r.Date); if(!d || low(r.Status) === 'cancelled') return; var k = d.getFullYear() * 100 + d.getMonth();
+    if(!months[k]){ months[k] = { label:MONTHS[d.getMonth()] + ' ' + d.getFullYear(), n:{}, l:{} }; order.push(k); }
+    var p = r.Programme || 'Other'; months[k].n[p] = (months[k].n[p] || 0) + 1; months[k].l[p] = (months[k].l[p] || 0) + learnersOf(r); });
+  order.sort(function(a, b){ return a - b; });
+  var maxL = Math.max.apply(null, order.map(function(k){ var m = months[k]; return Object.keys(m.l).reduce(function(a, p){ return a + m.l[p]; }, 0); }).concat([1]));
+  var col = { 'AI Native':'var(--confirmed)', 'AI Foundation':'var(--reserved)', 'AI Deep':'var(--available)' };
+  var monthHtml = order.map(function(k){
+    var m = months[k], tot = Object.keys(m.l).reduce(function(a, p){ return a + m.l[p]; }, 0);
+    var bar = Object.keys(m.l).map(function(p){ return '<i title="' + esc(p) + ': ' + m.l[p] + ' learners" style="width:' + (m.l[p] / maxL * 100) + '%;background:' + (col[p] || 'var(--coolgrey)') + '"></i>'; }).join('');
+    var txt = Object.keys(m.n).map(function(p){ return m.n[p] + ' ' + esc(p.replace('AI ', '')); }).join(' · ');
+    return '<div class="prow"><div class="pr-name">' + m.label + '<small>' + txt + '</small></div><div class="pm-stack" style="margin:0;background:transparent">' + bar + '</div><div class="pr-fig">' + tot + '<small>learners</small></div></div>';
+  }).join('');
+  return html + '<div class="pt-2col">'
+    + '<div class="pt-card"><h3>Next three weeks</h3><div class="sub">Click a cohort to change its date, partner or status.</div>' + soonHtml + '</div>'
+    + '<div class="pt-card"><h3>Month by month</h3><div class="sub">Learners per month (cancelled cohorts left out). <span style="color:var(--confirmed-ink)">■</span> AI Native <span style="color:var(--reserved-ink)">■</span> AI Foundation</div>' + monthHtml + '</div>'
+    + '</div>';
+}
+
 function pageSheet(def, sh){
   if(def.k === 'team') return pageTeam(def, sh);
+  if(def.k === 'cohorts' && !sh.rows.length){
+    return '<div class="pt-card"><h3>Cohort map</h3><div class="sub">Plan and track every AI Native and AI Foundation cohort here: dates, partners, sectors, learners, leads and status. Every cohort you add or change is saved straight away.</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="pm-btn primary" id="pmSeedCohorts">Load the cohort map (13 Nov 2026)</button>' + addBtn('cohorts', def) + '</div>'
+      + '<p class="pm-count" style="margin-top:10px">Loads ' + SEED_COHORTS.length + ' cohorts: the delivered AI Native cohorts (July–October), the tentative AI Native schedule to 23 Dec, and the AI Foundation pilot and scale-up to August 2027. You can change every row afterwards.</p></div>';
+  }
   var cols = sh.cols;
-  var hasStatus = cols.indexOf('Status') >= 0, ownerCol = cols.indexOf('Owner') >= 0 ? 'Owner' : (cols.indexOf('Person') >= 0 ? 'Person' : ''), hasType = cols.indexOf('Type') >= 0;
+  var hasStatus = cols.indexOf('Status') >= 0, ownerCol = cols.indexOf('Owner') >= 0 ? 'Owner' : (cols.indexOf('Person') >= 0 ? 'Person' : (cols.indexOf('Lead') >= 0 ? 'Lead' : '')), typeCol = cols.indexOf('Type') >= 0 ? 'Type' : (cols.indexOf('Programme') >= 0 ? 'Programme' : ''), hasType = !!typeCol;
   var uniq = function(c){ var s = {}; sh.rows.forEach(function(r){ if(r[c]) s[r[c]] = 1; }); return Object.keys(s).sort(); };
   var q = low(st.q);
   var rows = sh.rows.filter(function(r){
     if(st.status && r.Status !== st.status) return false;
     if(st.owner && ownerCol && r[ownerCol] !== st.owner) return false;
-    if(st.type && hasType && r.Type !== st.type) return false;
+    if(st.type && hasType && r[typeCol] !== st.type) return false;
     if(q && !cols.some(function(c){ return low(r[c]).indexOf(q) >= 0; })) return false;
     return true;
   });
+  if(def.k === 'cohorts') rows.sort(function(a, b){ return (parseDate(a.Date) || 0) - (parseDate(b.Date) || 0); });
   var sel = function(id, label, val, opts){ return '<div class="pt-filt"><label>' + label + '</label><select id="' + id + '"><option value="">All</option>'
     + opts.map(function(o){ return '<option' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select></div>'; };
   var filters = '<div class="pt-filters">'
     + '<div class="pt-filt" style="flex:1 1 200px"><label>Search</label><input id="pmQ" type="search" placeholder="Search this sheet" value="' + esc(st.q) + '" style="width:100%"></div>'
-    + (hasType ? sel('pmType', 'Type', st.type, uniq('Type')) : '')
+    + (hasType ? sel('pmType', typeCol, st.type, uniq(typeCol)) : '')
     + (hasStatus ? sel('pmStatus', 'Status', st.status, uniq('Status')) : '')
     + (ownerCol ? sel('pmOwner', ownerCol, st.owner, uniq(ownerCol)) : '')
     + ((st.q || st.status || st.owner || st.type) ? '<button class="pt-filt-reset" id="pmReset">Clear</button>' : '')
@@ -12318,7 +12438,11 @@ function pageSheet(def, sh){
   var table = rows.length ? '<div class="pt-scroll"><table class="pt-table"><thead><tr>' + cols.map(function(c){ return '<th>' + esc(c) + '</th>'; }).join('') + '<th></th></tr></thead><tbody>'
     + rows.map(function(r){ return '<tr data-edit="' + def.k + ':' + r.id + '">' + cols.map(function(c){ return cellHtml(c, r); }).join('') + '<td><button class="pm-icon" data-edit="' + def.k + ':' + r.id + '" title="Edit">✎</button></td></tr>'; }).join('') + '</tbody></table></div>'
     : '<div class="pm-empty">' + (sh.rows.length ? 'No rows match these filters.' : 'Nothing here yet. Use “+ Add ' + esc(def.one) + '”.') + '</div>';
-  var summary = hasStatus && sh.rows.length ? '<div class="pt-card"><h3>Status</h3>' + stackRow(def.label, sh.rows, 'Status') + '</div>' : '';
+  var summary = def.k === 'cohorts' ? cohortSummaryHtml(sh)
+    : (hasStatus && sh.rows.length ? '<div class="pt-card"><h3>Status</h3>' + stackRow(def.label, sh.rows, 'Status') + '</div>' : '');
+  if(def.k === 'cohorts') return summary + filters
+    + '<div class="pt-card"><div class="pm-card-head"><div><h3>All cohorts</h3><div class="sub">Sorted by date. Change a status to Delivered and add the actual learners once a cohort has run.</div></div>' + addBtn(def.k, def) + '</div>'
+    + '<p class="pm-count">Showing ' + rows.length + ' of ' + sh.rows.length + '. Click a row to edit or delete it.</p>' + table + '</div>';
   return filters + summary
     + '<div class="pt-card"><div class="pm-card-head"><div><h3>' + esc(def.label) + '</h3><div class="sub">' + esc(sh.desc) + '</div></div>' + addBtn(def.k, def) + '</div>'
     + '<p class="pm-count">Showing ' + rows.length + ' of ' + sh.rows.length + '. Click a row to edit or delete it.</p>' + table + '</div>';
@@ -12456,8 +12580,15 @@ function wire(box){
     var blank = {}; SHEETS.forEach(function(s){ blank[s.k] = { cols:s.cols.slice(), rows:[], desc:'' }; });
     save(blank, 'started empty sheets').catch(function(){});
   });
+  var sc = box.querySelector('#pmSeedCohorts'); if(sc) sc.addEventListener('click', function(){
+    sc.disabled = true; sc.textContent = 'Loading…';
+    var nd = cloneData(); nd.cohorts = { cols:defOf('cohorts').cols.slice(), rows:seedCohortRows(), desc:'AI School cohorts: delivered and tentative' };
+    save(nd, 'loaded the cohort map').then(function(){ render(); }).catch(function(){ sc.disabled = false; sc.textContent = 'Load the cohort map (13 Nov 2026)'; });
+  });
   var is = box.querySelector('#pmImportSave'); if(is) is.addEventListener('click', function(){
     is.disabled = true; is.textContent = 'Saving…';
+    // an Excel file without a "Cohort Map" sheet must not wipe the cohort map
+    if(st.data && st.data.cohorts && st.data.cohorts.rows.length && (!st.preview.data.cohorts || !st.preview.data.cohorts.rows.length)) st.preview.data.cohorts = st.data.cohorts;
     save(st.preview.data, 'loaded ' + st.preview.name).then(function(){ st.preview = null; go('overview'); }).catch(function(){ is.disabled = false; is.textContent = 'Save to Program Management'; });
   });
   var ic = box.querySelector('#pmImportCancel'); if(ic) ic.addEventListener('click', function(){ st.preview = null; render(); });

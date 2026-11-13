@@ -3,6 +3,8 @@
 **AI School cohorts: what has run, and a tentative schedule for what's next**
 EU UDAAN · Pathshala · Activity 1.1.1 · NAAMII · prepared 13 Nov 2026
 
+> **Live version:** this map is now kept on the dashboard, under Program Management → UDAAN → **Cohort map**, where it can be edited. This file is the 13 Nov 2026 snapshot.
+>
 > **How to read this.** Rows marked **Delivered** come from the cohort calendar and the monthly reports. Every other date is **tentative**: it is proposed from the targets, partner pipeline, trainer capacity and dependencies below, and must be confirmed with each partner before it goes on the dashboard calendar. Sessions run Sunday–Friday and avoid Saturdays, Christmas Day (25 Dec), Tamu Lhosar (30 Dec) and Maghe Sankranti (15 Jan).
 
 ## Summary
