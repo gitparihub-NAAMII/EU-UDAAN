@@ -200,9 +200,7 @@ role may rotate among the four members.
 
 ### 3.1 Experience First, Theory Second
 
-The programme adopts the NAAMII teaching philosophy:
-
-**Experience first, theory second.**
+The programme adopts **Experience first, theory second** teaching philosophy:
 
 Instead of beginning with theoretical explanations, each lesson starts
 with a realistic agricultural situation or workplace task.
