@@ -12,7 +12,7 @@ Part IV proposal in graph terms so it becomes actionable in this repo, or (b) ar
 | `corpus-gaps.md` | New — what `_system/tools/validate.py` reports, prioritised | Live worklist |
 | `banking-reskin.md` | New | Proposed, not actioned. **Kept local only** (draws on the confidential canon) |
 | `course-4-ai-enabled-problem-solving.md` | Graph framing over build manual §4.2 | Draft |
-| `sector-problem-statements.md` | New: one problem statement per sector, from the problem bank and the AI productivity course's method | Draft, not reviewed |
+| `sector-problem-statements.md` | New: seven problem statements by type of work across the 11 sectors, and a review of all 65 problems in the problem bank | Draft for discussion |
 
 ## Promotion
 
