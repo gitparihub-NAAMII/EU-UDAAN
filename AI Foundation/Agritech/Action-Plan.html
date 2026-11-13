@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agritech Action Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky contents rail on wide screens + one reading column; modules as cards carrying the five-step cycle (Experience → Apply) */
+:root{
+  --bg:#F7F7F8; --paper:#FFFFFF; --fg:#2b3038; --muted:#6b7280; --line:#E3E4E7; --track:#ECEDF0;
+  --accent:#db0505; --accent-soft:#FCE0E0;
+  --self:#454d59; --work:#db0505;
+  --leaf:#0E7C41; --leaf-bg:#E3F6EC; --warn:#8A6A00; --warn-bg:#FCF3CE;
+  --font:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#15171b; --paper:#1d2026; --fg:#e7e9ee; --muted:#9aa1ad; --line:#2e333b; --track:#2a2e35;
+  --accent:#ff5a4f; --accent-soft:#3a1d1c; --self:#aab2c0; --work:#ff5a4f;
+  --leaf:#5fd394; --leaf-bg:#183326; --warn:#f0cf5a; --warn-bg:#352d10; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15171b; --paper:#1d2026; --fg:#e7e9ee; --muted:#9aa1ad; --line:#2e333b; --track:#2a2e35;
+  --accent:#ff5a4f; --accent-soft:#3a1d1c; --self:#aab2c0; --work:#ff5a4f;
+  --leaf:#5fd394; --leaf-bg:#183326; --warn:#f0cf5a; --warn-bg:#352d10; color-scheme:dark}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.shell{max-width:1120px;margin:0 auto;padding-block:40px 72px;display:grid;grid-template-columns:1fr;gap:40px}
+@media (min-width:1000px){.shell{grid-template-columns:210px minmax(0,1fr)}}
+nav.toc{display:none}
+@media (min-width:1000px){nav.toc{display:block;position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;max-height:calc(100vh - 48px);overflow:auto;font-size:.82rem}}
+nav.toc b{display:block;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
+nav.toc a{display:block;color:var(--fg);text-decoration:none;padding:3px 8px;border-left:2px solid transparent;opacity:.8}
+nav.toc a:hover,nav.toc a.on{opacity:1;border-left-color:var(--accent);color:var(--accent)}
+main{display:grid;gap:48px;min-width:0}
+h1,h2,h3{text-wrap:balance;letter-spacing:-.01em;margin:0}
+h1{font-size:2.1rem;font-weight:800;line-height:1.12}
+h2{font-size:1.35rem;font-weight:700}
+h3{font-size:1rem;font-weight:700}
+p{margin:0;max-width:68ch}
+a{color:var(--accent)}
+a:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.eyebrow{font-size:.72rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+.part{font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border-top:2px solid var(--fg);padding-top:10px;margin-bottom:-24px}
+section{display:grid;gap:14px;min-width:0;scroll-margin-top:20px}
+.lede{color:var(--muted);font-size:1.05rem}
+.muted{color:var(--muted)}
+.note{font-size:.88rem;color:var(--muted)}
+ul,ol{margin:0;padding-left:1.25em;display:grid;gap:3px;max-width:68ch}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.fact{background:var(--paper);padding:12px 14px;display:grid;gap:1px}
+.fact span{font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.fact b{font-weight:600}
+.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;counter-reset:ph}
+.phase{border-top:3px solid var(--accent);background:var(--paper);padding:12px 14px;display:grid;gap:4px}
+.phase b{font-size:.95rem}
+.phase b::before{counter-increment:ph;content:counter(ph) "  ";color:var(--accent)}
+.phase span{font-size:.86rem;color:var(--muted)}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.n,th.n{text-align:right;white-space:nowrap}
+tfoot td{font-weight:700;border-bottom:none;border-top:2px solid var(--fg)}
+.gnum{font-family:var(--mono);color:var(--accent);font-weight:500}
+.bar{display:flex;height:10px;border-radius:2px;overflow:hidden;background:var(--track);min-width:110px;margin-top:6px}
+.bar .s{background:var(--self)} .bar .w{background:var(--work)}
+.legend{display:flex;gap:16px;font-size:.8rem;color:var(--muted);flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.cycle{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.cycle div{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:10px 12px;display:grid;gap:2px}
+.cycle b{font-size:.9rem}
+.cycle i{font-size:.84rem;color:var(--muted)}
+.callout{border-left:3px solid var(--accent);padding:6px 0 6px 14px;max-width:68ch}
+.example{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:grid;gap:8px}
+.example ol{gap:6px}
+/* modules */
+.mod{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;gap:16px;scroll-margin-top:20px}
+.mod-head{display:flex;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;align-items:flex-start}
+.mod-head h3{font-size:1.15rem}
+.mod-head .k{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.hours{display:flex;gap:6px;flex-wrap:wrap;font-size:.78rem;font-variant-numeric:tabular-nums}
+.hours span{padding:2px 8px;border-radius:999px;background:var(--track)}
+.hours .w{background:var(--accent-soft);color:var(--accent)}
+.kq{font-weight:600}
+.steps{display:grid;gap:0;border-top:1px solid var(--line)}
+.step{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+@media (max-width:520px){.step{grid-template-columns:1fr;gap:4px}}
+.step>b{font-size:.75rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding-top:2px}
+.step>div{display:grid;gap:6px;min-width:0}
+.step ul{font-size:.92rem}
+.deliv{display:flex;flex-wrap:wrap;gap:6px}
+.deliv span{font-size:.8rem;padding:3px 9px;border:1px solid var(--line);border-radius:4px;background:var(--bg)}
+.caution{font-size:.86rem;background:var(--warn-bg);color:var(--warn);padding:8px 12px;border-radius:6px;max-width:68ch}
+pre.tree{font-family:var(--mono);font-size:.8rem;line-height:1.45;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:0;overflow-x:auto}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.two>*{min-width:0}
+/* flow diagram */
+.flow{display:grid;justify-items:center;gap:0;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:20px 12px}
+.node{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:8px 14px;font-size:.82rem;font-weight:600;text-align:center;letter-spacing:.02em}
+.node.key{border-color:var(--accent);color:var(--accent)}
+.node.human{border-style:dashed}
+.arrow{width:2px;height:18px;background:var(--muted);position:relative;margin-block:2px}
+.arrow::after{content:"";position:absolute;bottom:-4px;left:-4px;border:5px solid transparent;border-top-color:var(--muted);border-bottom:0}
+.fan{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.fan .node{font-weight:500}
+.weights{display:grid;gap:8px}
+.wrow{display:grid;grid-template-columns:minmax(0,1fr) 140px 44px;gap:12px;align-items:center;font-size:.9rem}
+@media (max-width:520px){.wrow{grid-template-columns:minmax(0,1fr) 80px 40px}}
+.wbar{height:8px;background:var(--track);border-radius:4px;overflow:hidden}
+.wbar div{height:100%;background:var(--accent)}
+.wrow b{text-align:right;font-variant-numeric:tabular-nums}
+.success{counter-reset:s;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 20px;list-style:none;padding:0;max-width:none}
+.success li{counter-increment:s;display:grid;grid-template-columns:28px 1fr;font-size:.92rem}
+.success li::before{content:counter(s,decimal-leading-zero);font-family:var(--mono);color:var(--leaf);font-size:.8rem;padding-top:2px}
+.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.checks fieldset{border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:12px 14px;margin:0;display:grid;gap:4px;min-width:0}
+.checks legend{font-weight:700;font-size:.88rem;padding:0 4px}
+.checks label{display:grid;grid-template-columns:20px 1fr;gap:6px;font-size:.88rem;cursor:pointer}
+.checks input{accent-color:var(--leaf);margin-top:4px}
+.checks input:checked+span{color:var(--muted);text-decoration:line-through}
+.prog{font-size:.85rem;color:var(--muted);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.prog button{font:inherit;font-size:.8rem;background:none;border:1px solid var(--line);border-radius:4px;padding:3px 10px;color:var(--fg);cursor:pointer}
+.closing{background:var(--fg);color:var(--bg);border-radius:10px;padding:24px;display:grid;gap:12px}
+.closing p{max-width:70ch}
+.closing strong{font-size:1.25rem;letter-spacing:-.01em}
+code{font-family:var(--mono);font-size:.85em;background:var(--track);padding:1px 5px;border-radius:3px}
+</style>
+
+<div class="shell">
+<nav class="toc" aria-label="Contents" id="toc">
+  <b>Part I · Design</b>
+  <a href="#overview">Overview</a><a href="#groups">Groups &amp; themes</a><a href="#philosophy">Teaching philosophy</a>
+  <b>Part II · Course</b>
+  <a href="#schedule">Schedule</a><span id="tocMods"></span>
+  <b>Part III · Infrastructure</b>
+  <a href="#foundation">Data foundation</a><a href="#github">GitHub workflow</a><a href="#agents">Agent architecture</a>
+  <b>Part IV · Management</b>
+  <a href="#trainers">Trainers</a><a href="#assessment">Assessment</a><a href="#success">Success criteria</a><a href="#risks">Risks</a><a href="#checklist">Preparation checklist</a><a href="#outcome">Final outcome</a>
+</nav>
+
+<main>
+<header style="display:grid;gap:10px">
+  <div class="eyebrow">AI Foundation Training · Agritech Track</div>
+  <h1>Agricultural Agentic AI</h1>
+  <p class="lede">A detailed action plan that takes 40 IT students from agricultural understanding to one integrated agricultural intelligence system.</p>
+</header>
+
+<div class="facts">
+  <div class="fact"><span>Participants</span><b>40 IT students</b></div>
+  <div class="fact"><span>Duration</span><b>60 h · 40 self-study + 20 workshop</b></div>
+  <div class="fact"><span>Structure</span><b>10 groups × 4 members</b></div>
+  <div class="fact"><span>Trainers</span><b>2, each supporting 5 groups</b></div>
+  <div class="fact"><span>Approach</span><b>Problem-Based Learning</b></div>
+  <div class="fact"><span>Framework</span><b>UDAAN U0–U4</b></div>
+</div>
+<p class="callout"><b>Final outcome:</b> one integrated Agricultural Agentic AI prototype, built together in a shared GitHub repository.</p>
+
+<div class="part">Part I · Programme design</div>
+
+<section id="overview">
+  <h2>Programme overview</h2>
+  <p>The programme helps IT students understand agricultural systems and build AI-enabled solutions for real agricultural challenges. Each of ten groups investigates one agricultural problem. Each member builds one related component, and the group integrates the four into a specialised intelligence system. All ten projects share a common Agricultural Data Foundation, common utilities and knowledge resources, and are finally connected through a common Agentic AI architecture.</p>
+  <div class="phases">
+    <div class="phase"><b>Understand</b><span>Explore agricultural systems, workflows, stakeholders and available data.</span></div>
+    <div class="phase"><b>Formulate</b><span>Identify and structure agricultural problems.</span></div>
+    <div class="phase"><b>Build</b><span>Develop analytics, knowledge retrieval and specialised agents.</span></div>
+    <div class="phase"><b>Transform</b><span>Integrate into an AI-enabled workflow and evaluate the prototype.</span></div>
+  </div>
+  <div class="two">
+    <div style="display:grid;gap:8px">
+      <h3>Programme targets</h3>
+      <div class="scroll"><table>
+        <tbody>
+          <tr><td>Participants</td><td class="n">40</td></tr><tr><td>Groups</td><td class="n">10</td></tr>
+          <tr><td>Members per group</td><td class="n">4</td></tr><tr><td>Trainers</td><td class="n">2</td></tr>
+          <tr><td>Agricultural themes</td><td class="n">10</td></tr><tr><td>Subproblems per group</td><td class="n">4</td></tr>
+          <tr><td>Course hours (self-study / workshop)</td><td class="n">60 (40 / 20)</td></tr>
+          <tr><td>Central GitHub repository</td><td class="n">1</td></tr>
+          <tr><td>Group / individual branches</td><td class="n">10 / 40</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div style="display:grid;gap:8px">
+      <h3>Expected competencies</h3>
+      <ul style="font-size:.92rem">
+        <li>Understand agricultural systems, workflows, stakeholders and value chains.</li>
+        <li>Identify agricultural information and data requirements.</li>
+        <li>Explore, acquire and prepare agricultural datasets.</li>
+        <li>Establish an evidence-aware Agricultural Data Foundation.</li>
+        <li>Formulate problems with the eight elements of U0.</li>
+        <li>Run descriptive, diagnostic and predictive analysis.</li>
+        <li>Organise agricultural knowledge for retrieval; use local LLMs and RAG.</li>
+        <li>Design specialised agents and tool-using workflows, coordinated by an Agent Manager.</li>
+        <li>Implement validation and human-review mechanisms.</li>
+        <li>Integrate, test and demonstrate a prototype.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="groups">
+  <h2>Groups and agricultural themes</h2>
+  <p>Before groups form, participants complete a skills survey (Python, data and databases, AI/ML, documentation, Git). Trainers then build ten balanced groups of four with a mix of programming, data, analytical and documentation skills.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Group</th><th>Intelligence theme</th><th>Member-level subproblems</th></tr></thead>
+    <tbody id="themes"></tbody>
+  </table></div>
+  <p class="note">Themes are proposed project areas. Each group must validate the agricultural context and the availability of information before finalising its problem.</p>
+  <h3>Individual and group responsibilities</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Area</th><th>Individual member</th><th>Group</th></tr></thead>
+    <tbody>
+      <tr><td>Agricultural investigation</td><td>Investigates an assigned subproblem</td><td>Combines understanding of the whole system</td></tr>
+      <tr><td>Data</td><td>Identifies relevant data</td><td>Coordinates shared and domain-specific datasets</td></tr>
+      <tr><td>Analytics</td><td>Develops relevant analysis</td><td>Integrates analytical findings</td></tr>
+      <tr><td>AI development</td><td>Develops assigned tools or capabilities</td><td>Integrates specialised intelligence</td></tr>
+      <tr><td>Documentation</td><td>Maintains individual contributions</td><td>Maintains group-level documentation</td></tr>
+      <tr><td>Evaluation</td><td>Tests assigned component</td><td>Tests the integrated system</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">A group coordinator is appointed for each development stage. The role may rotate among the four members.</p>
+</section>
+
+<section id="philosophy">
+  <h2>Experience first, theory second</h2>
+  <p>Each lesson starts with a realistic agricultural situation or workplace task, not a theoretical explanation. Participants meet a challenge, observe it, discover the concepts they need, practise the skills and apply them to their group project. Theory arrives when it is needed.</p>
+  <div class="cycle">
+    <div><b>1. Experience</b><span>Encounter a realistic scenario</span><i>What is happening in the real world?</i></div>
+    <div><b>2. Observe</b><span>Identify the challenge and information gaps</span><i>What do we notice?</i></div>
+    <div><b>3. Discover</b><span>Concepts, methods, technologies</span><i>What do we need to understand?</i></div>
+    <div><b>4. Practice</b><span>Practise skills with examples and tools</span><i>How can we do it?</i></div>
+    <div><b>5. Apply</b><span>Use the skills on the group project</span><i>How do we apply it to our problem?</i></div>
+  </div>
+  <div class="example">
+    <h3>Example: introducing agricultural data</h3>
+    <p class="muted">The instructor does not begin with CSV, databases, APIs or data types. Instead:</p>
+    <ol>
+      <li><b>Experience:</b> a cucumber farmer reports fruit damage but keeps no systematic records.</li>
+      <li><b>Observe:</b> learners suggest what information would help.</li>
+      <li><b>Discover:</b> observations, measurements, records, data sources, variables and data quality.</li>
+      <li><b>Practice:</b> inspect and organise sample farm records and weather datasets.</li>
+      <li><b>Apply:</b> each group identifies and prepares the datasets for its own theme.</li>
+    </ol>
+  </div>
+  <p class="note">Every lesson plan and self-study unit names the scenario, the challenge, the concepts, the skills, the group-project task and the expected evidence or deliverable.</p>
+</section>
+
+<div class="part">Part II · Course implementation</div>
+
+<section id="schedule">
+  <h2>Training schedule: nine modules, 60 hours</h2>
+  <div class="legend"><span style="--c:var(--self)">Self-study</span><span style="--c:var(--work)">Workshop</span></div>
+  <div class="scroll"><table>
+    <thead><tr><th>Module</th><th class="n">Self</th><th class="n">Workshop</th><th class="n">Total</th></tr></thead>
+    <tbody id="sched"></tbody>
+    <tfoot><tr><td>Total</td><td class="n">40 h</td><td class="n">20 h</td><td class="n">60 h</td></tr></tfoot>
+  </table></div>
+  <p class="note">U3 depends on suitable historical data. If the data cannot support meaningful prediction, use the time for deeper U1/U2 investigation, evidence assessment, or a clearly labelled demonstration on simulated data.</p>
+</section>
+
+<div id="modules" style="display:grid;gap:20px"></div>
+
+<div class="part">Part III · Common project infrastructure</div>
+
+<section id="foundation">
+  <h2>Shared Agricultural Data Foundation</h2>
+  <p>A cohort-wide resource, not an application owned by one group. It reduces duplication and sets common data standards.</p>
+  <div class="two">
+    <div style="display:grid;gap:8px">
+      <h3>Three data layers</h3>
+      <div class="scroll"><table><tbody>
+        <tr><td><b>1 · External &amp; public</b></td><td>Public datasets, APIs, government and institutional sources</td></tr>
+        <tr><td><b>2 · Knowledge repository</b></td><td>Research, manuals, extension publications, crop calendars, expert-reviewed documents</td></tr>
+        <tr><td><b>3 · Primary &amp; simulated</b></td><td>Surveys, field observations, soil tests, farm records, sensors, simulated data</td></tr>
+      </tbody></table></div>
+      <p class="note">Every dataset is labelled as observed, externally sourced, derived or simulated.</p>
+    </div>
+    <div style="display:grid;gap:8px">
+      <h3>Every shared dataset documents</h3>
+      <ul style="font-size:.9rem;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2px 16px">
+        <li>Name and description</li><li>Original source</li><li>Geographic coverage</li><li>Observation period</li>
+        <li>Spatial and temporal resolution</li><li>Variables and units</li><li>Collection method</li><li>Quality limitations</li>
+        <li>Licence or access conditions</li><li>Observed / sourced / derived / simulated</li>
+      </ul>
+    </div>
+  </div>
+  <h3>Data sources and categories</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Category</th><th>Potential sources</th><th>Intended use</th></tr></thead>
+    <tbody>
+      <tr><td>Geographical</td><td>Open geographical datasets, administrative boundaries, OpenCage</td><td>Location and mapping</td></tr>
+      <tr><td>Weather</td><td>OpenWeather, Open-Meteo</td><td>Forecasts</td></tr>
+      <tr><td>Historical climate</td><td>NASA POWER, ERA5</td><td>Historical environmental analysis</td></tr>
+      <tr><td>Rainfall</td><td>CHIRPS, national data</td><td>Rainfall analysis</td></tr>
+      <tr><td>Agricultural knowledge</td><td>NARC, Ministry of Agriculture, extension publications</td><td>Knowledge base</td></tr>
+      <tr><td>Soil</td><td>Soil surveys, laboratory records</td><td>Soil analysis</td></tr>
+      <tr><td>Market</td><td>Government and market information</td><td>Price and market analysis</td></tr>
+      <tr><td>Field observations</td><td>Surveys, farm records, field observations</td><td>Local evidence</td></tr>
+    </tbody>
+  </table></div>
+  <p class="caution">Verify access, licensing, API limits and resolution before use. Gridded climate products are not precise farm-level measurements.</p>
+  <div class="two">
+    <div style="display:grid;gap:8px"><h3>Central repository</h3>
+<pre class="tree">Agricultural-Agentic-AI/
+├── README.md · COURSE.md · requirements.txt
+├── docs/
+│   ├── course-architecture.md
+│   ├── agricultural-data-standard.md
+│   ├── data-source-register.md
+│   ├── development-guidelines.md
+│   ├── agent-design-guidelines.md
+│   └── integration-guidelines.md
+├── shared/
+│   ├── common-data/
+│   │   ├── geographical/ weather/ soil/
+│   │   ├── crops/ pests/ diseases/
+│   │   └── livestock/ market/ sample-data/
+│   ├── data-connectors/
+│   ├── data-processing/
+│   ├── common-utilities/
+│   ├── knowledge-resources/
+│   └── shared-models/
+├── groups/
+│   ├── group-01-crop-pest/
+│   ├── …
+│   └── group-10-smart-greenhouse/
+└── integration/
+    ├── api/  agent-manager/  workflows/
+    └── reviewer/  evaluation/  deployment/</pre></div>
+    <div style="display:grid;gap:8px"><h3>Each group folder</h3>
+<pre class="tree">group-01-crop-pest/
+├── README.md
+├── agricultural-understanding/
+├── problem-formulation/
+├── data/
+│   ├── data-requirements.md
+│   ├── data-sources.md
+│   └── processed/
+├── member-01/ … member-04/
+├── analytics/
+│   ├── U1-descriptive/
+│   ├── U2-diagnostic/
+│   └── U3-predictive/
+├── rag/
+├── models/
+├── agents/
+├── evaluation/
+└── integration/</pre>
+    <p class="note">Member folders hold individual work. Shared group outputs stay in the stage folders.</p></div>
+  </div>
+</section>
+
+<section id="github">
+  <h2>GitHub collaboration workflow</h2>
+  <p>A two-level branching model: <code>main</code> → <code>group-NN</code> → <code>member-NN</code>.</p>
+  <ol>
+    <li>Trainers create the central repository and the shared folder structure.</li>
+    <li>Each group creates its branch from <code>main</code>.</li>
+    <li>Members create individual branches from their group branch.</li>
+    <li>Members commit and open pull requests to the group branch.</li>
+    <li>The group coordinator reviews and integrates contributions.</li>
+    <li>The group opens a pull request to <code>main</code>.</li>
+    <li>Trainers review and merge approved work.</li>
+  </ol>
+  <p class="caution">No direct commits to <code>main</code>. A branch holds the whole repository, so members change only their group folder unless authorised to edit shared resources.</p>
+</section>
+
+<section id="agents">
+  <h2>Proposed multi-agent architecture</h2>
+  <div class="flow" role="img" aria-label="Flow from farmer through problem understanding agent, agent manager, specialised agents, shared data foundation, analytics and knowledge retrieval, solution agent, reviewer agent, human review, to final response">
+    <div class="node">Farmer / user</div><div class="arrow"></div>
+    <div class="node">Problem Understanding Agent</div><div class="arrow"></div>
+    <div class="node key">Agent Manager</div><div class="arrow"></div>
+    <div class="fan"><div class="node">Weather</div><div class="node">Crop / Pest</div><div class="node">Market / Soil</div><div class="node">… specialised agents</div></div><div class="arrow"></div>
+    <div class="node">Shared Data Foundation</div><div class="arrow"></div>
+    <div class="fan"><div class="node">Analytics tools</div><div class="node">Knowledge retrieval</div></div><div class="arrow"></div>
+    <div class="node">Solution Agent</div><div class="arrow"></div>
+    <div class="node key">Reviewer Agent</div><div class="arrow"></div>
+    <div class="node human">Human review, when required</div><div class="arrow"></div>
+    <div class="node">Final response</div>
+  </div>
+  <p>The Agent Manager calls only the capabilities a question needs. This is a conceptual architecture: the build may use fewer agents and simpler interfaces. What matters is meaningful coordination, data and tool use, evidence-aware responses and validation.</p>
+</section>
+
+<div class="part">Part IV · Management and evaluation</div>
+
+<section id="trainers">
+  <h2>Trainer responsibilities</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Activity</th><th>Trainer 1</th><th>Trainer 2</th></tr></thead>
+    <tbody>
+      <tr><td>Group support</td><td>Groups 01–05</td><td>Groups 06–10</td></tr>
+      <tr><td>Problem review, technical guidance, PR review</td><td>Assigned groups</td><td>Assigned groups</td></tr>
+      <tr><td>Data foundation</td><td colspan="2">Shared coordination</td></tr>
+      <tr><td>Capstone evaluation</td><td colspan="2">Joint</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Both trainers maintain the repository, data standards, architecture and integration requirements, and prepare the repository, sample datasets, materials and scenarios before the programme begins.</p>
+</section>
+
+<section id="assessment">
+  <h2>Assessment</h2>
+  <p>Assessment measures the ability to understand and improve agricultural workflows, not coding alone.</p>
+  <div class="weights" id="weights"></div>
+  <p class="note">Individual work is evidenced through documentation, commits, pull requests, reviews and the ability to explain it. Group assessment covers integration quality, evidence, analysis and the demonstration.</p>
+</section>
+
+<section id="success">
+  <h2>Success criteria</h2>
+  <ol class="success">
+    <li>All ten groups understand their agricultural systems.</li>
+    <li>The cohort establishes a reusable Agricultural Data Foundation.</li>
+    <li>Data sources and limitations are documented.</li>
+    <li>Each group completes an eight-element U0 problem formulation.</li>
+    <li>Each group completes relevant U1 and U2 work.</li>
+    <li>U3 is completed where data permits, or its limits are documented.</li>
+    <li>Each group builds a knowledge retrieval capability.</li>
+    <li>Each group implements a specialised agent or tool-using workflow.</li>
+    <li>The final system shows agent coordination and validation.</li>
+    <li>All contributions are integrated through reviewed pull requests.</li>
+    <li>The final project can be demonstrated and evaluated.</li>
+    <li>Individual contributions are traceable.</li>
+  </ol>
+</section>
+
+<section id="risks">
+  <h2>Risks and mitigation</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>Limited Nepal-specific datasets</td><td>Combine public datasets, institutional documents and primary data</td></tr>
+      <tr><td>Unreliable data sources</td><td>Document provenance, resolution, quality and limitations</td></tr>
+      <tr><td>API access restrictions</td><td>Cache data and prepare local sample datasets</td></tr>
+      <tr><td>Insufficient historical data</td><td>Make U3 conditional; avoid unsupported predictions</td></tr>
+      <tr><td>Inconsistent group data formats</td><td>Set common standards in Module 1</td></tr>
+      <tr><td>Inconsistent agricultural knowledge</td><td>Keep source metadata and seek expert review</td></tr>
+      <tr><td>Excessive agent complexity</td><td>Start with simple agents and expand step by step</td></tr>
+      <tr><td>Insufficient workshop support</td><td>Add a teaching assistant or split workshop sessions</td></tr>
+      <tr><td>Unsupported AI recommendations</td><td>Use evidence, RAG, review and human checkpoints</td></tr>
+      <tr><td>Disconnected group applications</td><td>Require common data structures and interfaces</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="checklist">
+  <h2>Pre-programme preparation checklist</h2>
+  <div class="prog"><span id="progTxt"></span><button type="button" id="reset">Clear ticks</button><span class="note">Ticks are saved in this browser only.</span></div>
+  <div class="checks" id="checks"></div>
+</section>
+
+<section id="outcome">
+  <h2>Final programme outcome</h2>
+  <p>Not ten independent chatbots or unrelated AI apps, but one integrated Agricultural Agentic AI project with:</p>
+  <ul>
+    <li>A shared Agricultural Data Foundation with common geographical and environmental resources.</li>
+    <li>Agricultural knowledge resources.</li>
+    <li>Ten specialised agricultural intelligence components.</li>
+    <li>Common interfaces and reusable tools.</li>
+    <li>An Agent Manager, plus a Reviewer and human-validation workflow.</li>
+    <li>A demonstrable, evaluated prototype.</li>
+  </ul>
+  <div class="closing">
+    <p>Start with real agricultural experiences. Help participants observe and understand the agricultural system. Introduce data and concepts when they become necessary. Let participants practise the required skills and apply them to their own agricultural problems. Build the common data foundation, develop specialised intelligence, and integrate the results into one Agricultural Agentic AI system.</p>
+    <strong>Experience first. Theory second. Application throughout.</strong>
+  </div>
+</section>
+</main>
+</div>
+
+<script>
+const themes=[
+["Crop Pest Intelligence","Pest identification; pest monitoring; crop damage assessment; crop protection knowledge"],
+["Crop Disease Intelligence","Disease identification; symptom monitoring; disease severity assessment; disease management knowledge"],
+["Smart Irrigation Intelligence","Soil moisture; rainfall monitoring; crop water requirements; irrigation scheduling"],
+["Soil and Nutrient Intelligence","Soil properties; nutrient requirements; fertiliser management; soil health monitoring"],
+["Agricultural Market Intelligence","Price monitoring; supply and demand; market comparison; selling opportunities"],
+["Dairy Production Intelligence","Milk-yield monitoring; feeding management; animal health; lactation analysis"],
+["Livestock Health Intelligence","Animal identification; health records; symptom monitoring; veterinary advisory"],
+["Agricultural Extension Intelligence","Farmer enquiries; agricultural knowledge; expert referral; advisory communication"],
+["Agricultural Supply Chain Intelligence","Harvest management; grading and sorting; storage; transportation and logistics"],
+["Smart Greenhouse Intelligence","Environmental monitoring; temperature and humidity; ventilation; environmental control"]];
+document.getElementById("themes").innerHTML=themes.map(([t,s],i)=>`<tr><td class="gnum">${String(i+1).padStart(2,"0")}</td><td><b>${t}</b></td><td>${s.split("; ").join(" · ")}</td></tr>`).join("");
+
+const M=[
+{id:"m1",t:"Agricultural Understanding and Data Preparation",s:7,w:3,purpose:"Understand the agricultural systems behind each group's problem and establish the initial common Agricultural Data Foundation.",
+ steps:{
+  Experience:["Realistic situations: fruit fly damage in cucumber; when to irrigate; soil nutrient needs; changes in milk production; unreliable market prices.","Groups discuss what is happening, who is involved, what decisions are made and what information is needed.","<i>Output: initial agricultural questions and observations.</i>"],
+  Observe:["Investigate the workflow, e.g. for crop pest: production activities, growth stages, pest monitoring, damage observations, current practices, farmer and extension roles.","Identify information gaps rather than assume causes or solutions.","<i>Output: preliminary workflow and stakeholder map.</i>"],
+  Discover:["Production systems, crop and livestock cycles, stakeholders and value chains, operations and decisions, observations and measurements, data sources and categories, quality and provenance, geographical and environmental information, records and documents.","<i>Output: agricultural data requirement list.</i>"],
+  Practice:["Explore public datasets; inspect CSV/Excel; understand variables, units and types; find missing values and duplicates; check date, location and category consistency; examine geographical and weather data; record source and limitations; prepare an initial clean dataset.","<i>Output: prepared datasets and a data-source register.</i>"],
+  Apply:["All groups contribute to one shared foundation: geography, weather and climate, crop information, soil and environment, documents, metadata, and reusable acquisition and processing utilities.","Each group also lists its domain-specific data needs."]},
+ deliv:["System Understanding Document","Workflow Diagram","Stakeholder Map","Initial Data Requirements","Data Source Register","Data Inventory","Data Quality & Limitation Notes","Cohort: Common Data Dictionary","Cohort: Data Foundation structure","Cohort: source & metadata standards"],
+ caution:"Module 1 establishes understanding and data availability. It does not define the final problem; groups refine data requirements after U0."},
+{id:"m2",t:"U0: Agricultural Problem Formulation",s:4,w:2,kq:"What exactly is the agricultural problem, and what needs to be investigated?",
+ steps:{
+  Experience:["Revisit the situation with Module 1 findings. Cucumber farmers report fruit fly damage, but extent, species, practices and contributing factors are not yet established.","What is the actual problem? What should happen? What is happening? What evidence supports the concern? What is unknown?"],
+  Observe:["From the understanding document, workflow, stakeholder map and inventory, separate what is reported, evidenced, assumed, unknown and missing."],
+  Discover:["The eight elements of U0: <b>Context</b> · <b>Stakeholders</b> · <b>Expected condition</b> · <b>Observed condition</b> · <b>Gap and significance</b> · <b>Evidence and uncertainty</b> · <b>Scope and constraints</b> · <b>Formulated problem</b>."],
+  Practice:["Apply the eight elements to the group theme; refine the problem, write investigation questions, update data requirements."],
+  Apply:["Create the formal U0 record and add it to the Agricultural Problem Bank. Teaching example: <code>AG-U0-001</code> Fruit Fly Infestation and Management Challenges in Cucumber Production."]},
+ deliv:["U0 Problem Formulation","Evidence & Uncertainty Register","Investigation Questions","Scope & Constraints","Updated Data Requirements","Problem Bank entry"],
+ caution:"The cucumber case is a teaching scenario. Infestation rates, species, causes and intervention effects must come from evidence, not be invented."},
+{id:"m3",t:"Development Infrastructure and GitHub",s:2,w:1,purpose:"Establish the collaborative development environment.",
+ steps:{
+  Experience:["Several people work on the same project and must manage changes without overwriting each other."],
+  Observe:["Why files need organisation, changes need tracking, contributions need review and shared resources need controlled updates."],
+  Discover:["Git and GitHub; repositories, folders and branches; commits, push and pull; pull requests and review; Markdown; branch protection."],
+  Practice:["Clone, branch, write Markdown, commit and push, open a pull request, review changes."],
+  Apply:["Each group sets up its project folder and branches."]},
+ deliv:["Working repository","Group & member branches","Standard folder structure","README & contribution guide","Practice pull request"]},
+{id:"m4",t:"U1: Descriptive Analytics",s:5,w:2,kq:"What is happening?",
+ steps:{
+  Experience:["A dataset tied to the group's problem, e.g. fruits inspected and damaged across ten cucumber farms. What can we learn from it?"],
+  Observe:["Number of farms and observations, variables and units, missing values, differences between farms, possible patterns."],
+  Discover:["Data types, cleaning and profiling, frequency and percentage, mean, median and range, summary tables, bar/line/pie charts, careful interpretation."],
+  Practice:["Use an AI coding agent with structured Markdown instructions on CSV/Excel: count affected farms, compute damage proportion, compare farms, find min/max/mean, chart and report. IT track may use Python, pandas, NumPy and plotting libraries."],
+  Apply:["Each group completes a U1 analysis of its problem."]},
+ deliv:["Data Description","U1 Analysis Requirements","Tables & charts","U1 Results","Validated Descriptive Report"],
+ caution:"The report separates observations from interpretations and discloses data limitations."},
+{id:"m5",t:"U2: Diagnostic Analytics",s:5,w:2,kq:"Why might it be happening?",
+ steps:{
+  Experience:["U1 results show some farms with higher fruit damage than others. Why?"],
+  Observe:["Candidate factors (not established causes): temperature and humidity, rainfall and season, growth stage, pest monitoring and trap counts, management practices, crop variety."],
+  Discover:["Correlation, group comparison, regression, statistical significance, relationships between variables, confounding, association vs causation, evidence-based interpretation."],
+  Practice:["Is damage associated with trap counts? Does it differ by growth stage? By management practice? Is weather associated with damage?"],
+  Apply:["Each group writes its U2 diagnostic report."]},
+ deliv:["Diagnostic Questions","Potential Factors Register","Data Requirements","Analysis Methods","Tables & visualisations","U2 Diagnostic Report"],
+ caution:"Statistical association is never presented as proof of causation."},
+{id:"m6",t:"U3: Predictive Analytics",s:4,w:2,kq:"What might happen next?",conditional:true,
+ steps:{
+  Experience:["A farmer wants to know which cucumber farms may face higher fruit fly risk in the coming week."],
+  Observe:["What to predict, available history, useful variables, the relevant period, and the uncertainty."],
+  Discover:["Features and targets, train/test split, regression and classification, time-series forecasting, baselines, evaluation, uncertainty."],
+  Practice:["Where data allows: predict damage percentage, classify low/medium/high risk, estimate trap counts, find seasonal risk patterns."],
+  Apply:["Prepare U3 work, or document why the data does not justify prediction."]},
+ deliv:["Prediction Objectives","Prediction Variables Register","Data Requirements","Training & Evaluation","Prediction Results","U3 Predictive Report"],
+ caution:"Simulated data may be used for demonstration, but its predictions must be labelled as simulated."},
+{id:"m7",t:"RAG, Local LLM and Agent Basics",s:6,w:2,purpose:"Introduce knowledge-based intelligence and basic agent capabilities.",
+ steps:{
+  Experience:["“What management practices should cucumber farmers consider when fruit fly damage is reported?” Numbers alone cannot answer this. What knowledge is needed to respond responsibly?"],
+  Observe:["Manuals, research papers, extension publications, crop protection guidelines, local practices, source verification."],
+  Discover:["LLMs and local LLMs, document processing, chunking and embeddings, vector search, RAG, prompting and structured output, tools and basic agent workflows."],
+  Practice:["Organise documents → extract content → build a basic RAG pipeline → retrieve → connect to a local LLM → generate source-aware answers → check output against sources.","Suggested: Python, FAISS, sentence-transformers, LangChain or LlamaIndex, Gemma or Llama, chosen to fit available hardware."],
+  Apply:["Each group builds a basic knowledge retrieval component and an initial tool-using agent. A full orchestration framework is not required per group."]},
+ deliv:["Knowledge Source Register","Document Repository","RAG Prototype","Retrieval Test Cases","Basic Agent Specification","Source-aware response examples"]},
+{id:"m8",t:"Multi-Agent Integration and U4: Decision and Action",s:5,w:2,kq:"What should be done, and how can the workflow be improved?",
+ steps:{
+  Experience:["An extension officer gets a farmer's pest question and must understand it, check conditions, review observations, retrieve guidance and prepare advice."],
+  Observe:["Separate tasks: understand the question, identify location and crop, retrieve data, analyse, retrieve knowledge, draft a response, review and validate."],
+  Discover:["Specialised agents, Agent Manager, tool calling, agent communication, orchestration, solution generation, Reviewer Agent, human-in-the-loop, U4.","A model performs a defined analytical task; an agent selects tools, retrieves information and coordinates tasks toward an objective."],
+  Practice:["Build a manageable workflow: user → Problem Understanding Agent → Agent Manager → specialised agents (weather, data, pest, disease, irrigation, soil, market, livestock, knowledge retrieval) → Solution Agent → Reviewer → human review where required."],
+  Apply:["Integrate each group's component with the common data foundation and agent interfaces; identify actions, decision requirements, constraints and monitoring needs under U4."]},
+ deliv:["Agent Architecture","Agent Responsibilities","Input/Output Definitions","Tool & API Interfaces","Agent Manager Workflow","Reviewer & Human Review Workflow","U4 Decision & Action","Integration Test Cases"]},
+{id:"m9",t:"Capstone and Evaluation",s:2,w:4,
+ steps:{
+  Experience:["Groups receive realistic scenarios and demonstrate how their integrated system handles them."],
+  Observe:["Does the system understand the question, pick relevant capabilities, retrieve suitable information, use analytics correctly, give evidence-aware answers, communicate uncertainty and flag when human review is needed?"],
+  Discover:["Criteria: functional correctness, data quality and provenance, analytical validity, retrieval relevance, agent coordination, output quality, usability, safety and limitations."],
+  Practice:["Test with representative cases, recording input, expected behaviour, actual output, evidence used, errors and improvements."],
+  Apply:["Demonstrate the project and explain how each contribution fits the integrated system."]},
+ deliv:["Final Group Project","Test & Evaluation Report","Technical Documentation","Final Demonstration","Individual Contribution Record","Future Recommendations"]}
+];
+const MAX=10;
+document.getElementById("sched").innerHTML=M.map((m,i)=>`<tr><td><a href="#${m.id}" style="color:inherit;text-decoration:none"><b>${i+1}.</b> ${m.t}</a>${m.conditional?' <span class="note">(conditional)</span>':''}
+<div class="bar"><div class="s" style="width:${m.s/MAX*100}%"></div><div class="w" style="width:${m.w/MAX*100}%"></div></div></td>
+<td class="n">${m.s} h</td><td class="n">${m.w} h</td><td class="n">${m.s+m.w} h</td></tr>`).join("");
+document.getElementById("tocMods").innerHTML=M.map((m,i)=>`<a href="#${m.id}">${i+1}. ${m.t.replace(/^U\d: /,"").split(" and ")[0]}</a>`).join("");
+document.getElementById("modules").innerHTML=M.map((m,i)=>`<article class="mod" id="${m.id}">
+<div class="mod-head"><div style="display:grid;gap:2px"><span class="k">Module ${i+1}</span><h3>${m.t}</h3></div>
+<div class="hours"><span>${m.s+m.w} h total</span><span>${m.s} h self-study</span><span class="w">${m.w} h workshop</span></div></div>
+${m.kq?`<p class="kq">Key question: ${m.kq}</p>`:""}${m.purpose?`<p>${m.purpose}</p>`:""}
+<div class="steps">${Object.entries(m.steps).map(([k,v])=>`<div class="step"><b>${k}</b><div>${v.map(x=>`<p>${x}</p>`).join("")}</div></div>`).join("")}</div>
+<div style="display:grid;gap:8px"><span class="note" style="font-weight:600">Deliverables</span><div class="deliv">${m.deliv.map(d=>`<span>${d}</span>`).join("")}</div></div>
+${m.caution?`<p class="caution">${m.caution}</p>`:""}</article>`).join("");
+
+const W=[["Agricultural reality and value-chain understanding",10],["Operational workflow mapping",10],["U0 problem formulation",15],["Agricultural Problem Bank construction",15],["Intelligence and data requirements",15],["Agent design and architecture",15],["Working prototype and evaluation",20]];
+document.getElementById("weights").innerHTML=W.map(([n,v])=>`<div class="wrow"><span>${n}</span><div class="wbar"><div style="width:${v*5}%"></div></div><b>${v}%</b></div>`).join("")+`<div class="wrow" style="border-top:2px solid var(--fg);padding-top:6px"><b style="text-align:left">Total</b><span></span><b>100%</b></div>`;
+
+const C={"Curriculum and teaching":["Finalise the 60-hour timetable","Prepare scenarios for all ten themes","Prepare the five-step cycle for every module","Prepare self-study materials and workshop exercises","Prepare deliverable templates","Prepare assessment rubrics"],
+"Data foundation":["Identify public agricultural datasets","Verify API access and usage conditions","Prepare sample geographical and weather datasets","Identify agricultural reference documents","Prepare a common data dictionary","Prepare data-source and provenance templates","Label all simulated teaching datasets"],
+"Technical infrastructure":["Create the central GitHub repository","Create main and integration branches if required","Set up group folders and branches","Set member branch naming conventions","Protect main","Write contribution and pull-request guidelines","Confirm local LLM and hardware environment","Prepare the RAG and agent environment"],
+"Participants and delivery":["Run the skills survey","Form ten balanced groups","Assign group coordinators","Assign agricultural themes","Allocate trainer responsibilities","Confirm workshop facilities and support"]};
+const KEY="agritech-checklist";let saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
+let n=0;document.getElementById("checks").innerHTML=Object.entries(C).map(([g,items])=>`<fieldset><legend>${g}</legend>${items.map(it=>{const id="ck"+(n++);return `<label for="${id}"><input type="checkbox" id="${id}" ${saved[id]?"checked":""}><span>${it}</span></label>`}).join("")}</fieldset>`).join("");
+const boxes=[...document.querySelectorAll("#checks input")];
+function prog(){const d=boxes.filter(b=>b.checked).length;document.getElementById("progTxt").textContent=`${d} of ${boxes.length} done`}
+boxes.forEach(b=>b.addEventListener("change",()=>{saved[b.id]=b.checked;try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){}prog()}));
+document.getElementById("reset").addEventListener("click",()=>{boxes.forEach(b=>b.checked=false);saved={};try{localStorage.removeItem(KEY)}catch(e){}prog()});prog();
+
+const links=[...document.querySelectorAll("#toc a")];
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){links.forEach(a=>a.classList.toggle("on",a.getAttribute("href")==="#"+e.target.id))}})},{rootMargin:"-10% 0px -80% 0px"});
+links.forEach(a=>{const t=document.querySelector(a.getAttribute("href"));if(t)obs.observe(t)});
+</script>
+
+</html>
