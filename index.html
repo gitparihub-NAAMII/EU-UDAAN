@@ -11567,7 +11567,11 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
   #pmTab .pm-cal-day.out{ background:transparent; border-style:dashed; opacity:.4; }
   #pmTab .pm-cal-day.sat{ background:var(--cream); }
   #pmTab .pm-cal-day.today{ border:2px solid var(--brand); }
-  #pmTab .pm-cal-num{ font-size:11.5px; font-weight:800; color:var(--charcoal-soft); }
+  #pmTab .pm-cal-num{ font-size:11.5px; font-weight:800; color:var(--charcoal-soft); display:flex; justify-content:space-between; }
+  #pmTab .pm-cal-day[data-calday]{ cursor:copy; }
+  #pmTab .pm-cal-add{ opacity:0; color:var(--brand); font-weight:900; }
+  #pmTab .pm-cal-day[data-calday]:hover{ border-color:var(--brand); }
+  #pmTab .pm-cal-day[data-calday]:hover .pm-cal-add{ opacity:1; }
   #pmTab .pm-cal-day.today .pm-cal-num{ color:var(--brand); }
   #pmTab .pm-cal-ev{ font-size:10.5px; font-weight:700; line-height:1.25; padding:3px 5px; border-radius:6px; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
     background:var(--cream); color:var(--charcoal); border-left:3px solid var(--coolgrey); }
@@ -12223,11 +12227,11 @@ function submitMemberUpdate(box){
 }
 
 /* ---------- add / edit / delete (owner) ---------- */
-function openEditor(k, id){
+function openEditor(k, id, preset){
   var def = defOf(k); if(!def || !pmAllowed()) return;
   var sh = sheetOf(k), row = id ? sh.rows.find(function(r){ return r.id === id; }) : null;
   if(id && !row) return;
-  var vals = row || {};
+  var vals = row || preset || {};
   var fields = sh.cols.filter(function(c){ return c !== 'Reached'; }).map(function(c){
     var v = vals[c] || '', fid = 'pmf_' + c.replace(/[^a-z0-9]/gi, '_');
     var ch = choicesFor(k, c), input;
@@ -12696,7 +12700,8 @@ function cohortCalendarHtml(rows){
   for(var i = 0; i < lead; i++) cells += '<div class="pm-cal-day out"></div>';
   for(var d = 1; d <= daysIn; d++){
     var dt = new Date(y, m, d), isT = dt.getTime() === today.getTime(), sat = dt.getDay() === 6;
-    cells += '<div class="pm-cal-day' + (isT ? ' today' : '') + (sat ? ' sat' : '') + '"><div class="pm-cal-num">' + d + '</div>' + (byDay[d] || []).map(chip).join('') + '</div>';
+    cells += '<div class="pm-cal-day' + (isT ? ' today' : '') + (sat ? ' sat' : '') + '" data-calday="' + fmtDate(dt) + '" title="Click an empty part of the day to add a cohort on ' + fmtDate(dt) + '">'
+      + '<div class="pm-cal-num">' + d + '<span class="pm-cal-add">+</span></div>' + (byDay[d] || []).map(chip).join('') + '</div>';
   }
   var tail = (7 - (lead + daysIn) % 7) % 7;
   for(var j = 0; j < tail; j++) cells += '<div class="pm-cal-day out"></div>';
@@ -12956,6 +12961,13 @@ function wire(box){
   if(cp) cp.addEventListener('click', function(){ st.calMonth = new Date(st.calMonth.getFullYear(), st.calMonth.getMonth() - 1, 1); render(); });
   if(cn) cn.addEventListener('click', function(){ st.calMonth = new Date(st.calMonth.getFullYear(), st.calMonth.getMonth() + 1, 1); render(); });
   if(ct) ct.addEventListener('click', function(){ st.calMonth = null; render(); });
+  // click an empty part of a calendar day to add a cohort on that date
+  if(pmAllowed()) box.querySelectorAll('.pm-cal-day[data-calday]').forEach(function(cell){
+    cell.addEventListener('click', function(e){
+      if(e.target.closest('.pm-cal-ev')) return;          // clicking a cohort or meeting opens that instead
+      openEditor('cohorts', null, { Date:cell.dataset.calday, Programme:'AI Native', Format:'In person', Status:'Tentative' });
+    });
+  });
   var sc = box.querySelector('#pmSeedCohorts'); if(sc) sc.addEventListener('click', function(){
     sc.disabled = true; sc.textContent = 'Loading…';
     var nd = cloneData(); nd.cohorts = { cols:defOf('cohorts').cols.slice(), rows:seedCohortRows(), desc:'AI School cohorts: delivered and tentative' };
