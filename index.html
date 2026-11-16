@@ -11579,6 +11579,22 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
   #pmTab .pm-cal-ev.r{ background:var(--cancelled-bg); color:var(--cancelled-ink); border-left-color:var(--cancelled); }
   #pmTab .pm-cal-ev.late{ background:#fff; color:var(--cancelled-ink); border:1px dashed var(--cancelled); border-left:3px solid var(--cancelled); }
   #pmTab .pm-cal-ev.fnd{ box-shadow:inset -3px 0 0 var(--reserved); }
+  #pmTab .pm-cal-ev.mt{ background:var(--paper); color:var(--charcoal-soft); border:1px solid var(--line); border-left:3px solid var(--charcoal-soft); }
+  #pmTab .pm-meet-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px; }
+  #pmTab .pm-meet-card{ cursor:pointer; margin:0; }
+  #pmTab .pm-meet-card:hover{ border-color:var(--brand); }
+  #pmTab .pm-meet-card p{ margin:8px 0 0; font-size:12.5px; color:var(--charcoal); line-height:1.5; }
+  #pmTab .pm-meet-top{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:4px; font-size:14px; }
+  #pmTab .pm-checks{ display:flex; flex-wrap:wrap; gap:6px 14px; }
+  #pmTab .pm-check{ display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--charcoal); text-transform:none; letter-spacing:0; }
+  #pmTab .pm-actrow{ display:grid; grid-template-columns:minmax(180px, 3fr) minmax(120px, 1.3fr) 150px auto 32px; gap:6px; align-items:center; margin-bottom:6px; }
+  #pmTab .pm-actrow input, #pmTab .pm-actrow select{ border:1px solid var(--line); border-radius:8px; padding:7px 9px; font:inherit; font-size:13px; background:var(--cream); color:var(--charcoal); min-width:0; }
+  @media(max-width:700px){ #pmTab .pm-actrow{ grid-template-columns:1fr 1fr; } }
+  #pmTab .pm-minutes summary{ cursor:pointer; font-size:14px; }
+  #pmTab .pm-minutes h4{ margin:12px 0 4px; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--charcoal-soft); }
+  #pmTab .pm-minutes ul{ margin:0; padding-left:18px; font-size:13px; line-height:1.6; }
+  #pmTab .pm-pre{ white-space:pre-wrap; font-size:13px; line-height:1.55; }
+  #pmTab tr.pm-mine td{ background:var(--proposed-bg); font-weight:700; }
   #pmTab .pm-tools{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:-4px 0 14px; font-size:12.5px; color:var(--charcoal-soft); font-weight:600; }
   #pmTab .pm-btn{ display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:var(--paper); color:var(--charcoal);
     border-radius:9px; padding:6px 12px; font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; text-decoration:none; }
@@ -11971,10 +11987,16 @@ function publishPeople(){
   PM_TEAM.forEach(function(m){
     var sheets = {};
     Object.keys(MEMBER_EDIT).forEach(function(k){ sheets[k] = { cols:sheetOf(k).cols, rows:rowsOf(k).filter(function(r){ return ownsRow(m, r); }) }; });
-    var sig = JSON.stringify(sheets);
+    // read-only copy of the latest meeting minutes, with each action's current To-do status
+    var meetings = meetRows().slice().sort(byMeetDateDesc).slice(0, 20).map(function(x){
+      return { id:x.id, Date:x.Date, Meeting:x.Meeting, present:x.present || [], others:x.others || '', Agenda:x.Agenda || '', Notes:x.Notes || '',
+        Decisions:x.Decisions || '', Risks:x.Risks || '', Next:x.Next || '',
+        actions:(x.actions || []).filter(function(a){ return a.action; }).map(function(a){ var t = linkedTodo(a); return { action:a.action, owner:a.owner || '', due:a.due || '', status:t ? t.Status || '' : '' }; }) };
+    });
+    var sig = JSON.stringify([sheets, meetings]);
     if(st.peopleSig[m.email] === sig) return;
     st.peopleSig[m.email] = sig;
-    c.doc(low(m.email)).set({ name:m.name, email:low(m.email), sheets:sheets, updatedAt:stamp() })
+    c.doc(low(m.email)).set({ name:m.name, email:low(m.email), sheets:sheets, meetings:meetings, updatedAt:stamp() })
       .catch(function(e){ delete st.peopleSig[m.email]; console.warn('Could not share rows with ' + m.email, e); });
   });
 }
@@ -12413,6 +12435,185 @@ function seedCohortRows(){
 function learnersOf(r){ var n = parseInt(String(r.Learners || '').replace(/[^\d]/g, ''), 10); return isNaN(n) ? 0 : n; }
 function cohortDone(r){ return low(r.Status) === 'delivered'; }
 function cohortLive(r){ return !/^(cancelled|delivered)$/.test(low(r.Status)); }
+/* ---------- Meetings (minutes) ---------- */
+var MEET_TYPES = ['Monday team check-in', 'Tuesday UDAAN project meeting', 'Other meeting'];
+function meetRows(){ return rowsOf('meetings'); }
+function byMeetDateDesc(a, b){ return (parseDate(b.Date) || 0) - (parseDate(a.Date) || 0); }
+function meetClone(m){ return JSON.parse(JSON.stringify(m)); }
+function ownerName(){ var m = memberOf(curEmail()); return m ? m.name : 'Sumi Dhakal'; }
+function linkedTodo(a, data){ var rows = ((data || st.data || {}).todo || {}).rows || []; return a && a.todoId ? rows.find(function(r){ return r.id === a.todoId; }) : null; }
+function autoAgenda(type, dateStr){
+  var lines = [], d = parseDate(dateStr) || new Date(); d.setHours(0, 0, 0, 0);
+  var wkEnd = new Date(d); wkEnd.setDate(wkEnd.getDate() + 7);
+  var prev = meetRows().filter(function(m){ return m.Meeting === type && (parseDate(m.Date) || 0) < d; }).sort(byMeetDateDesc)[0];
+  if(prev){
+    var open = (prev.actions || []).filter(function(a){ var t = linkedTodo(a); return a.action && !(t && isDone(t.Status)); });
+    if(open.length){ lines.push('Open actions from ' + prev.Date + ':'); open.forEach(function(a){ lines.push('- ' + a.action + (a.owner ? ' (' + a.owner + (a.due ? ', due ' + a.due : '') + ')' : '')); }); }
+  }
+  var todos = rowsOf('todo').filter(function(r){ var x = parseDate(r.Due); return !isDone(r.Status) && x && x < wkEnd; });
+  if(todos.length){ lines.push('To-dos due this week or overdue:'); todos.forEach(function(r){ lines.push('- ' + strip(r.Task) + ' (' + (r.Owner || 'no owner') + ', due ' + r.Due + ')'); }); }
+  var coh = rowsOf('cohorts').filter(function(r){ var x = parseDate(r.Date); return cohortLive(r) && x && x >= d && x < wkEnd; })
+    .sort(function(a, b){ return parseDate(a.Date) - parseDate(b.Date); });
+  if(coh.length){ lines.push('Trainings in the next 7 days:'); coh.forEach(function(r){ lines.push('- ' + r.Date + ' · ' + (r.ID ? r.ID + ' · ' : '') + r.Partner + ' (' + r.Status + ')'); }); }
+  var since = prev ? parseDate(prev.Date) : null;
+  var who = {}; st.updates.forEach(function(u){ var t = tsDate(u.at); if(!since || !t || t >= since) who[u.byName || u.byEmail] = 1; });
+  if(Object.keys(who).length) lines.push('Team updates sent since the last meeting: ' + Object.keys(who).join(', '));
+  if(type === MEET_TYPES[1]){
+    lines.push('Updates from other UDAAN team members');
+    lines.push('Tangible update: platform progress, certificate and skill map, expected date for the final updated platform');
+  }
+  lines.push('Any other business');
+  return lines.join('\n');
+}
+function newMeeting(type){
+  var dt = fmtDate(new Date());
+  return { id:uid(), Date:dt, Meeting:type, present:teamNames().slice(), others:'', Agenda:autoAgenda(type, dt), Notes:'', Decisions:'', actions:[{ action:'', owner:'', due:'' }], Risks:'', Next:'', isNew:true };
+}
+function meetLines(s){ return String(s || '').split(/\r?\n/).map(function(x){ return x.replace(/^\s*[-•*]\s*/, '').trim(); }).filter(Boolean); }
+function absentOf(m){ var p = m.present || []; return teamNames().filter(function(n){ return p.indexOf(n) < 0; }); }
+function meetingMd(m){
+  var acts = (m.actions || []).filter(function(a){ return a.action; });
+  return '# Meeting notes: ' + m.Date + '\n\n**Meeting:** ' + m.Meeting + '  \n**Present:** ' + (m.present || []).concat(m.others ? [m.others] : []).join(', ') + '  \n**Absent:** ' + absentOf(m).join(', ') + '\n\n'
+    + '## Agenda\n\n' + (m.Agenda || '') + '\n\n'
+    + '## Decisions\n\n' + (meetLines(m.Decisions).map(function(x){ return '- ' + x; }).join('\n') || '- ') + '\n\n'
+    + '## Actions\n\n| Action | Owner | Due |\n|---|---|---|\n' + (acts.map(function(a){ return '| ' + a.action.replace(/\|/g, '\\|') + ' | ' + (a.owner || '') + ' | ' + (a.due || '') + ' |'; }).join('\n') || '|  |  |  |') + '\n\n'
+    + '## Risks or challenges raised\n\n' + (meetLines(m.Risks).map(function(x){ return '- ' + x; }).join('\n') || '- ') + '\n\n'
+    + '## Notes\n\n' + (m.Notes || '') + '\n' + (m.Next ? '\n**Next meeting:** ' + m.Next + '\n' : '');
+}
+function downloadText(name, text){
+  var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type:'text/markdown' })); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function pageMeetings(){
+  if(st.meetDraft) return pageMeetingEdit(st.meetDraft);
+  var rows = meetRows().slice().sort(byMeetDateDesc), q = low(st.mq || '');
+  if(st.mtype) rows = rows.filter(function(m){ return m.Meeting === st.mtype; });
+  if(q) rows = rows.filter(function(m){ return low([m.Date, m.Meeting, m.Agenda, m.Notes, m.Decisions, m.Risks, (m.actions || []).map(function(a){ return a.action + ' ' + a.owner; }).join(' ')].join(' ')).indexOf(q) >= 0; });
+  var cards = rows.map(function(m){
+    var acts = (m.actions || []).filter(function(a){ return a.action; }), doneA = acts.filter(function(a){ var t = linkedTodo(a); return t && isDone(t.Status); }).length;
+    var snippet = strip(m.Notes || m.Agenda || '').slice(0, 160);
+    return '<div class="pt-card pm-meet-card" data-meet="' + m.id + '" role="button" tabindex="0"><div class="pm-meet-top"><b>' + esc(m.Date) + '</b>'
+      + '<span class="pm-badge ' + (m.Meeting === MEET_TYPES[0] ? 'b' : (m.Meeting === MEET_TYPES[1] ? 'p' : '')) + '">' + esc(m.Meeting) + '</span></div>'
+      + '<div class="pm-muted">' + (m.present || []).length + ' present · ' + meetLines(m.Decisions).length + ' decisions · ' + acts.length + ' actions (' + doneA + ' done)</div>'
+      + (snippet ? '<p>' + esc(snippet) + (snippet.length >= 160 ? '…' : '') + '</p>' : '') + '</div>';
+  }).join('') || '<div class="pm-empty">No meetings yet. Start one with the buttons above.</div>';
+  return '<div class="pt-card"><div class="pm-card-head"><div><h3>Meeting minutes</h3><div class="sub">Start the minutes for today’s meeting. The agenda fills itself from open actions, to-dos due this week and upcoming trainings. When you save, actions go to To-do and decisions to Risks & decisions. The team can read the minutes in My updates.</div></div></div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap">' + MEET_TYPES.map(function(t){ return '<button class="pm-btn' + (t === MEET_TYPES[2] ? '' : ' primary') + '" data-newmeet="' + esc(t) + '">+ ' + esc(t) + '</button>'; }).join('') + '</div></div>'
+    + '<div class="pt-filters"><div class="pt-filt" style="flex:1 1 200px"><label>Search</label><input id="pmMeetQ" type="search" placeholder="Search minutes, e.g. MoU or Tangible" value="' + esc(st.mq || '') + '" style="width:100%"></div>'
+    + '<div class="pt-filt"><label>Meeting</label><select id="pmMeetType"><option value="">All</option>' + MEET_TYPES.map(function(t){ return '<option' + (t === st.mtype ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select></div></div>'
+    + '<div class="pm-meet-list">' + cards + '</div>';
+}
+function pageMeetingEdit(m){
+  var names = teamNames(), present = m.present || [];
+  var opt = function(list, v){ var o = list.slice(); if(v && o.indexOf(v) < 0) o.push(v); return '<option value=""></option>' + o.map(function(x){ return '<option' + (x === v ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join(''); };
+  var acts = (m.actions || []).map(function(a, i){
+    var t = linkedTodo(a);
+    return '<div class="pm-actrow"><input type="text" data-ai="' + i + '" data-af2="action" value="' + esc(a.action) + '" placeholder="What needs doing">'
+      + '<select data-ai="' + i + '" data-af2="owner">' + opt(names, a.owner) + '</select>'
+      + '<input type="date" data-ai="' + i + '" data-af2="due" value="' + toIso(a.due) + '">'
+      + (t ? '<span class="pm-badge ' + badgeClass('Status', t.Status) + '" title="In the To-do list">' + esc(t.Status || 'In To-do') + '</span>' : '<span class="pm-muted" style="font-size:11px">new</span>')
+      + '<button class="pm-icon" data-adel="' + i + '" title="Remove">✕</button></div>';
+  }).join('');
+  var field = function(label, key, rows, hint){ return '<div class="field pm-full"><label>' + label + (hint ? ' <span class="pm-muted" style="font-weight:600">' + hint + '</span>' : '') + '</label><textarea rows="' + rows + '" data-mt="' + key + '">' + esc(m[key] || '') + '</textarea></div>'; };
+  return '<div class="pm-tools"><button class="pm-btn" id="pmMeetBack">← All meetings</button>'
+    + '<span>' + (m.isNew ? '<b style="color:var(--cancelled-ink)">Not saved yet</b>' : 'Saved') + '</span>'
+    + '<button class="pm-btn" id="pmMeetMd" title="Download these minutes as a Markdown file">⬇ Markdown</button>'
+    + (m.isNew ? '' : '<button class="pm-btn" id="pmMeetDel" style="color:var(--cancelled-ink)">Delete</button>') + '</div>'
+    + '<div class="pt-card"><div class="pm-form">'
+    + '<div class="field"><label>Date</label><input type="date" data-mt="Date" value="' + toIso(m.Date) + '"></div>'
+    + '<div class="field"><label>Meeting</label><select data-mt="Meeting">' + opt(MEET_TYPES, m.Meeting) + '</select></div>'
+    + '<div class="field pm-full"><label>Present <span class="pm-muted" style="font-weight:600">untick anyone absent</span></label><div class="pm-checks">'
+    + names.map(function(n){ return '<label class="pm-check"><input type="checkbox" data-mp="' + esc(n) + '"' + (present.indexOf(n) >= 0 ? ' checked' : '') + '> ' + esc(n) + '</label>'; }).join('') + '</div></div>'
+    + '<div class="field pm-full"><label>Others present</label><input type="text" data-mt="others" value="' + esc(m.others || '') + '" placeholder="e.g. other UDAAN team members, Tangible team"></div>'
+    + '</div></div>'
+    + '<div class="pt-card"><div class="pm-card-head"><h3>Agenda</h3><button class="pm-btn" id="pmAgendaRefresh" title="Rebuild the agenda from the latest tracker">↻ Refresh agenda</button></div><div class="pm-form">' + field('', 'Agenda', 9) + '</div></div>'
+    + '<div class="pt-card"><h3>Minutes</h3><div class="pm-form">'
+    + field('Discussion notes', 'Notes', 7)
+    + field('Decisions', 'Decisions', 4, 'one per line · added to Risks & decisions when you save')
+    + '<div class="field pm-full"><label>Action items <span class="pm-muted" style="font-weight:600">added to To-do with owner and due date when you save</span></label>' + acts
+    + '<button class="pm-btn" id="pmActAdd" style="margin-top:6px">+ Add action</button></div>'
+    + field('Risks or challenges raised', 'Risks', 3, 'one per line')
+    + '<div class="field"><label>Next meeting</label><input type="date" data-mt="Next" value="' + toIso(m.Next) + '"></div>'
+    + '</div></div>'
+    + '<div class="pm-submitbar"><span>' + (m.isNew ? 'New minutes · not saved yet' : 'Editing minutes of ' + esc(m.Date)) + '</span><button class="pm-btn primary" id="pmMeetSave">Save minutes</button></div>';
+}
+function saveMeeting(){
+  var m = meetClone(st.meetDraft), name = ownerName(); delete m.isNew;
+  m.actions = (m.actions || []).filter(function(a){ return a.action && a.action.trim(); });
+  var nd = cloneData();
+  if(!nd.meetings) nd.meetings = { cols:[], rows:[], desc:'Meeting minutes' };
+  if(!nd.todo) nd.todo = { cols:defOf('todo').cols.slice(), rows:[], desc:'' };
+  if(!nd.risk) nd.risk = { cols:defOf('risk').cols.slice(), rows:[], desc:'' };
+  var from = 'From ' + m.Meeting + ', ' + m.Date;
+  m.actions.forEach(function(a){
+    var t = a.todoId && nd.todo.rows.find(function(r){ return r.id === a.todoId; });
+    if(t){ t.Task = a.action; t.Owner = a.owner || t.Owner; t.Due = a.due || t.Due; }
+    else { var id = uid(); nd.todo.rows.push({ id:id, Task:a.action, Priority:'Medium', Owner:a.owner || '', Team:'Education and Outreach', Due:a.due || '', Status:'Not started', Notes:from }); a.todoId = id; }
+  });
+  m.decIds = m.decIds || {};
+  meetLines(m.Decisions).forEach(function(line){
+    if(m.decIds[line] && nd.risk.rows.some(function(r){ return r.id === m.decIds[line]; })) return;
+    var id = uid(); nd.risk.rows.push({ id:id, Type:'Decision', What:line, Owner:name, Date:m.Date, Impact:'', Status:'Closed', Notes:from }); m.decIds[line] = id;
+  });
+  var i = nd.meetings.rows.findIndex(function(r){ return r.id === m.id; });
+  if(i >= 0) nd.meetings.rows[i] = m; else nd.meetings.rows.push(m);
+  var btn = document.getElementById('pmMeetSave'); if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
+  save(nd, 'saved minutes: ' + m.Meeting + ', ' + m.Date).then(function(){ st.meetDraft = meetClone(m); render(); })
+    .catch(function(){ if(btn){ btn.disabled = false; btn.textContent = 'Save minutes'; } });
+}
+function pageMinutesRead(){
+  var list = (st.mine && st.mine.meetings) || [], me = memberOf(curEmail());
+  if(!list.length) return '<div class="pt-card"><h3>Meeting minutes</h3><div class="pm-empty">No minutes shared yet. They appear here after Sumi saves them.</div></div>';
+  return '<div class="pt-card"><h3>Meeting minutes</h3><div class="sub">Read-only. Your own action items are highlighted. Update them in My updates (To-do).</div></div>'
+    + list.map(function(m, i){
+      var acts = (m.actions || []).map(function(a){ var mine = me && ownsRow(me, { Owner:a.owner });
+        return '<tr' + (mine ? ' class="pm-mine"' : '') + '><td class="wrap">' + esc(a.action) + '</td><td>' + esc(a.owner || '') + '</td><td>' + esc(a.due || '') + '</td><td>' + badge('Status', a.status || '') + '</td></tr>'; }).join('');
+      var ul = function(s){ var l = meetLines(s); return l.length ? '<ul>' + l.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '<p class="pm-muted">None</p>'; };
+      return '<details class="pt-card pm-minutes"' + (i === 0 ? ' open' : '') + '><summary><b>' + esc(m.Date) + '</b> · ' + esc(m.Meeting) + '</summary>'
+        + '<p class="pm-muted">Present: ' + esc((m.present || []).concat(m.others ? [m.others] : []).join(', ')) + '</p>'
+        + '<h4>Agenda</h4><div class="pm-pre">' + esc(m.Agenda || '') + '</div>'
+        + '<h4>Notes</h4><div class="pm-pre">' + esc(m.Notes || '') + '</div>'
+        + '<h4>Decisions</h4>' + ul(m.Decisions)
+        + '<h4>Action items</h4>' + (acts ? '<div class="pt-scroll"><table class="pt-table"><thead><tr><th>Action</th><th>Owner</th><th>Due</th><th>Status</th></tr></thead><tbody>' + acts + '</tbody></table></div>' : '<p class="pm-muted">None</p>')
+        + '<h4>Risks or challenges raised</h4>' + ul(m.Risks)
+        + (m.Next ? '<p class="pm-muted">Next meeting: ' + esc(m.Next) + '</p>' : '') + '</details>';
+    }).join('');
+}
+function wireMeetings(box){
+  box.querySelectorAll('[data-newmeet]').forEach(function(b){ b.addEventListener('click', function(){ st.meetDraft = newMeeting(b.dataset.newmeet); render(); try{ window.scrollTo({ top:0 }); }catch(e){} }); });
+  box.querySelectorAll('[data-meet]').forEach(function(el){
+    var open = function(e){ if(e) e.stopPropagation(); var m = meetRows().find(function(r){ return r.id === el.dataset.meet; }); if(!m) return;
+      st.page = 'meetings'; st.meetDraft = meetClone(m); render(); try{ window.scrollTo({ top:0 }); }catch(x){} };
+    el.addEventListener('click', open); el.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ open(e); } });
+  });
+  var mq = box.querySelector('#pmMeetQ'), tm;
+  if(mq) mq.addEventListener('input', function(){ clearTimeout(tm); tm = setTimeout(function(){ st.mq = mq.value; render(); }, 200); });
+  var mt = box.querySelector('#pmMeetType'); if(mt) mt.addEventListener('change', function(){ st.mtype = mt.value; render(); });
+  var d = st.meetDraft; if(!d) return;
+  box.querySelectorAll('[data-mt]').forEach(function(el){
+    var upd = function(){ var v = el.value; if(el.type === 'date') v = v ? fmtDate(parseDate(v)) : ''; d[el.dataset.mt] = v; };
+    el.addEventListener('input', upd); el.addEventListener('change', upd);
+  });
+  box.querySelectorAll('[data-mp]').forEach(function(cb){ cb.addEventListener('change', function(){
+    var p = (d.present || []).filter(function(n){ return n !== cb.dataset.mp; }); if(cb.checked) p.push(cb.dataset.mp); d.present = p; }); });
+  box.querySelectorAll('[data-ai]').forEach(function(el){
+    var upd = function(){ var a = d.actions[+el.dataset.ai]; if(!a) return; var v = el.value; if(el.type === 'date') v = v ? fmtDate(parseDate(v)) : ''; a[el.dataset.af2] = v; };
+    el.addEventListener('input', upd); el.addEventListener('change', upd);
+  });
+  box.querySelectorAll('[data-adel]').forEach(function(b){ b.addEventListener('click', function(){ d.actions.splice(+b.dataset.adel, 1); render(); }); });
+  var aa = box.querySelector('#pmActAdd'); if(aa) aa.addEventListener('click', function(){ d.actions.push({ action:'', owner:'', due:'' }); render(); });
+  var ar = box.querySelector('#pmAgendaRefresh'); if(ar) ar.addEventListener('click', function(){
+    if(d.Agenda && !confirm('Replace the agenda with a fresh one from the tracker?')) return; d.Agenda = autoAgenda(d.Meeting, d.Date); render(); });
+  var bk = box.querySelector('#pmMeetBack'); if(bk) bk.addEventListener('click', function(){ st.meetDraft = null; render(); });
+  var sv = box.querySelector('#pmMeetSave'); if(sv) sv.addEventListener('click', saveMeeting);
+  var md = box.querySelector('#pmMeetMd'); if(md) md.addEventListener('click', function(){ downloadText(toIso(d.Date) + ' ' + d.Meeting + '.md', meetingMd(d)); });
+  var dl = box.querySelector('#pmMeetDel'); if(dl) dl.addEventListener('click', function(){
+    if(!confirm('Delete the minutes of ' + d.Meeting + ', ' + d.Date + '?\n\nTo-dos and decisions already added stay in the tracker.')) return;
+    var nd = cloneData(); nd.meetings.rows = nd.meetings.rows.filter(function(r){ return r.id !== d.id; });
+    save(nd, 'deleted minutes: ' + d.Meeting + ', ' + d.Date).then(function(){ st.meetDraft = null; render(); }).catch(function(){});
+  });
+}
+
 /* Month calendar of cohorts: delivered in green, upcoming by status, past-but-not-delivered flagged. */
 function cohortCalendarHtml(rows){
   var today = new Date(); today.setHours(0, 0, 0, 0);
@@ -12427,7 +12628,12 @@ function cohortCalendarHtml(rows){
     put(s, r, e && e > s ? 'start' : 'one');
     if(e && s && e > s) put(e, r, 'end');
   });
+  meetRows().forEach(function(mt){ put(parseDate(mt.Date), mt, 'meet'); });
   var chip = function(it){
+    if(it.kind === 'meet'){
+      var short = it.r.Meeting === MEET_TYPES[0] ? 'Mon check-in' : (it.r.Meeting === MEET_TYPES[1] ? 'Tue UDAAN meeting' : 'Meeting');
+      return '<div class="pm-cal-ev mt" data-meet="' + it.r.id + '" title="' + esc(it.r.Meeting + ' · ' + it.r.Date + ' · open the minutes') + '">📝 ' + short + '</div>';
+    }
     var r = it.r, d = parseDate(it.kind === 'end' ? r['End date'] : r.Date), done = cohortDone(r);
     var cls = done ? 'done' : (d && d < today ? 'late' : (badgeClass('Status', r.Status) || 'n'));
     if(cls === 'g') cls = 'b';                       // green is kept for delivered only
@@ -12586,29 +12792,32 @@ function render(){
       + PROGRAMS.map(function(p){ return '<div class="pt-nav-item" data-open="' + p.key + '"><span class="ic">✈</span><span class="pt-nav-label">' + esc(p.name) + '</span></div>'; }).join('');
     title = 'Program Management'; page = pageHome();
   }else if(member){
-    if(st.page !== 'mine' && st.page !== 'history') st.page = 'mine';
+    if(st.page !== 'mine' && st.page !== 'history' && st.page !== 'minutes') st.page = 'mine';
     var pend = st.myHist.filter(function(u){ return u.status === 'pending'; }).length;
     nav = '<div class="pt-nav-item" data-pmnav="home"><span class="ic">←</span><span class="pt-nav-label">All programmes</span></div><div class="pm-nav-sep"></div>'
       + '<div class="pt-nav-item' + (st.page === 'mine' ? ' active' : '') + '" data-pg="mine"><span class="ic">✍</span><span class="pt-nav-label">My updates</span></div>'
-      + '<div class="pt-nav-item' + (st.page === 'history' ? ' active' : '') + '" data-pg="history"><span class="ic">🕒</span><span class="pt-nav-label">Submitted' + (pend ? ' <small style="opacity:.7">' + pend + ' pending</small>' : '') + '</span></div>';
-    title = st.page === 'history' ? 'UDAAN · Submitted updates' : 'UDAAN · My updates';
-    page = st.page === 'history' ? pageMyHistory() : pageMyUpdates();
+      + '<div class="pt-nav-item' + (st.page === 'history' ? ' active' : '') + '" data-pg="history"><span class="ic">🕒</span><span class="pt-nav-label">Submitted' + (pend ? ' <small style="opacity:.7">' + pend + ' pending</small>' : '') + '</span></div>'
+      + '<div class="pt-nav-item' + (st.page === 'minutes' ? ' active' : '') + '" data-pg="minutes"><span class="ic">📝</span><span class="pt-nav-label">Meeting minutes</span></div>';
+    title = st.page === 'history' ? 'UDAAN · Submitted updates' : (st.page === 'minutes' ? 'UDAAN · Meeting minutes' : 'UDAAN · My updates');
+    page = st.page === 'history' ? pageMyHistory() : (st.page === 'minutes' ? (st.mine ? pageMinutesRead() : '<div class="pt-note">Loading…</div>') : pageMyUpdates());
   }else{
     var pendO = st.updates.filter(function(u){ return u.status === 'pending'; }).length;
     nav = '<div class="pt-nav-item" data-pmnav="home"><span class="ic">←</span><span class="pt-nav-label">All programmes</span></div><div class="pm-nav-sep"></div>'
       + '<div class="pt-nav-item' + (st.page === 'overview' ? ' active' : '') + '" data-pg="overview"><span class="ic">📊</span><span class="pt-nav-label">Overview</span></div>'
       + '<div class="pt-nav-item' + (st.page === 'updates' ? ' active' : '') + '" data-pg="updates"><span class="ic">📥</span><span class="pt-nav-label">Team updates' + (pendO ? ' <small style="opacity:.7">' + pendO + '</small>' : '') + '</span></div>'
+      + '<div class="pt-nav-item' + (st.page === 'meetings' ? ' active' : '') + '" data-pg="meetings"><span class="ic">📝</span><span class="pt-nav-label">Meetings' + (meetRows().length ? ' <small style="opacity:.6;font-weight:600">' + meetRows().length + '</small>' : '') + '</span></div>'
       + (memberOf(curEmail()) ? '<div class="pt-nav-item' + (st.page === 'mine' ? ' active' : '') + '" data-pg="mine"><span class="ic">✍</span><span class="pt-nav-label">My updates</span></div>' : '')
       + SHEETS.map(function(s){
           var n = st.data ? rowsOf(s.k).length : '';
           return '<div class="pt-nav-item' + (st.page === s.k ? ' active' : '') + '" data-pg="' + s.k + '"><span class="ic">' + s.ic + '</span><span class="pt-nav-label">' + esc(s.label) + (n !== '' ? ' <small style="opacity:.6;font-weight:600">' + n + '</small>' : '') + '</span></div>';
         }).join('');
     var def = defOf(st.page);
-    title = 'UDAAN · ' + (def ? def.label : (st.page === 'updates' ? 'Team updates' : (st.page === 'mine' ? 'My updates' : 'Overview')));
+    title = 'UDAAN · ' + (def ? def.label : (st.page === 'updates' ? 'Team updates' : (st.page === 'mine' ? 'My updates' : (st.page === 'meetings' ? (st.meetDraft ? st.meetDraft.Meeting + ', ' + st.meetDraft.Date : 'Meetings') : 'Overview'))));
     if(st.err) page = '<div class="pt-note">' + esc(st.err) + (st.ruleErr ? '<pre class="pm-rule">' + esc(RULE_TXT) + '</pre>' : '') + '</div>';
     else if(st.loading) page = '<div class="pt-note">Loading UDAAN Program Management…</div>';
     else if(!st.data || st.preview){ page = pageImport(); title = 'UDAAN · Load the tracker'; }
     else if(st.page === 'updates') page = pageTeamUpdates();
+    else if(st.page === 'meetings') page = pageMeetings();
     else if(st.page === 'mine' && memberOf(curEmail())){
       // the owner's own items, taken straight from the tracker
       var me = memberOf(curEmail()), mine = {};
@@ -12638,7 +12847,10 @@ function render(){
   if(focusQ){ var qi = box.querySelector('#pmQ'); if(qi){ qi.focus(); try{ qi.setSelectionRange(caret, caret); }catch(e){} } }
   wire(box);
 }
-function go(page){ st.page = page; st.q = ''; st.status = ''; st.owner = ''; st.type = ''; render(); try{ window.scrollTo({ top:0 }); }catch(e){} }
+function go(page){
+  if(st.meetDraft && st.meetDraft.isNew && page !== 'meetings' && !confirm('These new minutes are not saved yet. Leave without saving?')) return;
+  st.page = page; st.q = ''; st.status = ''; st.owner = ''; st.type = ''; st.meetDraft = null; render(); try{ window.scrollTo({ top:0 }); }catch(e){}
+}
 function pickFile(box){
   var fi = box.querySelector('#pmFile'); if(!fi) return;
   fi.onchange = function(){ if(fi.files && fi.files[0]) readExcelFile(fi.files[0], function(data, name){ st.preview = { data:data, name:name }; render(); }); };
@@ -12679,6 +12891,7 @@ function wire(box){
     var blank = {}; SHEETS.forEach(function(s){ blank[s.k] = { cols:s.cols.slice(), rows:[], desc:'' }; });
     save(blank, 'started empty sheets').catch(function(){});
   });
+  if(pmAllowed()) wireMeetings(box);
   var cp = box.querySelector('#pmCalPrev'), cn = box.querySelector('#pmCalNext'), ct = box.querySelector('#pmCalToday');
   if(cp) cp.addEventListener('click', function(){ st.calMonth = new Date(st.calMonth.getFullYear(), st.calMonth.getMonth() - 1, 1); render(); });
   if(cn) cn.addEventListener('click', function(){ st.calMonth = new Date(st.calMonth.getFullYear(), st.calMonth.getMonth() + 1, 1); render(); });
@@ -12692,6 +12905,7 @@ function wire(box){
     is.disabled = true; is.textContent = 'Saving…';
     // an Excel file without a "Cohort Map" sheet must not wipe the cohort map
     if(st.data && st.data.cohorts && st.data.cohorts.rows.length && (!st.preview.data.cohorts || !st.preview.data.cohorts.rows.length)) st.preview.data.cohorts = st.data.cohorts;
+    if(st.data && st.data.meetings) st.preview.data.meetings = st.data.meetings;   // minutes are never in the Excel
     save(st.preview.data, 'loaded ' + st.preview.name).then(function(){ st.preview = null; go('overview'); }).catch(function(){ is.disabled = false; is.textContent = 'Save to Program Management'; });
   });
   var ic = box.querySelector('#pmImportCancel'); if(ic) ic.addEventListener('click', function(){ st.preview = null; render(); });
