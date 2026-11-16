@@ -4370,13 +4370,15 @@ function startCountdown(){
   const tick = ()=>{
     const dEl = document.getElementById('cdDays');
     if(!dEl){ return; }
-    let diff = Math.max(0, PROJECT_DEADLINE - new Date());
-    const d = Math.floor(diff/86400000); diff -= d*86400000;
-    const h = Math.floor(diff/3600000);  diff -= h*3600000;
-    const m = Math.floor(diff/60000);    diff -= m*60000;
-    const s = Math.floor(diff/1000);
-    const set = (id,v,pad)=>{ const x = document.getElementById(id); if(x) x.textContent = pad ? String(v).padStart(2,'0') : String(v); };
-    set('cdDays', d, false); set('cdHours', h, true); set('cdMins', m, true); set('cdSecs', s, true);
+    const set = (id,v)=>{ const x = document.getElementById(id); if(x) x.textContent = String(v); };
+    // For now: years, months, weeks and days (same calculation as the header clock)
+    if(typeof window.udaanUntilDeadline === 'function'){
+      const t = window.udaanUntilDeadline();
+      set('cdYears', t.y); set('cdMonths', t.mo); set('cdWeeks', t.w); set('cdDays', t.d);
+      return;
+    }
+    const diff = Math.max(0, PROJECT_DEADLINE - new Date());
+    set('cdDays', Math.floor(diff/86400000));
   };
   tick();
   if(_cdTimer) return;          // one interval only
@@ -4429,10 +4431,10 @@ function renderMaster(){
       <div class="countdown-card">
         <div class="cc-eyebrow">Time to project deadline</div>
         <div class="cc-timer">
+          <div class="cd-unit"><div class="cd-num" id="cdYears">0</div><div class="cd-label">Years</div></div>
+          <div class="cd-unit"><div class="cd-num" id="cdMonths">0</div><div class="cd-label">Months</div></div>
+          <div class="cd-unit"><div class="cd-num" id="cdWeeks">0</div><div class="cd-label">Weeks</div></div>
           <div class="cd-unit"><div class="cd-num" id="cdDays">0</div><div class="cd-label">Days</div></div>
-          <div class="cd-unit"><div class="cd-num" id="cdHours">00</div><div class="cd-label">Hours</div></div>
-          <div class="cd-unit"><div class="cd-num" id="cdMins">00</div><div class="cd-label">Minutes</div></div>
-          <div class="cd-unit"><div class="cd-num" id="cdSecs">00</div><div class="cd-label">Seconds</div></div>
         </div>
         <div class="cc-deadline">Project deadline \u00B7 <span class="d-date">1 December 2029</span></div>
       </div>
@@ -10096,22 +10098,40 @@ function buildClock(){
   var clk = document.createElement('div');
   clk.className = 'bar-clock'; clk.setAttribute('role', 'timer'); clk.setAttribute('aria-label', 'Time left to the project deadline');
   clk.title = 'Time to project deadline \u00B7 ' + endLabel();
-  clk.innerHTML = [['d', 'Days'], ['h', 'Hours'], ['m', 'Minutes'], ['s', 'Seconds']].map(function(u){
+  /* For now the clock shows years, months, weeks and days.
+     To go back to days/hours/minutes/seconds, use
+     [['d','Days'],['h','Hours'],['m','Minutes'],['s','Seconds']] here and the old lines in tick(). */
+  clk.innerHTML = [['y', 'Years'], ['mo', 'Months'], ['w', 'Weeks'], ['d', 'Days']].map(function(u){
     return '<div class="bc-unit"><span class="bc-num" data-bc="' + u[0] + '">00</span><span class="bc-lab">' + u[1] + '</span></div>';
   }).join('');
   col.appendChild(clk);
   tick();
 }
 function pad(n){ return String(n).padStart(2, '0'); }
+/* Calendar difference: whole years, then whole months, then the remaining days as weeks + days. */
+function untilDeadline(){
+  var a = new Date(), b = new Date(PROJECT_DEADLINE.getTime());
+  if(b <= a) return { y:0, mo:0, w:0, d:0 };
+  var y = b.getFullYear() - a.getFullYear(), mo = b.getMonth() - a.getMonth(), d = b.getDate() - a.getDate();
+  var tod = function(x){ return ((x.getHours() * 60 + x.getMinutes()) * 60 + x.getSeconds()) * 1000 + x.getMilliseconds(); };
+  if(tod(b) < tod(a)) d -= 1;                                   // today is only partly left
+  if(d < 0){ mo -= 1; d += new Date(b.getFullYear(), b.getMonth(), 0).getDate(); }
+  if(mo < 0){ y -= 1; mo += 12; }
+  return { y:y, mo:mo, w:Math.floor(d / 7), d:d % 7 };
+}
+window.udaanUntilDeadline = untilDeadline;
 function tick(){
   var c = document.querySelector('.bar-clock'); if(!c) return;
+  var t = untilDeadline();
+  var set = function(k, v){ var el = c.querySelector('[data-bc="' + k + '"]'); if(el) el.textContent = v; };
+  set('y', t.y); set('mo', t.mo); set('w', t.w); set('d', t.d);
+  /* old: days / hours / minutes / seconds
   var diff = Math.max(0, PROJECT_DEADLINE - new Date());
   var d = Math.floor(diff / 86400000); diff -= d * 86400000;
   var h = Math.floor(diff / 3600000);  diff -= h * 3600000;
   var m = Math.floor(diff / 60000);    diff -= m * 60000;
   var s = Math.floor(diff / 1000);
-  var set = function(k, v){ var el = c.querySelector('[data-bc="' + k + '"]'); if(el) el.textContent = v; };
-  set('d', d); set('h', pad(h)); set('m', pad(m)); set('s', pad(s));
+  set('d', d); set('h', pad(h)); set('m', pad(m)); set('s', pad(s)); */
 }
 buildClock();
 setInterval(function(){ buildClock(); tick(); }, 1000);
