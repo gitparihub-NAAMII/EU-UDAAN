@@ -11558,6 +11558,27 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
   #pmTab .pm-upd i{ font-style:normal; font-weight:700; color:var(--confirmed-ink); }
   #pmTab .pm-upd-note{ background:var(--cream); border-radius:8px; padding:7px 10px; margin:4px 0; }
   #pmTab .pt-card h3 small.pm-muted{ font-size:12px; margin-left:4px; }
+  #pmTab .pm-cal-nav{ display:flex; align-items:center; gap:8px; }
+  #pmTab .pm-cal-nav b{ min-width:130px; text-align:center; font-size:14px; }
+  #pmTab .pm-cal-wrap{ overflow-x:auto; margin-top:10px; }
+  #pmTab .pm-cal{ display:grid; grid-template-columns:repeat(7, minmax(92px, 1fr)); gap:4px; min-width:680px; }
+  #pmTab .pm-cal-dow{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--charcoal-soft); text-align:center; padding:4px 0; }
+  #pmTab .pm-cal-day{ min-height:84px; border:1px solid var(--line); border-radius:9px; padding:4px; background:var(--paper); display:flex; flex-direction:column; gap:3px; }
+  #pmTab .pm-cal-day.out{ background:transparent; border-style:dashed; opacity:.4; }
+  #pmTab .pm-cal-day.sat{ background:var(--cream); }
+  #pmTab .pm-cal-day.today{ border:2px solid var(--brand); }
+  #pmTab .pm-cal-num{ font-size:11.5px; font-weight:800; color:var(--charcoal-soft); }
+  #pmTab .pm-cal-day.today .pm-cal-num{ color:var(--brand); }
+  #pmTab .pm-cal-ev{ font-size:10.5px; font-weight:700; line-height:1.25; padding:3px 5px; border-radius:6px; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    background:var(--cream); color:var(--charcoal); border-left:3px solid var(--coolgrey); }
+  #pmTab .pm-cal-ev:hover{ filter:brightness(.95); }
+  #pmTab .pm-cal-ev.done{ background:var(--available-bg); color:var(--available-ink); border-left-color:var(--available); }
+  #pmTab .pm-cal-ev.b{ background:var(--confirmed-bg); color:var(--confirmed-ink); border-left-color:var(--confirmed); }
+  #pmTab .pm-cal-ev.g{ background:var(--available-bg); color:var(--available-ink); border-left-color:var(--available); }
+  #pmTab .pm-cal-ev.y{ background:var(--proposed-bg); color:var(--proposed-ink); border-left-color:var(--proposed); }
+  #pmTab .pm-cal-ev.r{ background:var(--cancelled-bg); color:var(--cancelled-ink); border-left-color:var(--cancelled); }
+  #pmTab .pm-cal-ev.late{ background:#fff; color:var(--cancelled-ink); border:1px dashed var(--cancelled); border-left:3px solid var(--cancelled); }
+  #pmTab .pm-cal-ev.fnd{ box-shadow:inset -3px 0 0 var(--reserved); }
   #pmTab .pm-tools{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:-4px 0 14px; font-size:12.5px; color:var(--charcoal-soft); font-weight:600; }
   #pmTab .pm-btn{ display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:var(--paper); color:var(--charcoal);
     border-radius:9px; padding:6px 12px; font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; text-decoration:none; }
@@ -12392,6 +12413,55 @@ function seedCohortRows(){
 function learnersOf(r){ var n = parseInt(String(r.Learners || '').replace(/[^\d]/g, ''), 10); return isNaN(n) ? 0 : n; }
 function cohortDone(r){ return low(r.Status) === 'delivered'; }
 function cohortLive(r){ return !/^(cancelled|delivered)$/.test(low(r.Status)); }
+/* Month calendar of cohorts: delivered in green, upcoming by status, past-but-not-delivered flagged. */
+function cohortCalendarHtml(rows){
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  if(!st.calMonth) st.calMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  var y = st.calMonth.getFullYear(), m = st.calMonth.getMonth();
+  var first = new Date(y, m, 1), daysIn = new Date(y, m + 1, 0).getDate(), lead = first.getDay();   // weeks start on Sunday
+  var byDay = {};
+  var put = function(d, r, kind){ if(!d || d.getFullYear() !== y || d.getMonth() !== m) return; (byDay[d.getDate()] = byDay[d.getDate()] || []).push({ r:r, kind:kind }); };
+  rows.forEach(function(r){
+    if(low(r.Status) === 'cancelled') return;
+    var s = parseDate(r.Date), e = parseDate(r['End date']);
+    put(s, r, e && e > s ? 'start' : 'one');
+    if(e && s && e > s) put(e, r, 'end');
+  });
+  var chip = function(it){
+    var r = it.r, d = parseDate(it.kind === 'end' ? r['End date'] : r.Date), done = cohortDone(r);
+    var cls = done ? 'done' : (d && d < today ? 'late' : (badgeClass('Status', r.Status) || 'n'));
+    if(cls === 'g') cls = 'b';                       // green is kept for delivered only
+    if(it.kind === 'start' && !done && d && d < today) cls = 'b';   // a running multi-week cohort is not late
+    var label = (r.ID && r.ID !== '–' ? r.ID + ' · ' : '') + String(r.Partner || '').replace(/\s*\(.*$/, '').slice(0, 38);
+    var pre = it.kind === 'start' ? '▶ ' : (it.kind === 'end' ? '■ ends: ' : '');
+    var tip = [r.ID, r.Programme, r.Partner, r.Learners ? r.Learners + ' learners' : '', r.Status, it.kind === 'start' ? 'starts (ends ' + r['End date'] + ')' : (it.kind === 'end' ? 'ends' : '')].filter(Boolean).join(' · ');
+    return '<div class="pm-cal-ev ' + cls + (r.Programme === 'AI Foundation' ? ' fnd' : '') + '" data-edit="cohorts:' + r.id + '" title="' + esc(tip) + '">' + pre + esc(label) + '</div>';
+  };
+  var cells = '';
+  for(var i = 0; i < lead; i++) cells += '<div class="pm-cal-day out"></div>';
+  for(var d = 1; d <= daysIn; d++){
+    var dt = new Date(y, m, d), isT = dt.getTime() === today.getTime(), sat = dt.getDay() === 6;
+    cells += '<div class="pm-cal-day' + (isT ? ' today' : '') + (sat ? ' sat' : '') + '"><div class="pm-cal-num">' + d + '</div>' + (byDay[d] || []).map(chip).join('') + '</div>';
+  }
+  var tail = (7 - (lead + daysIn) % 7) % 7;
+  for(var j = 0; j < tail; j++) cells += '<div class="pm-cal-day out"></div>';
+  var inMonth = rows.filter(function(r){ var s = parseDate(r.Date); return s && s.getFullYear() === y && s.getMonth() === m && low(r.Status) !== 'cancelled'; });
+  var doneN = inMonth.filter(cohortDone).length, doneL = inMonth.filter(cohortDone).reduce(function(a, r){ return a + learnersOf(r); }, 0);
+  var future = inMonth.filter(function(r){ return !cohortDone(r) && parseDate(r.Date) >= today; });
+  var upN = future.length, upL = future.reduce(function(a, r){ return a + learnersOf(r); }, 0);
+  var checkN = inMonth.length - doneN - upN;
+  var MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return '<div class="pt-card"><div class="pm-card-head"><div><h3>Training calendar</h3><div class="sub">'
+    + MONTHS_LONG[m] + ': ' + doneN + ' delivered (' + doneL + ' learners) · ' + upN + ' still to run (' + upL + ' learners)'
+    + (checkN ? ' · <b style="color:var(--cancelled-ink)">' + checkN + ' date passed, not marked delivered</b>' : '') + '. Click a cohort to edit it.</div></div>'
+    + '<div class="pm-cal-nav"><button class="pm-btn" id="pmCalPrev" title="Previous month">‹</button><b>' + MONTHS_LONG[m] + ' ' + y + '</b><button class="pm-btn" id="pmCalNext" title="Next month">›</button><button class="pm-btn" id="pmCalToday">Today</button></div></div>'
+    + '<div class="pm-cal-wrap"><div class="pm-cal">'
+    + ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(w){ return '<div class="pm-cal-dow">' + w + '</div>'; }).join('')
+    + cells + '</div></div>'
+    + '<div class="chart-legend"><span><i style="background:var(--available)"></i>Delivered</span><span><i style="background:var(--confirmed)"></i>Confirmed / planned / pilot / onboarding</span>'
+    + '<span><i style="background:var(--proposed)"></i>Tentative / to confirm / MoU in progress</span><span><i style="background:var(--cancelled)"></i>Partner to find</span>'
+    + '<span><i style="background:#fff;border:2px dashed var(--cancelled)"></i>Date passed, not marked delivered</span><span>▶ starts · ■ ends (multi-week cohorts) · purple edge = AI Foundation</span></div></div>';
+}
 function cohortSummaryHtml(sh){
   var rows = sh.rows, today = new Date(); today.setHours(0, 0, 0, 0);
   var sum = function(list){ return list.reduce(function(a, r){ return a + learnersOf(r); }, 0); };
@@ -12430,7 +12500,7 @@ function cohortSummaryHtml(sh){
     var txt = Object.keys(m.n).map(function(p){ return m.n[p] + ' ' + esc(p.replace('AI ', '')); }).join(' · ');
     return '<div class="prow"><div class="pr-name">' + m.label + '<small>' + txt + '</small></div><div class="pm-stack" style="margin:0;background:transparent">' + bar + '</div><div class="pr-fig">' + tot + '<small>learners</small></div></div>';
   }).join('');
-  return html + '<div class="pt-2col">'
+  return html + cohortCalendarHtml(rows) + '<div class="pt-2col">'
     + '<div class="pt-card"><h3>Next three weeks</h3><div class="sub">Click a cohort to change its date, partner or status.</div>' + soonHtml + '</div>'
     + '<div class="pt-card"><h3>Month by month</h3><div class="sub">Learners per month (cancelled cohorts left out). <span style="color:var(--confirmed-ink)">■</span> AI Native <span style="color:var(--reserved-ink)">■</span> AI Foundation</div>' + monthHtml + '</div>'
     + '</div>';
@@ -12609,6 +12679,10 @@ function wire(box){
     var blank = {}; SHEETS.forEach(function(s){ blank[s.k] = { cols:s.cols.slice(), rows:[], desc:'' }; });
     save(blank, 'started empty sheets').catch(function(){});
   });
+  var cp = box.querySelector('#pmCalPrev'), cn = box.querySelector('#pmCalNext'), ct = box.querySelector('#pmCalToday');
+  if(cp) cp.addEventListener('click', function(){ st.calMonth = new Date(st.calMonth.getFullYear(), st.calMonth.getMonth() - 1, 1); render(); });
+  if(cn) cn.addEventListener('click', function(){ st.calMonth = new Date(st.calMonth.getFullYear(), st.calMonth.getMonth() + 1, 1); render(); });
+  if(ct) ct.addEventListener('click', function(){ st.calMonth = null; render(); });
   var sc = box.querySelector('#pmSeedCohorts'); if(sc) sc.addEventListener('click', function(){
     sc.disabled = true; sc.textContent = 'Loading…';
     var nd = cloneData(); nd.cohorts = { cols:defOf('cohorts').cols.slice(), rows:seedCohortRows(), desc:'AI School cohorts: delivered and tentative' };
