@@ -11687,6 +11687,12 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
        allow write: if request.auth != null
          && request.auth.token.email in ['sumi@naamii.org.np', 'sumi.dhakal@naamii.org.np'];
      }
+     match /udaan_pm_minutes/{d} {
+       allow read: if request.auth != null
+         && exists(/databases/$(database)/documents/udaan_admins/$(request.auth.uid));
+       allow write: if request.auth != null
+         && request.auth.token.email in ['sumi@naamii.org.np', 'sumi.dhakal@naamii.org.np'];
+     }
      match /udaan_pm_updates/{id} {
        allow create: if request.auth != null
          && request.resource.data.byEmail == request.auth.token.email
@@ -11708,6 +11714,7 @@ var PM_TEAM = [
 var PM_COLLECTION = 'udaan_program_management';
 var PEOPLE_COLLECTION = 'udaan_pm_people';
 var UPDATES_COLLECTION = 'udaan_pm_updates';
+var MINUTES_COLLECTION = 'udaan_pm_minutes';   // read-only copy of agendas and minutes for every dashboard admin
 
 /* The programmes listed under Program Management. Add more here later. */
 var PROGRAMS = [
@@ -11799,7 +11806,9 @@ function memberOf(email){
   return m || null;
 }
 function pmMember(){ return adminOk() && !pmAllowed() && !!memberOf(curEmail()); }
-function pmVisible(){ return pmAllowed() || pmMember(); }
+// any other signed-in dashboard admin can read the meeting agendas and minutes
+function pmReader(){ return adminOk() && !!curUser() && !pmAllowed() && !memberOf(curEmail()); }
+function pmVisible(){ return pmAllowed() || pmMember() || pmReader(); }
 window.pmAllowed = pmVisible;            // used by updateRoleUI to show the tab
 function getDb(){ try{ return (typeof db !== 'undefined' && db) ? db : null; }catch(e){ return null; } }
 function col(name){ var d = getDb(); return d ? d.collection(name) : null; }
@@ -11932,7 +11941,14 @@ var RULE_TXT = [
   "        || request.auth.token.email in ['" + PM_EDITORS.join("','") + "']);",
   "  allow update, delete: if request.auth != null",
   "    && request.auth.token.email in ['" + PM_EDITORS.join("','") + "'];",
+  "}",
+  "match /" + MINUTES_COLLECTION + "/{d} {",
+  "  allow read: if request.auth != null",
+  "    && exists(/databases/$(database)/documents/udaan_admins/$(request.auth.uid));",
+  "  allow write: if request.auth != null",
+  "    && request.auth.token.email in ['" + PM_EDITORS.join("','") + "'];",
   "}"].join('\n');
+var MINUTES_RULE_TXT = RULE_TXT.split('\n').slice(-6).join('\n');
 function listen(){
   if(st.unsub || !pmAllowed()) return;
   var ref = docRef();
@@ -11962,9 +11978,9 @@ function listenUpdates(){
   }, function(e){ st.unsubUpd = null; console.warn('Team updates', e); });
 }
 function stopListening(){
-  [st.unsub, st.unsubUpd, st.unsubMine, st.unsubHist].forEach(function(u){ if(u){ try{ u(); }catch(e){} } });
-  st.unsub = st.unsubUpd = st.unsubMine = st.unsubHist = null;
-  st.data = null; st.meta = null; st.updates = []; st.mine = null; st.myHist = []; st.peopleSig = {};
+  [st.unsub, st.unsubUpd, st.unsubMine, st.unsubHist, st.unsubMin].forEach(function(u){ if(u){ try{ u(); }catch(e){} } });
+  st.unsub = st.unsubUpd = st.unsubMine = st.unsubHist = st.unsubMin = null;
+  st.data = null; st.meta = null; st.updates = []; st.mine = null; st.myHist = []; st.peopleSig = {}; st.minutes = null; st.minErr = ''; st.minSig = null;
 }
 function save(newData, what, quiet){
   var ref = docRef(); if(!ref || !pmAllowed()) return Promise.reject(new Error('Not allowed'));
@@ -11982,17 +11998,41 @@ function toast(msg){
 function cloneData(){ return JSON.parse(JSON.stringify(st.data || {})); }
 
 /* Each team member gets a private copy of ONLY their own rows to update. */
+/* read-only copy of the latest agendas and minutes, with each action's current To-do status */
+function meetingsForReaders(){
+  return meetRows().slice().sort(byMeetDateDesc).slice(0, 30).map(function(x){
+    return { id:x.id, Date:x.Date, Meeting:x.Meeting, present:x.present || [], others:x.others || '', Agenda:x.Agenda || '', Notes:x.Notes || '',
+      Decisions:x.Decisions || '', Risks:x.Risks || '', Next:x.Next || '',
+      actions:(x.actions || []).filter(function(a){ return a.action; }).map(function(a){ var t = linkedTodo(a); return { action:a.action, owner:a.owner || '', due:a.due || '', status:t ? t.Status || '' : '' }; }) };
+  });
+}
+function publishMinutes(){
+  var c = col(MINUTES_COLLECTION); if(!c || !st.data || !pmAllowed()) return;
+  var meetings = meetingsForReaders(), sig = JSON.stringify(meetings);
+  if(st.minSig === sig) return; st.minSig = sig;
+  c.doc('udaan').set({ meetings:meetings, updatedAt:stamp() })
+    .then(function(){ if(st.minShareErr){ st.minShareErr = false; render(); } })
+    .catch(function(e){ st.minSig = null; if(!st.minShareErr){ st.minShareErr = true; render(); } console.warn('Could not share the minutes with admins (add the udaan_pm_minutes rule)', e); });
+}
+function listenMinutes(){
+  if(st.unsubMin || !pmReader()) return;
+  var c = col(MINUTES_COLLECTION);
+  if(!c){ st.minErr = 'The shared database is not connected. Reload the page and sign in again.'; render(); return; }
+  st.minErr = ''; st.minutes = null; render();
+  st.unsubMin = c.doc('udaan').onSnapshot(function(s){ st.minutes = s.exists ? ((s.data() || {}).meetings || []) : []; render(); },
+    function(e){ st.unsubMin = null; st.minErr = e && e.code === 'permission-denied' ? 'The database refused access to the meeting minutes. Ask Sumi or Pradip to add the udaan_pm_minutes rule in Firebase.' : 'Could not load the minutes: ' + (e && e.message || e); render(); });
+}
+function isUpcoming(m){
+  var d = parseDate(m.Date), today = new Date(); today.setHours(0, 0, 0, 0);
+  return !!d && d >= today && !String(m.Notes || '').trim() && !meetLines(m.Decisions).length && !(m.actions || []).some(function(a){ return a.action; });
+}
 function publishPeople(){
+  publishMinutes();
   var c = col(PEOPLE_COLLECTION); if(!c || !st.data || !pmAllowed()) return;
   PM_TEAM.forEach(function(m){
     var sheets = {};
     Object.keys(MEMBER_EDIT).forEach(function(k){ sheets[k] = { cols:sheetOf(k).cols, rows:rowsOf(k).filter(function(r){ return ownsRow(m, r); }) }; });
-    // read-only copy of the latest meeting minutes, with each action's current To-do status
-    var meetings = meetRows().slice().sort(byMeetDateDesc).slice(0, 20).map(function(x){
-      return { id:x.id, Date:x.Date, Meeting:x.Meeting, present:x.present || [], others:x.others || '', Agenda:x.Agenda || '', Notes:x.Notes || '',
-        Decisions:x.Decisions || '', Risks:x.Risks || '', Next:x.Next || '',
-        actions:(x.actions || []).filter(function(a){ return a.action; }).map(function(a){ var t = linkedTodo(a); return { action:a.action, owner:a.owner || '', due:a.due || '', status:t ? t.Status || '' : '' }; }) };
-    });
+    var meetings = meetingsForReaders();
     var sig = JSON.stringify([sheets, meetings]);
     if(st.peopleSig[m.email] === sig) return;
     st.peopleSig[m.email] = sig;
@@ -12257,19 +12297,19 @@ function setBrand(on){
   if(!origBrand) origBrand = { p:p.innerHTML, h:h.innerHTML };
   if(on){
     p.innerHTML = st.view === 'home' ? 'NAAMII · Programmes' : 'EU UDAAN · Program Management';
-    h.textContent = st.view === 'home' ? 'Program Management' : (pmMember() ? 'UDAAN · My updates' : 'UDAAN Project Tracker');
+    h.textContent = st.view === 'home' ? 'Program Management' : (pmMember() ? 'UDAAN · My updates' : (pmReader() ? 'UDAAN · Meeting minutes' : 'UDAAN Project Tracker'));
   }else{ p.innerHTML = origBrand.p; h.innerHTML = origBrand.h; }
 }
 window.pmOnTabChange = function(tab){
   setBrand(tab === 'pm');
-  if(tab === 'pm'){ if(pmAllowed()) listen(); else if(pmMember()) listenMine(); render(); }
+  if(tab === 'pm'){ if(pmAllowed()) listen(); else if(pmMember()) listenMine(); else if(pmReader()) listenMinutes(); render(); }
 };
 
 /* ---------- show the tab only to the owner and the team ---------- */
 var lastRole = '';
 function syncTabButton(){
   var b = document.getElementById('pmTabBtn'); if(!b) return;
-  var role = pmAllowed() ? 'owner' : (pmMember() ? 'member:' + curEmail() : '');
+  var role = pmAllowed() ? 'owner' : (pmMember() ? 'member:' + curEmail() : (pmReader() ? 'reader:' + curEmail() : ''));
   if(role !== lastRole){ stopListening(); st.view = 'home'; st.page = 'overview'; lastRole = role; }
   b.style.display = role ? '' : 'none';
   if(!role && b.classList.contains('active')){ var c = document.querySelector('.tab-btn[data-tab="cal"]'); if(c) c.click(); }
@@ -12492,12 +12532,13 @@ function pageMeetings(){
   var cards = rows.map(function(m){
     var acts = (m.actions || []).filter(function(a){ return a.action; }), doneA = acts.filter(function(a){ var t = linkedTodo(a); return t && isDone(t.Status); }).length;
     var snippet = strip(m.Notes || m.Agenda || '').slice(0, 160);
-    return '<div class="pt-card pm-meet-card" data-meet="' + m.id + '" role="button" tabindex="0"><div class="pm-meet-top"><b>' + esc(m.Date) + '</b>'
+    return '<div class="pt-card pm-meet-card" data-meet="' + m.id + '" role="button" tabindex="0"><div class="pm-meet-top"><b>' + esc(m.Date) + (isUpcoming(m) ? ' <span class="pm-badge y">Upcoming</span>' : '') + '</b>'
       + '<span class="pm-badge ' + (m.Meeting === MEET_TYPES[0] ? 'b' : (m.Meeting === MEET_TYPES[1] ? 'p' : '')) + '">' + esc(m.Meeting) + '</span></div>'
       + '<div class="pm-muted">' + (m.present || []).length + ' present · ' + meetLines(m.Decisions).length + ' decisions · ' + acts.length + ' actions (' + doneA + ' done)</div>'
       + (snippet ? '<p>' + esc(snippet) + (snippet.length >= 160 ? '…' : '') + '</p>' : '') + '</div>';
   }).join('') || '<div class="pm-empty">No meetings yet. Start one with the buttons above.</div>';
-  return '<div class="pt-card"><div class="pm-card-head"><div><h3>Meeting minutes</h3><div class="sub">Start the minutes for today’s meeting. The agenda fills itself from open actions, to-dos due this week and upcoming trainings. When you save, actions go to To-do and decisions to Risks & decisions. The team can read the minutes in My updates.</div></div></div>'
+  return (st.minShareErr ? '<div class="pt-note" style="margin-bottom:14px">Your minutes are saved, but they could not be shared with the other dashboard admins yet. Ask Pradip to add this Firestore rule:<pre class="pm-rule">' + esc(MINUTES_RULE_TXT) + '</pre></div>' : '')
+    + '<div class="pt-card"><div class="pm-card-head"><div><h3>Meeting minutes</h3><div class="sub">Start the minutes for today’s meeting, or save the agenda ahead of time (set a future date) so people can prepare. The agenda fills itself from open actions, to-dos due this week and upcoming trainings. When you save, actions go to To-do and decisions to Risks & decisions. The team and all dashboard admins can read the agenda and minutes (read-only).</div></div></div>'
     + '<div style="display:flex;gap:8px;flex-wrap:wrap">' + MEET_TYPES.map(function(t){ return '<button class="pm-btn' + (t === MEET_TYPES[2] ? '' : ' primary') + '" data-newmeet="' + esc(t) + '">+ ' + esc(t) + '</button>'; }).join('') + '</div></div>'
     + '<div class="pt-filters"><div class="pt-filt" style="flex:1 1 200px"><label>Search</label><input id="pmMeetQ" type="search" placeholder="Search minutes, e.g. MoU or Tangible" value="' + esc(st.mq || '') + '" style="width:100%"></div>'
     + '<div class="pt-filt"><label>Meeting</label><select id="pmMeetType"><option value="">All</option>' + MEET_TYPES.map(function(t){ return '<option' + (t === st.mtype ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select></div></div>'
@@ -12562,14 +12603,22 @@ function saveMeeting(){
     .catch(function(){ if(btn){ btn.disabled = false; btn.textContent = 'Save minutes'; } });
 }
 function pageMinutesRead(){
-  var list = (st.mine && st.mine.meetings) || [], me = memberOf(curEmail());
-  if(!list.length) return '<div class="pt-card"><h3>Meeting minutes</h3><div class="pm-empty">No minutes shared yet. They appear here after Sumi saves them.</div></div>';
-  return '<div class="pt-card"><h3>Meeting minutes</h3><div class="sub">Read-only. Your own action items are highlighted. Update them in My updates (To-do).</div></div>'
+  var reader = pmReader();
+  if(reader && st.minErr) return '<div class="pt-note">' + esc(st.minErr) + '</div>';
+  if(reader && !st.minutes) return '<div class="pt-note">Loading the meeting minutes…</div>';
+  var list = (reader ? st.minutes : (st.mine && st.mine.meetings)) || [], me = memberOf(curEmail());
+  if(!list.length) return '<div class="pt-card"><h3>Meeting minutes</h3><div class="pm-empty">No agendas or minutes shared yet. They appear here as soon as Sumi saves them.</div></div>';
+  var up = list.filter(isUpcoming), past = list.filter(function(m){ return !isUpcoming(m); });
+  list = up.sort(function(a, b){ return parseDate(a.Date) - parseDate(b.Date); }).concat(past);
+  return '<div class="pt-card"><h3>Meeting agendas and minutes</h3><div class="sub">Read-only. Monday team check-ins and Tuesday UDAAN project meetings. Upcoming meetings show their agenda so you can prepare; minutes are added after the meeting.'
+    + (me ? ' Your own action items are highlighted. Update them in My updates (To-do).' : '') + '</div></div>'
     + list.map(function(m, i){
       var acts = (m.actions || []).map(function(a){ var mine = me && ownsRow(me, { Owner:a.owner });
         return '<tr' + (mine ? ' class="pm-mine"' : '') + '><td class="wrap">' + esc(a.action) + '</td><td>' + esc(a.owner || '') + '</td><td>' + esc(a.due || '') + '</td><td>' + badge('Status', a.status || '') + '</td></tr>'; }).join('');
       var ul = function(s){ var l = meetLines(s); return l.length ? '<ul>' + l.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '<p class="pm-muted">None</p>'; };
-      return '<details class="pt-card pm-minutes"' + (i === 0 ? ' open' : '') + '><summary><b>' + esc(m.Date) + '</b> · ' + esc(m.Meeting) + '</summary>'
+      var upc = isUpcoming(m);
+      return '<details class="pt-card pm-minutes"' + (i === 0 || upc ? ' open' : '') + '><summary><b>' + esc(m.Date) + '</b> · ' + esc(m.Meeting)
+        + (upc ? ' <span class="pm-badge y">Upcoming · agenda</span>' : ' <span class="pm-badge g">Minutes</span>') + '</summary>'
         + '<p class="pm-muted">Present: ' + esc((m.present || []).concat(m.others ? [m.others] : []).join(', ')) + '</p>'
         + '<h4>Agenda</h4><div class="pm-pre">' + esc(m.Agenda || '') + '</div>'
         + '<h4>Notes</h4><div class="pm-pre">' + esc(m.Notes || '') + '</div>'
@@ -12766,6 +12815,12 @@ function pageImport(){
 }
 function pageHome(){
   var sub = '', member = pmMember();
+  if(pmReader()){
+    return '<div class="pt-card"><h3>Programmes</h3><div class="sub">You can read the meeting agendas and minutes.</div><div class="pm-prog-grid">'
+      + PROGRAMS.map(function(p){ return '<div class="pt-card pm-prog" data-open="' + p.key + '" role="button" tabindex="0"><div class="pm-prog-top"><div class="pm-prog-ic">' + esc(p.abbr) + '</div><div><h3>' + esc(p.name) + '</h3><p>Meeting minutes</p></div></div>'
+        + '<p>Agendas and minutes of the Monday team check-ins and Tuesday UDAAN project meetings (read-only).</p><div><button class="pm-btn primary" data-open="' + p.key + '">Open meeting minutes →</button></div></div>'; }).join('')
+      + '</div></div>';
+  }
   if(!member && st.data){
     sub = '<div class="pm-prog-stats"><div><b>' + avgGoal().toFixed(0) + '%</b>Goal progress</div><div><b>' + countOpen('todo') + '</b>To-dos open</div>'
       + '<div><b>' + countOpen('chal') + '</b>Challenges</div><div><b>' + rowsOf('risk').filter(function(r){ return low(r.Type) === 'risk' && !isDone(r.Status); }).length + '</b>Risks</div></div>';
@@ -12791,6 +12846,11 @@ function render(){
       + '<div class="pm-nav-sep"></div>'
       + PROGRAMS.map(function(p){ return '<div class="pt-nav-item" data-open="' + p.key + '"><span class="ic">✈</span><span class="pt-nav-label">' + esc(p.name) + '</span></div>'; }).join('');
     title = 'Program Management'; page = pageHome();
+  }else if(pmReader()){
+    st.page = 'minutes';
+    nav = '<div class="pt-nav-item" data-pmnav="home"><span class="ic">←</span><span class="pt-nav-label">All programmes</span></div><div class="pm-nav-sep"></div>'
+      + '<div class="pt-nav-item active" data-pg="minutes"><span class="ic">📝</span><span class="pt-nav-label">Meeting minutes</span></div>';
+    title = 'UDAAN · Meeting minutes'; page = pageMinutesRead();
   }else if(member){
     if(st.page !== 'mine' && st.page !== 'history' && st.page !== 'minutes') st.page = 'mine';
     var pend = st.myHist.filter(function(u){ return u.status === 'pending'; }).length;
@@ -12865,7 +12925,7 @@ function refreshChangeCount(box){
 function wire(box){
   box.querySelectorAll('[data-open]').forEach(function(el){
     var open = function(e){ if(e) e.stopPropagation(); st.view = 'program'; st.prog = el.dataset.open;
-      if(pmMember()){ listenMine(); go('mine'); } else { listen(); go('overview'); } };
+      if(pmMember()){ listenMine(); go('mine'); } else if(pmReader()){ listenMinutes(); go('minutes'); } else { listen(); go('overview'); } };
     el.addEventListener('click', open);
     el.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(e); } });
   });
