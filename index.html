@@ -4375,6 +4375,7 @@ function startCountdown(){
     if(typeof window.udaanUntilDeadline === 'function'){
       const t = window.udaanUntilDeadline();
       set('cdYears', t.y); set('cdMonths', t.mo); set('cdWeeks', t.w); set('cdDays', t.d);
+      set('cdTotal', 'In total: ' + t.months + ' months · ' + t.days.toLocaleString() + ' days left');
       return;
     }
     const diff = Math.max(0, PROJECT_DEADLINE - new Date());
@@ -4436,6 +4437,7 @@ function renderMaster(){
           <div class="cd-unit"><div class="cd-num" id="cdWeeks">0</div><div class="cd-label">Weeks</div></div>
           <div class="cd-unit"><div class="cd-num" id="cdDays">0</div><div class="cd-label">Days</div></div>
         </div>
+        <div class="cc-total" id="cdTotal" style="margin-top:10px;font-size:14px;font-weight:700;opacity:.92;"></div>
         <div class="cc-deadline">Project deadline \u00B7 <span class="d-date">1 December 2029</span></div>
       </div>
 
@@ -10105,19 +10107,24 @@ function buildClock(){
     return '<div class="bc-unit"><span class="bc-num" data-bc="' + u[0] + '">00</span><span class="bc-lab">' + u[1] + '</span></div>';
   }).join('');
   col.appendChild(clk);
+  var tot = document.createElement('div');
+  tot.className = 'bar-clock-total';
+  tot.style.cssText = 'font-size:12px;font-weight:700;color:var(--charcoal-soft);text-align:center;letter-spacing:.01em;';
+  col.appendChild(tot);
   tick();
 }
 function pad(n){ return String(n).padStart(2, '0'); }
 /* Calendar difference: whole years, then whole months, then the remaining days as weeks + days. */
 function untilDeadline(){
   var a = new Date(), b = new Date(PROJECT_DEADLINE.getTime());
-  if(b <= a) return { y:0, mo:0, w:0, d:0 };
+  if(b <= a) return { y:0, mo:0, w:0, d:0, months:0, days:0 };
   var y = b.getFullYear() - a.getFullYear(), mo = b.getMonth() - a.getMonth(), d = b.getDate() - a.getDate();
   var tod = function(x){ return ((x.getHours() * 60 + x.getMinutes()) * 60 + x.getSeconds()) * 1000 + x.getMilliseconds(); };
   if(tod(b) < tod(a)) d -= 1;                                   // today is only partly left
   if(d < 0){ mo -= 1; d += new Date(b.getFullYear(), b.getMonth(), 0).getDate(); }
   if(mo < 0){ y -= 1; mo += 12; }
-  return { y:y, mo:mo, w:Math.floor(d / 7), d:d % 7 };
+  // totals: whole months, and whole days (what is left of today is not counted, matching the boxes)
+  return { y:y, mo:mo, w:Math.floor(d / 7), d:d % 7, months:y * 12 + mo, days:Math.floor((b - a) / 86400000) };
 }
 window.udaanUntilDeadline = untilDeadline;
 function tick(){
@@ -10125,6 +10132,8 @@ function tick(){
   var t = untilDeadline();
   var set = function(k, v){ var el = c.querySelector('[data-bc="' + k + '"]'); if(el) el.textContent = v; };
   set('y', t.y); set('mo', t.mo); set('w', t.w); set('d', t.d);
+  var tot = document.querySelector('.bar-clock-total');
+  if(tot) tot.textContent = 'In total: ' + t.months + ' months · ' + t.days.toLocaleString() + ' days left';
   /* old: days / hours / minutes / seconds
   var diff = Math.max(0, PROJECT_DEADLINE - new Date());
   var d = Math.floor(diff / 86400000); diff -= d * 86400000;
