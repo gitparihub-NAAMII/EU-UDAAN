@@ -1,5 +1,5 @@
 PART 4 — AGENTIC AI
-Prompt Library — build a team of three   (v5, Gemini skills)
+Prompt Library — build a team of three   (v6, Gemini skills + fix-and-recheck loop)
 
 AI Nativity · NAAMII Education & Outreach · UDAAN
 Work in Gemini — gemini.google.com -> Customize -> Skills -> Create -> Create manually
@@ -7,6 +7,8 @@ Work in Gemini — gemini.google.com -> Customize -> Skills -> Create -> Create 
 WHAT YOU'RE BUILDING
 
 THE LISTENER  ->  THE WRITER  ->  THE CHECKER  ->  you send
+                      ^               |
+                      +-- HOLD + FIX -+   (at most once, then a human)
 
 Three saved skills. A skill is a job description you write once and keep.
 Each one has three boxes and a place for files:
@@ -78,8 +80,8 @@ WORKER 2 — THE WRITER
 ===============================================================================
 
 NAME          writer
-DESCRIPTION   Drafts the outgoing messages an action register needs, using
-              Team & Contacts. Use when I paste an action register.
+DESCRIPTION   Drafts outgoing messages from an action register, and revises
+              them from Checker feedback. Uses Team & Contacts.
 FILES         D2-02 Team & Contacts. Download it from the shared folder
               first, then add it from your computer.
 
@@ -126,7 +128,19 @@ it is the Checker's. Draft the message the action requires and pass it on.
 If a topic was raised but never decided, list it under RAISED BUT NOT
 DECIDED instead of drafting anything.
 
+IF YOU RECEIVE THE CHECKER'S ANSWER
+You will get your drafts and the Checker's verdicts, each HOLD with a FIX.
+- Revise only the drafts marked HOLD. Apply the FIX. Change nothing else.
+- Do not argue with the FIX, and do not judge whether the result is safe.
+  That is still the Checker's job.
+- Output only the revised drafts, under the heading
+  ROUND 2 — REVISED DRAFTS, in the same TO / SENT BY / MESSAGE format.
+- If the drafts are already marked ROUND 2, do not revise again.
+  Write HAND TO A HUMAN for each one, and stop.
+
 WHAT YOU OUTPUT — in this order, with nothing repeated
+
+Start with the line ROUND 1.
 
 DRAFTS TO SEND
 For each one:
@@ -224,6 +238,12 @@ IF HOLD — WHAT: quote the exact words
 IF HOLD — WHY: one line, which of the four above
 IF HOLD — FIX: the shortest change that makes it sendable
 
+ROUNDS
+Drafts marked ROUND 2 have already been revised once. That is the last
+round. If a ROUND 2 draft still needs a HOLD, write
+VERDICT: HOLD — HAND TO A HUMAN
+and give no FIX. A person decides what happens next.
+
 RULES
 SEND means nothing was flagged. It does NOT mean approved to send —
 a human still decides.
@@ -279,6 +299,36 @@ not, say so honestly, and make this point instead:
 Nobody did anything wrong either way. Every worker did exactly its job.
 
 ===============================================================================
+THE LOOP — FIX AND RECHECK
+===============================================================================
+
+The Checker told you what is wrong and how to fix it. Send that back.
+
+  1. Copy the Checker's whole answer: every verdict, with each FIX.
+  2. Open a new chat, type /writer. Paste your drafts, then the Checker's
+     answer. Send.
+  3. The Writer fixes only the HOLDs and marks the result ROUND 2.
+  4. Open a new chat, type /checker, paste the ROUND 2 drafts, send.
+
+ROUND 2 IS THE LAST ROUND. The Writer still writes and the Checker still
+flags. Neither job changes. Only the baton goes back.
+
+IF ROUND 2 SAYS SEND
+Ask whether it fixed the problem or just the wording. The likely rewrite asks
+the landlord to confirm the agreed refund amount. That may pass the Checker,
+but the refund is still unreconciled until someone checks the chalan.
+
+IF ROUND 2 STILL SAYS HOLD
+There is no round 3. The Checker writes HAND TO A HUMAN, and the draft goes to
+its owner with both FIXes attached.
+
+Some HOLDs can't be fixed by rewriting. The fix is a person checking the
+chalan.
+
+NOT YET TESTED. The loop was added on 2026-11-16 and hasn't been run live.
+Note what comes back in your room.
+
+===============================================================================
 THE TWO RULES
 ===============================================================================
 
@@ -305,7 +355,8 @@ workers make a mediocre chain.
 
 Keep the chain short, and put the human at the join that costs the most to get
 wrong. That is why the fourth box in the picture is a person, not a fourth
-skill.
+skill, and why the loop stops after two rounds: every extra round is
+another step in the chain.
 
 ===============================================================================
 TAKE HOME

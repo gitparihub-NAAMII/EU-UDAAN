@@ -1,6 +1,6 @@
 # testing/
 
-Everything you need to test the Part 4 chain (Listener → Writer → Checker) with Gemini skills
+Everything you need to test the Part 4 chain (Listener → Writer → Checker, then the fix-and-recheck loop) with Gemini skills
 before you deliver it. This folder is for you, not participants.
 
 | File | What it is |
@@ -23,7 +23,12 @@ regenerate these files (ask Claude to "regenerate testing from the skills").
 3. **Listener:** open a new chat, type `/listener`, paste D2-01, and send.
 4. **Writer:** copy the whole table. Open a new chat, type `/writer`, paste the table, and send.
 5. **Checker:** copy all the drafts. Open a new chat, type `/checker`, paste the drafts, and send.
-6. Record what came back in the log below.
+6. **Loop, round 2:** copy the Checker's whole answer. Open a new chat, type `/writer`, paste your
+   drafts and then the Checker's answer, and send. Copy the `ROUND 2 — REVISED DRAFTS`. Open a new
+   chat, type `/checker`, paste them, and send.
+7. **Optional, test the cap:** paste the round 2 drafts into `/writer` again. It should refuse to
+   revise and write HAND TO A HUMAN.
+8. Record what came back in the log below.
 
 ## What should happen
 
@@ -34,12 +39,14 @@ These outcomes were recorded with Gems in D2-03 v4. Confirm them with skills.
 | Listener | Table with Owner, Action, Due date and Source line. **CONFLICT** on the Kalimati refund (one lakh twenty vs one lakh forty). **UNASSIGNED** on the internet bill. **NOT STATED** on the Gurung follow-up. **INAUDIBLE** on the overlap. The signboard notice and staff bonus go under a "raised but unresolved" heading |
 | Writer | Four drafts going out: Biratnagar client (English); Shrestha Suppliers, Gurung Traders and the Kalimati landlord (Nepali). "Check the chalan" under INTERNAL. Signboard and bonus under RAISED BUT NOT DECIDED. Internet bill under NEEDS AN OWNER |
 | Checker | **HOLD** on the Kalimati landlord draft (UNSETTLED). The Shrestha/Gurung leak may or may not appear; in v4 it didn't, and the other drafts came back SEND |
+| Writer, round 2 | Only the held drafts, under `ROUND 2 — REVISED DRAFTS`. The landlord message most likely asks the landlord to confirm the agreed refund amount instead of requesting payment. **Not yet tested** |
+| Checker, round 2 | Either SEND (the wording is fixed, but the refund is still unreconciled; make that point in the room) or `HOLD — HAND TO A HUMAN` with no FIX. **Not yet tested** |
 
 ## Log
 
 Add a row per run. If a result differs from the expected one, update the "what came back" slides
-(94 and 99 in the deck) and D2-03 before you promote.
+(94, 99, 100 and 101 in the deck) and D2-03 before you promote.
 
-| Date | Account | Listener OK? | Writer: 4 drafts, right languages? | Checker: landlord HOLD? | Shrestha leak caught? | Notes |
-|---|---|---|---|---|---|---|
-| | | | | | | |
+| Date | Account | Listener OK? | Writer: 4 drafts, right languages? | Checker: landlord HOLD? | Shrestha leak caught? | Round 2: revised only HOLDs? | Round 2 verdict | Cap held? | Notes |
+|---|---|---|---|---|---|---|---|---|---|
+| | | | | | | | | | |

@@ -39,6 +39,7 @@ The workshop never says BRIEF, AGENT or TRUST, and must keep it that way (see
 | "You paste it in", where the human is the wire | G, Go-signal (always *you*; no triggers or schedules) |
 | The skill's instructions | E, Explicit steps |
 | The Checker and "you press send" | N, Nod points |
+| The fix-and-recheck loop: two rounds, then HAND TO A HUMAN | N, Nod points, as an escalation rule. The course has no loop exercise |
 | The skill's attached files and "do not decide whether it's safe" | T, Tools & limits |
 | The skill's description: "call it by name, automatic pick-up is best-effort" | Touches G. The workshop never relies on it; the go-signal is still you |
 | "One job per worker", "short chains beat clever ones" | No letter. Workshop-only rules |
@@ -71,10 +72,10 @@ The workshop never says BRIEF, AGENT or TRUST, and must keep it that way (see
    were moved into `4-courses/`. They're fine as workshop delivery:
    - slide 27: "AI only knows what you put in front of it"
    - slide 51: "The AI knows nothing about you"
-   - slide 114: "what it already believed"
+   - slide 116: "what it already believed"
 
    Rewrite them in mechanism terms ("it only has what you put in front of it") if they move.
-5. **Illustrative figure.** Slide 102's 90% → 81% → 73% is 0.9ⁿ, an illustration, not
+5. **Illustrative figure.** Slide 104's 90% → 81% → 73% is 0.9ⁿ, an illustration, not
    measured data. Never quote it as a statistic in either track.
 
 6. **Build tool.** As of 2026-11-16, the workshop builds its workers as Gemini **skills**. The

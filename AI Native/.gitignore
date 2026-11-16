@@ -39,6 +39,8 @@ source/**/*.key
 6-workshops/**/*.key
 # ...except the deck in each session's final/ folder: the one you deliver lives in GitHub.
 !6-workshops/**/final/deck/*.pptx
+# PowerPoint/Word lock files (~$name.pptx) appear while a file is open. Never commit them.
+~$*
 
 # Build output
 dist/

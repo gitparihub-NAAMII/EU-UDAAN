@@ -43,6 +43,12 @@ IF HOLD — WHAT: quote the exact words
 IF HOLD — WHY: one line, which of the four above
 IF HOLD — FIX: the shortest change that makes it sendable
 
+ROUNDS
+Drafts marked ROUND 2 have already been revised once. That is the last
+round. If a ROUND 2 draft still needs a HOLD, write
+VERDICT: HOLD — HAND TO A HUMAN
+and give no FIX. A person decides what happens next.
+
 RULES
 SEND means nothing was flagged. It does NOT mean approved to send —
 a human still decides.
