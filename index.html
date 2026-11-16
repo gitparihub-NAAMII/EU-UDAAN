@@ -11584,6 +11584,17 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
   #pmTab .pm-cal-ev.late{ background:#fff; color:var(--cancelled-ink); border:1px dashed var(--cancelled); border-left:3px solid var(--cancelled); }
   #pmTab .pm-cal-ev.fnd{ box-shadow:inset -3px 0 0 var(--reserved); }
   #pmTab .pm-cal-ev.mt{ background:var(--paper); color:var(--charcoal-soft); border:1px solid var(--line); border-left:3px solid var(--charcoal-soft); }
+  #pmTab .pm-flag{ display:inline-block; font-size:10.5px; font-weight:800; padding:2px 7px; border-radius:999px; margin-left:6px; vertical-align:middle; }
+  #pmTab .pm-flag.new{ background:var(--confirmed-bg); color:var(--confirmed-ink); }
+  #pmTab .pm-flag.late{ background:var(--cancelled-bg); color:var(--cancelled-ink); }
+  #pmTab .pm-flag.soon{ background:var(--proposed-bg); color:var(--proposed-ink); }
+  #pmTab .pm-mitem.fresh{ box-shadow:inset 3px 0 0 var(--confirmed); }
+  #pmTab .pm-todo-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+  #pmTab .pm-todo-col{ border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:var(--paper); }
+  #pmTab .pm-todo-col h4{ margin:0 0 6px; font-size:13.5px; display:flex; justify-content:space-between; gap:6px; align-items:baseline; }
+  #pmTab .pm-todo-it{ font-size:12.5px; padding:6px 0; border-top:1px solid var(--line); cursor:pointer; }
+  #pmTab .pm-todo-it:hover{ color:var(--brand); }
+  #pmTab .pm-todo-it small{ display:block; color:var(--charcoal-soft); margin-top:2px; }
   #pmTab .pm-cal-ev.cal{ background:transparent; color:var(--confirmed-ink); border:1px dashed var(--confirmed); border-left:3px solid var(--confirmed); }
   #pmTab .pm-cal-ev.cal.done{ color:var(--available-ink); border-color:var(--available); }
   #pmTab .pm-sync-note{ font-size:12.5px; color:var(--charcoal-soft); margin:8px 0 0; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
@@ -12125,21 +12136,51 @@ function normVal(c, el){
   if(el.tagName === 'TEXTAREA') return v.replace(/\r?\n/g, '<br>');
   return v;
 }
+/* to-do due-date state: overdue, due within 7 days, or nothing */
+function todoDue(r){
+  if(isDone(r.Status)) return '';
+  var d = parseDate(r.Due); if(!d) return '';
+  var t = new Date(); t.setHours(0, 0, 0, 0);
+  return d < t ? 'overdue' : (d - t <= 7 * 864e5 ? 'soon' : '');
+}
+function todoSort(a, b){
+  var da = isDone(a.Status) ? 1 : 0, db = isDone(b.Status) ? 1 : 0; if(da !== db) return da - db;
+  var pa = parseDate(a.Due), pb = parseDate(b.Due); return (pa ? pa.getTime() : 9e15) - (pb ? pb.getTime() : 9e15);
+}
+/* to-dos this person has not seen in My updates before (remembered in this browser only) */
+function seenTodoKey(){ return 'udaan-pm-seen-todo-' + curEmail(); }
+function newTodoIds(rows){
+  var seen = null; try{ seen = JSON.parse(localStorage.getItem(seenTodoKey()) || 'null'); }catch(e){}
+  var ids = rows.map(function(r){ return r.id; }), fresh = {};
+  if(seen) rows.forEach(function(r){ if(seen.indexOf(r.id) < 0 && !isDone(r.Status)) fresh[r.id] = 1; });
+  try{ localStorage.setItem(seenTodoKey(), JSON.stringify(ids)); }catch(e){}
+  return fresh;
+}
 function memberItemsHtml(k){
   var def = defOf(k), rows = memberRows(k).slice(), edit = MEMBER_EDIT[k];
   if(!rows.length) return '';
-  rows.sort(function(a, b){ return (isDone(a.Status) ? 1 : 0) - (isDone(b.Status) ? 1 : 0); });
+  rows.sort(k === 'todo' ? todoSort : function(a, b){ return (isDone(a.Status) ? 1 : 0) - (isDone(b.Status) ? 1 : 0); });
+  var fresh = k === 'todo' ? (st.freshTodo || {}) : {};
   var items = rows.map(function(r){
-    var ctx = [];
+    var ctx = [], due = k === 'todo' ? todoDue(r) : '';
     ['Due', 'Week of', 'Priority', 'Severity', 'Impact', 'Type', 'Which period', 'Target', 'Unit', 'Deliverable'].forEach(function(c){ if(r[c] && edit.indexOf(c) < 0) ctx.push(esc(c) + ': ' + esc(String(r[c]).replace(/<br>/gi, ' '))); });
     var fields = edit.map(function(c){
       return '<div class="field' + (LONG.test(c) ? ' pm-full' : '') + '"><label>' + esc(c) + (c === 'Progress' ? ' (%)' : '') + '</label>'
         + fieldInput(k, c, r[c] || '', 'data-mk="' + k + '" data-mid="' + esc(r.id) + '" data-mcol="' + esc(c) + '" data-orig="' + esc(r[c] || '') + '"') + '</div>';
     }).join('');
-    return '<div class="pm-mitem' + (isDone(r.Status) ? ' done' : '') + '"><div class="pm-mtitle">' + esc(titleOf(k, r)) + ' ' + badge('Status', r.Status) + '</div>'
+    var flags = (fresh[r.id] ? '<span class="pm-flag new">New</span>' : '') + (due === 'overdue' ? '<span class="pm-flag late">Overdue</span>' : (due === 'soon' ? '<span class="pm-flag soon">Due this week</span>' : ''));
+    return '<div class="pm-mitem' + (isDone(r.Status) ? ' done' : '') + (fresh[r.id] ? ' fresh' : '') + '"><div class="pm-mtitle">' + esc(titleOf(k, r)) + ' ' + badge('Status', r.Status) + flags + '</div>'
       + (ctx.length ? '<div class="pm-mctx">' + ctx.join(' · ') + '</div>' : '') + '<div class="pm-form">' + fields + '</div></div>';
   }).join('');
-  return '<div class="pt-card"><h3>' + def.ic + ' My ' + esc(def.label.toLowerCase()) + ' <small class="pm-muted">' + rows.length + '</small></h3>' + items + '</div>';
+  var sub = '';
+  if(k === 'todo'){
+    var open = rows.filter(function(r){ return !isDone(r.Status); }).length, late = rows.filter(function(r){ return todoDue(r) === 'overdue'; }).length, nNew = Object.keys(fresh).length;
+    var at = pmAllowed() ? null : tsDate(st.mine && st.mine.updatedAt);
+    sub = '<div class="sub">Kept in step with the To-do list automatically: when ' + (pmAllowed() ? 'a to-do is added or changed' : 'Sumi adds or changes a to-do') + ' with you as the owner, or a meeting action is assigned to you, it appears here. '
+      + open + ' open' + (late ? ', <b style="color:var(--cancelled-ink)">' + late + ' overdue</b>' : '') + (nNew ? ', <b>' + nNew + ' new</b>' : '') + '.'
+      + (at ? ' Last refreshed ' + esc(whenStr(at)) + '.' : '') + '</div>';
+  }
+  return '<div class="pt-card"><h3>' + def.ic + ' My ' + esc(def.label.toLowerCase()) + ' <small class="pm-muted">' + rows.length + '</small></h3>' + sub + items + '</div>';
 }
 function memberAddHtml(){
   var mon = fmtDate(thisMonday());
@@ -12169,7 +12210,10 @@ function pageMyUpdates(){
   var m = memberOf(curEmail());
   if(st.mineErr) return '<div class="pt-note">' + esc(st.mineErr) + '</div>';
   if(st.mineLoading || !st.mine) return '<div class="pt-note">Loading your items…</div>';
-  var sections = Object.keys(MEMBER_EDIT).map(memberItemsHtml).join('');
+  var tr = memberRows('todo'), tsig = tr.map(function(r){ return r.id; }).join(',');
+  if(st.mine && !st.mine.empty && st.freshSig !== tsig){ var f = newTodoIds(tr); st.freshTodo = Object.assign({}, st.freshTodo || {}, f); st.freshSig = tsig; }
+  // to-dos first: they change most often
+  var sections = ['todo'].concat(Object.keys(MEMBER_EDIT).filter(function(k){ return k !== 'todo'; })).map(memberItemsHtml).join('');
   var intro = '<div class="pt-card pm-hello"><h3>Hi ' + esc(m ? m.name.split(' ')[0] : '') + ', update your UDAAN work</h3><div class="sub">These are the items where you are the owner. Change what has moved, add this week’s tasks, then press <b>Submit my update</b>. '
     + (pmAllowed() ? 'It is applied to the tracker straight away and listed on Team updates under your name.' : 'Your update goes into Sumi’s main tracker automatically.') + '</div>'
     + (st.mine.empty ? '<div class="pt-note">Sumi has not shared your items yet. You can still add this week’s tasks or raise a challenge.</div>' : '') + '</div>';
@@ -12393,16 +12437,43 @@ function pageOverview(){
     +   '<div class="pt-card"><h3>Open items per person</h3><div class="sub">Weekly tasks, to-dos, deliverables, challenges, risks and follow-ups that are not done or closed.</div>' + ownHtml + '</div>'
     + '</div>';
 }
+/* Live board of open to-dos per person, straight from the To-do sheet. */
+function teamTodoHtml(){
+  var all = rowsOf('todo'), open = all.filter(function(r){ return !isDone(r.Status); }), taken = {};
+  var col = function(name, sub, rows){
+    rows = rows.slice().sort(todoSort);
+    var late = rows.filter(function(r){ return todoDue(r) === 'overdue'; }).length;
+    var items = rows.map(function(r){
+      var due = todoDue(r);
+      return '<div class="pm-todo-it" data-edit="todo:' + r.id + '">' + esc(titleOf('todo', r)) + ' ' + badge('Status', r.Status)
+        + (due === 'overdue' ? '<span class="pm-flag late">Overdue</span>' : (due === 'soon' ? '<span class="pm-flag soon">This week</span>' : ''))
+        + '<small>' + esc([r.Due ? 'Due ' + r.Due : '', r.Priority ? r.Priority + ' priority' : '', sub ? '' : r.Owner].filter(Boolean).join(' · ')) + '</small></div>';
+    }).join('') || '<div class="pm-muted" style="font-size:12.5px;padding:6px 0">Nothing open.</div>';
+    return '<div class="pm-todo-col"><h4><span>' + esc(name) + '</span><span class="pm-muted" style="font-size:11.5px;font-weight:700">' + rows.length + ' open'
+      + (late ? ' · <span style="color:var(--cancelled-ink)">' + late + ' overdue</span>' : '') + '</span></h4>' + items + '</div>';
+  };
+  var cols = PM_TEAM.map(function(m){
+    var mine = open.filter(function(r){ return ownsRow(m, r); }); mine.forEach(function(r){ taken[r.id] = 1; });
+    return col(m.name, true, mine);
+  });
+  var rest = open.filter(function(r){ return !taken[r.id]; });
+  if(rest.length) cols.push(col('Others and unassigned', false, rest));
+  return '<div class="pt-card"><div class="pm-card-head"><div><h3>☑ To-dos by person</h3><div class="sub">Live from the To-do list. Whatever you add or change there, or assign in meeting minutes, shows here and in that person’s My updates straight away. Click a to-do to edit it.</div></div>'
+    + addBtn('todo', defOf('todo')) + '</div><div class="pm-todo-grid">' + cols.join('') + '</div></div>';
+}
 function pageTeamUpdates(){
   var team = PM_TEAM.map(function(m){
     var last = st.updates.find(function(u){ return memberOf(u.byEmail) === m; });
-    return '<div class="prow"><div class="pr-name">' + esc(m.name) + '<small>' + esc(m.email) + '</small></div><div></div><div class="pr-fig">'
+    var mine = rowsOf('todo').filter(function(r){ return ownsRow(m, r) && !isDone(r.Status); }), late = mine.filter(function(r){ return todoDue(r) === 'overdue'; }).length;
+    return '<div class="prow"><div class="pr-name">' + esc(m.name) + '<small>' + esc(m.email) + '</small></div><div class="pm-muted" style="font-size:12px">' + mine.length + ' open to-do' + (mine.length === 1 ? '' : 's')
+      + (late ? ' · <b style="color:var(--cancelled-ink)">' + late + ' overdue</b>' : '') + '</div><div class="pr-fig">'
       + (last ? esc(whenStr(tsDate(last.at))) + '<small>last update</small>' : '<span class="pm-muted">No update yet</span>') + '</div></div>';
   }).join('');
   var list = st.updates.length ? st.updates.map(updateCardHtml).join('') : '<div class="pm-empty">No team updates yet. Team members send them from Program Management → UDAAN → My updates.</div>';
   return '<div class="pt-2col"><div class="pt-card"><h3>Team</h3><div class="sub">Who can send updates. To change this list, edit PM_TEAM in the page code.</div>' + team + '</div>'
     + '<div class="pt-card"><h3>How it works</h3><div class="sub" style="line-height:1.6">Each person sees only the rows where they are the Owner, and can change progress, status, actuals and notes, add weekly tasks and raise challenges. '
     + 'When they press Submit, their update is merged into this tracker automatically while your dashboard is open (on any tab). Updates sent while you are away are merged the next time you sign in.</div></div></div>'
+    + teamTodoHtml()
     + '<div class="pt-card"><h3>Recent updates</h3><div class="sub">Newest first. Everything here has already been applied to the sheets unless it says Pending or Skipped.</div>' + list + '</div>';
 }
 function addBtn(k, def){ return '<button class="pm-btn primary" data-add="' + k + '">+ Add ' + esc(def.one) + '</button>'; }
