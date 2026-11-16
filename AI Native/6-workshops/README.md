@@ -38,7 +38,7 @@ them in each session's `crosswalk.md`, not in `_system/graph/`.
 
 | Session | Status | What it is |
 |---|---|---|
-| [`ai-nativity-2026/`](ai-nativity-2026/README.md) | Final deck + all four handouts (D1-02 rebuilt) | One-day, five-part hands-on session: problem solving, context engineering, agentic AI, responsible AI |
+| [`ai-nativity-2026/`](ai-nativity-2026/README.md) | Final deck + all handouts. Part 4 rebuilt for Gemini skills, 2026-11-16 | One-day, five-part hands-on session: problem solving, context engineering, agentic AI, responsible AI |
 
 ## Layout of a session
 

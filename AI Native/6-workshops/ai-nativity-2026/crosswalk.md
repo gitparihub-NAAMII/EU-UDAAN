@@ -11,7 +11,7 @@ Nothing here declares anything in the graph.
 | Part 1: quiz, AI Pyramid, five habits | Domain framing (build manual §2) | No CU. The Pyramid sits at program level (`vocabulary-map.md` §4.3, "no home") | Workshop only |
 | **Part 2: five moves** | `prob.ai-enabled-problem-solving` (**unbuilt**) | None. See `5-roadmap/course-4-ai-enabled-problem-solving.md` | **Workshop has it; the course doesn't** |
 | Part 3: five dials | `prob.context-engineering` | CU2 (role, intent, audience), CU3 (shape decided upfront), CU4 (the answer it invented / fencing it in the truth), CU5 (reusable one-pager) | Strong, different vocabulary |
-| Part 4: Listener → Writer → Checker | `prob.agentic-ai` | CU3 (it did exactly what I said), CU4 (who's watching: nod points), CU5 · SCU 5.2 (build it in Gemini, free), SCU 5.3 (what deserves an agent) | Strong; different build (three Gems vs one) |
+| Part 4: Listener → Writer → Checker | `prob.agentic-ai` | CU3 (it did exactly what I said), CU4 (who's watching: nod points), CU5 · SCU 5.2 (build it in Gemini, free), SCU 5.3 (what deserves an agent) | Strong; different build (three Gemini skills vs one Gem). See difference 6 |
 | Part 5: five cases, two moments | `prob.responsible-ai` | CU2 (machine lied / Air Canada), CU3 (CV bias / Amazon), CU4 (whose data did you paste), CU5 (show your work, and sign it) | Strong, different device |
 
 ## Vocabulary: workshop names vs course names
@@ -35,11 +35,12 @@ The workshop never says BRIEF, AGENT or TRUST, and must keep it that way (see
 
 | Workshop device | AGENT letter |
 |---|---|
-| Each Gem's "IT PRODUCES" | A, Aim |
+| Each worker's "IT PRODUCES" | A, Aim |
 | "You paste it in", where the human is the wire | G, Go-signal (always *you*; no triggers or schedules) |
-| The Gem instructions | E, Explicit steps |
+| The skill's instructions | E, Explicit steps |
 | The Checker and "you press send" | N, Nod points |
-| Knowledge files and "do not decide whether it's safe" | T, Tools & limits |
+| The skill's attached files and "do not decide whether it's safe" | T, Tools & limits |
+| The skill's description: "call it by name, automatic pick-up is best-effort" | Touches G. The workshop never relies on it; the go-signal is still you |
 | "One job per worker", "short chains beat clever ones" | No letter. Workshop-only rules |
 
 **Part 5, two moments ↔ TRUST** (revealed at RAI SCU 5.2)
@@ -75,6 +76,12 @@ The workshop never says BRIEF, AGENT or TRUST, and must keep it that way (see
    Rewrite them in mechanism terms ("it only has what you put in front of it") if they move.
 5. **Illustrative figure.** Slide 104's 90% → 81% → 73% is 0.9ⁿ, an illustration, not
    measured data. Never quote it as a statistic in either track.
+
+6. **Build tool.** As of 2026-11-16, the workshop builds its workers as Gemini **skills**. The
+   course (Agentic SCU 5.2, "Build it in Gemini, free") still builds one Gemini **Gem**, and
+   `problems.yaml` names "a working Gemini Gem" as the validation artifact. Gems are being
+   retired, so the course will need the same move. That is a course change, made separately and
+   validator-gated, not from here. Until then, the two tracks use different tools on purpose.
 
 ## What each track can borrow
 
