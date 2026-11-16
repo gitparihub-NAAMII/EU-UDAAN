@@ -36,8 +36,8 @@ If anyone edits D2-01, these must survive, because Parts 3–5 depend on them:
   instructions *"your Part 3 prompt"*. The filenames keep their prefixes, because the slides cite them.
 - **The deck and D2-03 disagree on the Shrestha catch.** D2-03 says it did *not* appear in testing
   ("all three other drafts came back SEND") and tells the facilitator to say so honestly. Deck
-  slide 100 says *"Read every HOLD out loud… Especially the Shrestha one"*, which assumes it will
-  appear. Slide 101 hedges correctly ("If it also caught…"). **Fixed 2026-11-16:** slide 100 now reads *"Then look hard at the Shrestha draft. It may pass."*
+  slide 100 said *"Read every HOLD out loud… Especially the Shrestha one"*, which assumed it would
+  appear, while slide 101 hedged ("If it also caught…"). **Fixed 2026-11-16:** the run slide (98) now reads *"Then look hard at the Shrestha draft. It may pass."*
 - **Binod Shrestha vs Shrestha Suppliers.** A colleague and a vendor share a surname. It's harmless
   in testing so far, but it's a plausible way for the Writer to route a message wrongly. Watch it,
   or use it as a teaching moment.

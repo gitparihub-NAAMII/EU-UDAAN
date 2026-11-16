@@ -71,10 +71,10 @@ The workshop never says BRIEF, AGENT or TRUST, and must keep it that way (see
    were moved into `4-courses/`. They're fine as workshop delivery:
    - slide 27: "AI only knows what you put in front of it"
    - slide 51: "The AI knows nothing about you"
-   - slide 116: "what it already believed"
+   - slide 114: "what it already believed"
 
    Rewrite them in mechanism terms ("it only has what you put in front of it") if they move.
-5. **Illustrative figure.** Slide 104's 90% → 81% → 73% is 0.9ⁿ, an illustration, not
+5. **Illustrative figure.** Slide 102's 90% → 81% → 73% is 0.9ⁿ, an illustration, not
    measured data. Never quote it as a statistic in either track.
 
 6. **Build tool.** As of 2026-11-16, the workshop builds its workers as Gemini **skills**. The
