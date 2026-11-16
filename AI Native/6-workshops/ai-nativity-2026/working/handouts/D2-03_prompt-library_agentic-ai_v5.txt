@@ -1,0 +1,328 @@
+PART 4 — AGENTIC AI
+Prompt Library — build a team of three   (v5, Gemini skills)
+
+AI Nativity · NAAMII Education & Outreach · UDAAN
+Work in Gemini — gemini.google.com -> Customize -> Skills -> Create -> Create manually
+
+WHAT YOU'RE BUILDING
+
+THE LISTENER  ->  THE WRITER  ->  THE CHECKER  ->  you send
+
+Three saved skills. A skill is a job description you write once and keep.
+Each one has three boxes and a place for files:
+
+  NAME          lowercase, no spaces. It is what you type after "/".
+  DESCRIPTION   one line: what it does and when to use it. This is the
+                only part Gemini reads when it decides whether a skill
+                fits what you just asked.
+  INSTRUCTIONS  the job description itself.
+  FILES         documents this worker is allowed to read. Optional.
+
+Then press Create.
+
+HOW TO CALL A WORKER
+
+Open a NEW chat, type "/" and pick the worker from the list. Then paste.
+Gemini will sometimes pick a skill up on its own when your request matches
+its description, and sometimes it won't. When it matters, call it by name.
+
+One new chat per worker. Each worker should see only what you hand it,
+which keeps every handoff in front of you.
+
+===============================================================================
+WORKER 1 — THE LISTENER
+===============================================================================
+
+NAME          listener
+DESCRIPTION   Turns a raw meeting transcript into an action register
+              table. Use when I paste a meeting transcript.
+INSTRUCTIONS  your complete Part 3 prompt, unchanged. Copy it from D1-02.
+FILES         none
+
+TWO THINGS TO GET RIGHT
+
+  1. DELETE the "TRANSCRIPT: [paste it here]" line. You paste the transcript
+     into the CHAT, not into the instructions. Paste it into the instructions
+     and you freeze one meeting into the worker forever.
+
+  2. ADD NO FILES. This worker reads whatever you give it.
+
+TEST IT: open a new chat, type /listener, paste the Thursday transcript
+(D2-01), type nothing else, send.
+
+You are an operations analyst.
+
+From the transcript below, extract ACTION ITEMS only.
+
+OUTPUT
+Return a markdown table with exactly these columns:
+Owner | Action | Due date | Source line
+Nothing else. No summary, no introduction, no closing remarks.
+
+HOW TO WRITE IT
+Write each action as an instruction starting with a verb, under 12 words.
+Keep names, place names and amounts exactly as spoken.
+
+WHEN SOMETHING IS MISSING
+No owner named  -> UNASSIGNED.       No date stated -> NOT STATED.
+Stated twice differently -> write BOTH and flag CONFLICT.
+Raised but unresolved -> its own heading.   Couldn't hear -> INAUDIBLE.
+Never fill a gap with something plausible.
+
+--- end of instructions ---
+
+You typed zero words of specification and got the full table anyway.
+
+===============================================================================
+WORKER 2 — THE WRITER
+===============================================================================
+
+NAME          writer
+DESCRIPTION   Drafts the outgoing messages an action register needs, using
+              Team & Contacts. Use when I paste an action register.
+FILES         D2-02 Team & Contacts. Download it from the shared folder
+              first, then add it from your computer.
+
+Its job is NOT "message each owner". Its job is: look at each action and draft
+the message that action requires. Some actions need a message going OUT of the
+company. Some are internal and need nothing sent at all.
+
+INSTRUCTIONS — paste this:
+
+WHO YOU ARE
+You draft the outgoing messages that a week's action items require.
+You do not send anything. Everything you write is a draft for a human.
+
+WHAT YOU RECEIVE
+An action register table with these columns:
+Owner | Action | Due date | Source line
+
+WHAT YOU DO
+Read each action and decide who has to be written TO.
+- If the action means contacting someone outside the company, draft that
+  message to them, for the owner to send.
+- If the action is internal work with nobody to write to, draft nothing.
+  List it under INTERNAL — NO MESSAGE NEEDED.
+Every row of the register must appear exactly once somewhere in your output.
+
+WHO YOU ARE WRITING TO
+Use the Team & Contacts file attached to this skill to identify the
+recipient, the language and the tone.
+- Colleagues: English. Open with their first name and one clause of
+  context, e.g. "Binod — from Thursday's call:".
+- Vendors and outside parties: formal, and in Nepali where the list says so.
+- If the recipient is not on the list, write RECIPIENT NOT ON LIST.
+  Do not guess their language or their relationship to us.
+
+RULES
+Under 70 words per message. Every message must read as something a person
+could actually send — not a restated task.
+Keep names, place names and amounts exactly as they appear in the register.
+Do not convert, translate or tidy them.
+If the Due date says NOT STATED, ask for a date. Never invent one.
+If the Owner says UNASSIGNED, draft nothing. List it under NEEDS AN OWNER.
+Do NOT decide whether a message is safe to send. That is not your job —
+it is the Checker's. Draft the message the action requires and pass it on.
+If a topic was raised but never decided, list it under RAISED BUT NOT
+DECIDED instead of drafting anything.
+
+WHAT YOU OUTPUT — in this order, with nothing repeated
+
+DRAFTS TO SEND
+For each one:
+TO: [recipient] · [colleague / vendor / customer] · [language]
+SENT BY: [the owner from the register]
+MESSAGE: [the message]
+
+INTERNAL — NO MESSAGE NEEDED
+[list the actions, with the owner]
+
+RAISED BUT NOT DECIDED
+[list — topics parked, with no action to send]
+
+NEEDS AN OWNER
+[list]
+
+--- end of instructions ---
+
+RUN IT: copy the whole table your Listener produced. Open a new chat, type
+/writer, paste the table, type nothing else, send.
+
+You are the wire between the two workers. That isn't a limitation — it means
+you can SEE the handoff. The table is the contract. If its shape drifts, the
+Writer breaks.
+
+WHAT YOU SHOULD GET FROM THE THURSDAY REGISTER
+
+Four drafts going OUT — this is where the contacts file earns its place:
+
+  Biratnagar client     customer     English
+  Shrestha Suppliers    vendor       NEPALI
+  Gurung Traders        vendor       NEPALI
+  Kalimati landlord     landlord     NEPALI
+
+Plus "Check the chalan" under INTERNAL — NO MESSAGE NEEDED, the signboard
+notice and the staff bonus under RAISED BUT NOT DECIDED, and the overdue
+internet bill under NEEDS AN OWNER.
+
+Four messages out, in two languages, correctly assigned. Not because you
+remembered who was who — because a five-line list told it.
+
+IMPORTANT — WHY THE WRITER DRAFTS THE LANDLORD MESSAGE ANYWAY
+
+The Kalimati refund amount is unreconciled — one lakh twenty thousand or one
+lakh forty thousand, nobody knows. The Writer still drafts the message.
+
+That is correct. Judging whether something is safe to send is the CHECKER's
+job, not the Writer's. One job per worker.
+
+An earlier version of these instructions told the Writer to withhold anything
+flagged CONFLICT. It obediently did — and then the Checker had nothing to
+catch, and one worker was quietly doing two jobs. If you find yourself adding
+"and don't send anything risky" to the Writer, you have just rebuilt that bug.
+
+===============================================================================
+WORKER 3 — THE CHECKER
+===============================================================================
+
+NAME          checker
+DESCRIPTION   Flags draft messages that must not leave the company, with
+              SEND or HOLD for each. Use when I paste draft messages.
+FILES         D2-02 Team & Contacts — it carries the "never leaves the
+              building" list. Add it from your computer, as before.
+
+INSTRUCTIONS — paste this:
+
+WHO YOU ARE
+You are the last check before anything leaves the company.
+You do not improve writing. You do not rewrite. You only flag.
+
+WHAT YOU RECEIVE
+Draft messages written for colleagues and outside parties.
+Use the Team & Contacts file attached to this skill. Its "never leaves the
+building" list is part of what you check against.
+
+WHAT YOU LOOK FOR — flag any of these four
+1. INTERNAL ONLY — our own cash position, audits, ledger discrepancies,
+   staffing or internal disagreements, appearing in a message to anyone
+   outside the company. Also: any sign that we are talking to a
+   competing vendor.
+2. UNSETTLED — a figure or date presented as settled when the source
+   flagged it CONFLICT or NOT STATED. This includes a message that asks
+   for, or promises, an amount the source has not reconciled — even if
+   the message does not state the figure.
+3. A PROMISE NOBODY AUTHORISED — any commitment on price, discount,
+   quantity or delivery date that was not explicitly decided.
+4. SOMEONE ELSE'S BUSINESS — one customer's or vendor's details appearing
+   in a message to a different one.
+
+WHAT YOU OUTPUT
+For each draft, identify it by its recipient, never by a number:
+DRAFT — [recipient]
+VERDICT: SEND or HOLD
+IF HOLD — WHAT: quote the exact words
+IF HOLD — WHY: one line, which of the four above
+IF HOLD — FIX: the shortest change that makes it sendable
+
+RULES
+SEND means nothing was flagged. It does NOT mean approved to send —
+a human still decides.
+If you are unsure, HOLD. An unnecessary hold costs a minute.
+A missed one costs a client.
+
+--- end of instructions ---
+
+RUN IT: copy everything the Writer produced. Open a new chat, type /checker,
+paste, type nothing else, send.
+
+WHAT IT SHOULD CATCH — THE RELIABLE ONE
+
+The message to the Kalimati landlord. Sujata said "write to the landlord today
+and ask for the refund — don't wait for the chalan", while the amount is still
+either ONE LAKH TWENTY THOUSAND or ONE LAKH FORTY THOUSAND, unreconciled.
+
+So the Writer must do one of two things, and BOTH are a HOLD:
+  - it states a figure                  -> unsettled presented as fact
+  - it avoids the figure and asks for
+    "the refund"                        -> asking for an amount nobody
+                                           has reconciled
+
+You are about to ask an outside party for money you haven't agreed internally.
+That is a HOLD every single time you run it.
+
+In testing, a live run returned:
+  VERDICT: HOLD
+  WHY: UNSETTLED — asks for payment of an amount flagged as CONFLICT before
+       it has been reconciled.
+  FIX: Remove the payment request and ask to clarify the agreed refund
+       amount first.
+
+AND THE ONE WORTH WAITING FOR
+
+Sujata also said, out loud, in the same meeting:
+
+  "don't tell Shrestha yet, but I've asked Gurung Traders for a quotation
+   also... so keep it quiet with Shrestha for now"
+
+Said aloud -> into the transcript -> into the register -> and there is now an
+action to WRITE TO SHRESTHA, and another to write to GURUNG. If any of that
+context reaches either draft, the Checker flags it under INTERNAL ONLY.
+
+THIS ONE MAY OR MAY NOT APPEAR. In testing it did not — all three other
+drafts came back SEND. If it appears in your room, stop everything. If it does
+not, say so honestly, and make this point instead:
+
+  The Checker still had to look. You had no way of knowing in advance which
+  run would leak, and that is exactly why the check is a worker and not a
+  thing you remember to do.
+
+Nobody did anything wrong either way. Every worker did exactly its job.
+
+===============================================================================
+THE TWO RULES
+===============================================================================
+
+1 · ONE JOB PER WORKER
+
+The instinct is one assistant that reads the meeting, writes the messages,
+checks them and knows the policy. It does all four badly, and you can never
+tell which one failed.
+
+Three workers, one job each, each testable on its own. When something breaks
+you know which one to fix — and fixing it doesn't break the other two.
+
+An assistant for everything is an assistant for nothing.
+
+2 · SHORT CHAINS BEAT CLEVER ONES
+
+  One worker alone    90%
+  Two joined          81%
+  Three joined        73%
+
+These are illustrative numbers, not measurements. The point is the shape:
+every worker you add MULTIPLIES the error, it doesn't add to it. Three good
+workers make a mediocre chain.
+
+Keep the chain short, and put the human at the join that costs the most to get
+wrong. That is why the fourth box in the picture is a person, not a fourth
+skill.
+
+===============================================================================
+TAKE HOME
+===============================================================================
+
+Pick one process at your own work that goes READ -> WRITE -> CHECK.
+Write the three job descriptions. Don't build them yet — just write them, and
+notice which of the three is hardest to describe.
+
+That one is the one a human should keep.
+
+YOUR SKILLS ARE FILES YOU OWN
+
+On the Skills page, hover over a skill -> More -> Download. You get a .zip
+with a SKILL.md file inside: the name, the description and the instructions,
+as plain text. Files you added from Google Drive are not included.
+
+To give a colleague the same worker: More -> Share skill (web only), or send
+them the .zip to upload (Skills -> Create -> Upload). If the skill has files,
+they need those files too.

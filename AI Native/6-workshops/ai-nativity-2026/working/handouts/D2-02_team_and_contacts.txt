@@ -1,0 +1,36 @@
+TEAM & CONTACTS — Himalaya Trade Concern
+Internal reference. Use this to decide who gets what, and in which language.
+
+
+COLLEAGUES — internal
+Write in English. Direct, first name, no formal greeting.
+
+  Sujata Rana      Managing Director
+  Ramesh Thapa     Operations
+  Binod Shrestha   Logistics & stores
+
+
+VENDORS AND OUTSIDE PARTIES — external
+Write formally. Write in Nepali where indicated.
+
+  Shrestha Suppliers        Biratnagar    vendor          Nepali
+  Gurung Traders            Birtamod      vendor          Nepali
+  Kalimati warehouse        Kathmandu     landlord        Nepali
+  Ward office / Nagarpalika Kathmandu     government      Nepali
+  Biratnagar client         Biratnagar    customer        English
+
+
+NEVER LEAVES THE BUILDING
+The following must never appear in a message to anyone external:
+
+  - our own cash position, cash flow or payment difficulties
+  - audit matters, ledger discrepancies, or figures we have not reconciled
+  - the fact that we are talking to a competing vendor
+  - staffing, hiring, salary or bonus decisions
+  - any figure or date the source flagged as CONFLICT or NOT STATED
+  - one vendor's or customer's details in a message to a different one
+
+
+ANYONE NOT ON THIS LIST
+Unknown. Do not guess their language, their tone, or their relationship
+to us. Say so instead.

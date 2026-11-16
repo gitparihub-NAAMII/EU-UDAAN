@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Export a .docx to plain Markdown-ish text, so a gitignored handout has a diffable twin.
 
-    env/bin/python _system/tools/docx_to_md.py 6-workshops/<session>/handouts/<file>.docx \
-        > 6-workshops/<session>/handouts/<file>.md
+    env/bin/python _system/tools/docx_to_md.py 6-workshops/<session>/<final|working>/handouts/<file>.docx \
+        > 6-workshops/<session>/<final|working>/handouts/<file>.md
 
 Standard library only. Keeps paragraph text in order and renders tables as pipe rows.
 Loses formatting, images and comments. Generated: edit the .docx, then re-run.

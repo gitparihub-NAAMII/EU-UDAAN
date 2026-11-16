@@ -37,6 +37,8 @@ source/**/*.key
 6-workshops/**/*.xlsx
 6-workshops/**/*.pdf
 6-workshops/**/*.key
+# ...except the deck in each session's final/ folder: the one you deliver lives in GitHub.
+!6-workshops/**/final/deck/*.pptx
 
 # Build output
 dist/

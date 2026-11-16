@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Export a .pptx deck to slide-by-slide Markdown, so a gitignored binary has a diffable twin.
 
-    env/bin/python _system/tools/deck_to_md.py 6-workshops/ai-nativity-2026/deck/ai-nativity-2026.pptx \
-        > 6-workshops/ai-nativity-2026/slides.md
+    env/bin/python _system/tools/deck_to_md.py 6-workshops/ai-nativity-2026/final/deck/ai-nativity-2026.pptx \
+        > 6-workshops/ai-nativity-2026/final/slides.md
 
 Standard library only (a .pptx is a zip of XML). What it keeps: every text run, in reading
 order, plus speaker notes. What it cannot keep: images, diagrams, layout. Slides carrying
