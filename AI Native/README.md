@@ -34,6 +34,7 @@ Read the numbered folders in order. Each one opens with a README.
 | [**3-course-flow/**](3-course-flow/) | The programme arc, Maya's story, the map of all 15 units | How the courses connect, and the order things are taught |
 | [**4-courses/**](4-courses/) | The three courses: units, sub-units, and the written lessons | The course itself |
 | [**5-roadmap/**](5-roadmap/) | Course 4, known gaps, open proposals | What's not built yet |
+| [**6-workshops/**](6-workshops/) | Live sessions: decks, handouts, run-sheets, and how each maps to the courses | What's delivered in the room, as opposed to self-paced |
 | [`_system/`](_system/) | Machine-readable graph, validator, vocabulary mapping, source pointers | Maintaining the repo (you can skip this as a reader) |
 
 ## Where things stand

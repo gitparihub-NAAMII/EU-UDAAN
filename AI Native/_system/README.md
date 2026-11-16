@@ -10,6 +10,7 @@ The programme is also expressed as a contribution to Tangible's typed capability
 | `vocabulary-map.md` | How UDAAN's vocabulary maps onto the graph, where it doesn't fit, and open questions for upstream | Yes |
 | `graph/` | Machine-readable registries: domains, skills and typed edges, knowledge bases, problems, escalations | Yes |
 | `tools/validate.py` | The structural gate. Run before claiming any change is done | Yes |
+| `tools/deck_to_md.py`, `tools/docx_to_md.py` | Generate the diffable `.md` twins of gitignored workshop decks and handouts | Yes |
 | `tools/seed_corpus.py` | One-time seed of the 63 sub-units, kept for auditability. `--force` destroys hand edits | Rarely |
 | `source/` | Pointer and manifest for the original decks and spreadsheets. The binaries are not committed | Yes |
 | `claude-project-memory.md` | Programme-level notes carried over from earlier Claude sessions | Yes |

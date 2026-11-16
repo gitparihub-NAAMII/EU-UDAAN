@@ -31,6 +31,13 @@ source/**/*.key
 !source/README.md
 !source/MANIFEST.yaml
 
+# Workshop binaries — decks and handouts live locally; each has a generated .md twin.
+6-workshops/**/*.pptx
+6-workshops/**/*.docx
+6-workshops/**/*.xlsx
+6-workshops/**/*.pdf
+6-workshops/**/*.key
+
 # Build output
 dist/
 build/
