@@ -12329,8 +12329,14 @@ function openEditor(k, id, preset){
     var nd = cloneData(); if(!nd[k]) nd[k] = { cols:sh.cols.slice(), rows:[], desc:sh.desc || '' };
     if(row){ nd[k].rows = nd[k].rows.map(function(r){ return r.id === row.id ? o : r; }); }
     else nd[k].rows.push(o);
+    // an AI Native cohort also goes on (or updates) the AI Native calendar
+    var toCal = k === 'cohorts' && (calEligible(o) || (o.calId && low(o.Status) === 'cancelled'));
+    if(toCal && !o.calId) o.calId = newEvId();
     var btn = ov.querySelector('#pmSave'); btn.disabled = true; btn.textContent = 'Saving…';
-    save(nd, (row ? 'edited ' : 'added ') + def.one).then(close).catch(function(){ btn.disabled = false; btn.textContent = row ? 'Save changes' : 'Add'; });
+    save(nd, (row ? 'edited ' : 'added ') + def.one).then(function(){
+      close();
+      if(toCal) pushRowToCalendar(o, row).then(function(){ toast('Also ' + (row && row.calId ? 'updated on' : 'added to') + ' the AI Native calendar'); }).catch(function(e){ console.warn('calendar', e); });
+    }).catch(function(){ btn.disabled = false; btn.textContent = row ? 'Save changes' : 'Add'; });
   });
   var del = ov.querySelector('#pmDel');
   if(del) del.addEventListener('click', function(){
@@ -12765,6 +12771,48 @@ function calEvents(){
         Notes:['From the AI Native calendar', e.location, e.time].filter(Boolean).join(' · ') };
     });
 }
+/* ---------- cohort map → AI Native calendar ---------- */
+function toCalStatus(s){
+  s = low(s);
+  if(s === 'delivered') return 'completed';
+  if(s === 'confirmed') return 'confirmed';
+  if(s === 'cancelled') return 'cancelled';
+  if(/^(planned|onboarding|pilot)$/.test(s)) return 'booked';
+  return 'proposed';
+}
+/* An AI Native cohort with a date and a partner goes on the calendar ("Partner to find" rows stay in the map only). */
+function calEligible(r){ return !!r && r.Programme === 'AI Native' && !!toIso(r.Date) && low(r.Status) !== 'partner to find'; }
+function newEvId(){ return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function plainTxt(s){ return String(s || '').replace(/<br>/gi, ' ').trim(); }
+/* Create or update the calendar entry for one cohort-map row. prev = the row before this edit (only changed fields are sent). */
+function pushRowToCalendar(r, prev){
+  if(!r || !r.calId || typeof persistEventToProgram !== 'function') return Promise.resolve();
+  var evs = []; try{ evs = evsForProgram('ai_native') || []; }catch(e){}
+  var ex = evs.find(function(e){ return e.id === r.calId; }), status = toCalStatus(r.Status);
+  if(!ex && (status === 'cancelled' || !calEligible(r))) return Promise.resolve();
+  var now = new Date().toISOString(), who = (typeof adminName !== 'undefined' && adminName) || 'Admin';
+  var ev = ex ? JSON.parse(JSON.stringify(ex)) : { id:r.calId, createdAt:now, ownerId:(typeof profile !== 'undefined' && profile) ? profile.userId : null, capacity:'',
+    location:low(r.Format) === 'online' ? 'Online' : '', notes:['Added from the Program Management cohort map', plainTxt(r.Notes)].filter(Boolean).join(' · '), history:[] };
+  var changed = function(c){ return !ex || !prev || prev[c] !== r[c]; };
+  var before = JSON.stringify(ev);
+  if(changed('Date')) ev.date = toIso(r.Date);
+  if(changed('Status')) ev.status = status;
+  if(changed('Partner') || !ev.title) ev.title = plainTxt(r.Partner);
+  if(changed('Learners') && learnersOf(r) && !(typeof isOpenCohort === 'function' && isOpenCohort(ev))) ev.participants = String(learnersOf(r));
+  if(ex && JSON.stringify(ev) === before) return Promise.resolve();
+  ev.updatedAt = now; ev.lastActionBy = who + ' (cohort map)'; ev.lastActionStatus = ev.status; ev.lastActionAt = now;
+  ev.history = Array.isArray(ev.history) ? ev.history : []; ev.history.push({ by:who + ' (cohort map)', status:ev.status, at:now });
+  if(ev.status === 'completed' && !ev.completedAt) ev.completedAt = now;
+  try{ if(currentProgram.key === 'ai_native'){ var i = events.findIndex(function(e){ return e.id === ev.id; }); if(i >= 0) events[i] = ev; else events.push(ev); } }catch(e){}
+  return Promise.resolve(persistEventToProgram('ai_native', ev)).then(function(){ try{ if(typeof renderAll === 'function') renderAll(); }catch(e){} calRefresh(); });
+}
+/* Cohort-map rows that are not on the calendar yet and not matched to a calendar entry (today onwards). */
+function calPushRows(rows, plan){
+  var t = toIso(new Date()), matched = {};
+  (plan || []).forEach(function(p){ if(p.row) matched[p.row.id] = 1; });
+  var known = {}; (plan || []).forEach(function(p){ known[p.ev.calId] = 1; });
+  return rows.filter(function(r){ return calEligible(r) && !matched[r.id] && (!r.calId || !known[r.calId]) && toIso(r.Date) >= t && !/^(delivered|cancelled)$/.test(low(r.Status)); });
+}
 function nameWords(s){ return low(s).replace(/\(.*?\)/g, ' ').split(/[^a-z0-9]+/).filter(function(w){ return w.length > 2 && !/^(the|and|for|college|cohort|ai|native|open|of|nepal|campus)$/.test(w); }); }
 /* Which cohort-map row is this calendar cohort? Linked rows first, then same date with a similar name. */
 function calMatch(ev, rows, used){
@@ -12795,7 +12843,7 @@ function calPlan(rows){
       var rs = low(r.Status), definite = /^(completed|confirmed|cancelled)$/.test(ev.status);
       // Delivered and "To verify" rows are checked against the monthly reports, so the calendar never overrides them
       var locked = rs === 'delivered' || rs === 'to verify';
-      if(!locked && r.Status !== ev.Status && (definite || !rs || /^(tentative|planned|confirmed|to confirm)$/.test(rs))) ch.Status = ev.Status;
+      if(!locked && toCalStatus(r.Status) !== ev.status && (definite || !rs || /^(tentative|planned|confirmed|to confirm)$/.test(rs))) ch.Status = ev.Status;
       if(!locked && ev.Learners && (ev.status === 'completed' ? learnersOf(r) !== +ev.Learners : !learnersOf(r))) ch.Learners = ev.Learners;
     }
     out.push({ ev:ev, row:r, ch:ch, isNew:!r && ev.status !== 'cancelled' });
@@ -12809,13 +12857,15 @@ function calSyncCounts(plan){
   return { add:add, upd:upd, link:link, any:add + upd + link };
 }
 function calSync(){
-  var plan = calPlan(rowsOf('cohorts')), c = calSyncCounts(plan);
-  if(!c.any){ if(typeof showToast === 'function') showToast('The cohort map already matches the AI Native calendar.'); return; }
-  var lines = [];
+  var plan = calPlan(rowsOf('cohorts')), c = calSyncCounts(plan), push = calPushRows(rowsOf('cohorts'), plan);
+  if(!c.any && !push.length){ if(typeof showToast === 'function') showToast('The cohort map already matches the AI Native calendar.'); return; }
+  var lines = push.map(function(r){ return '→ calendar: ' + r.Date + ' · ' + plainTxt(r.Partner).slice(0, 60) + ' (' + (STATUS_LABEL[toCalStatus(r.Status)] || '') + ')'; });
   plan.filter(function(p){ return p.isNew; }).forEach(function(p){ lines.push('+ ' + fmtDate(p.ev.d) + ' · ' + p.ev.Partner + ' (' + p.ev.Status + ')'); });
   plan.filter(function(p){ return p.row && Object.keys(p.ch).some(function(k){ return k !== 'calId'; }); }).forEach(function(p){
     lines.push('~ ' + p.row.Date + ' · ' + p.row.Partner + ': ' + Object.keys(p.ch).filter(function(k){ return k !== 'calId'; }).map(function(k){ return k + ' → ' + p.ch[k]; }).join(', ')); });
-  var msg = 'Bring the AI Native calendar into the cohort map?\n\n' + c.add + ' new cohort' + (c.add === 1 ? '' : 's') + ', ' + c.upd + ' updated'
+  var msg = 'Sync the cohort map and the AI Native calendar?\n\n'
+    + (push.length ? push.length + ' cohort-map date' + (push.length === 1 ? '' : 's') + ' added to the AI Native calendar.\n' : '')
+    + 'From the calendar: ' + c.add + ' new cohort' + (c.add === 1 ? '' : 's') + ', ' + c.upd + ' updated'
     + (c.link ? ', ' + c.link + ' linked (no change)' : '') + '.\n\n' + lines.slice(0, 25).join('\n') + (lines.length > 25 ? '\n… and ' + (lines.length - 25) + ' more' : '')
     + '\n\nRows marked Delivered keep their status. Nothing is deleted.';
   if(!confirm(msg)) return;
@@ -12827,7 +12877,11 @@ function calSync(){
     else if(p.isNew) nd.cohorts.rows.push({ id:uid(), calId:p.ev.calId, ID:'', Programme:'AI Native', Date:fmtDate(p.ev.d), 'End date':'', Partner:p.ev.Partner,
       Sector:p.ev.Sector, Format:p.ev.Format, Learners:p.ev.Learners, Lead:'', 'Depends on':'', Status:p.ev.Status, Notes:p.ev.Notes });
   });
-  save(nd, 'synced the cohort map with the AI Native calendar (' + c.add + ' added, ' + c.upd + ' updated)').catch(function(){});
+  var pushed = push.map(function(r){ var x = byId[r.id]; if(x){ x.calId = newEvId(); return x; } return null; }).filter(Boolean);
+  save(nd, 'synced the cohort map with the AI Native calendar (' + c.add + ' added, ' + c.upd + ' updated, ' + pushed.length + ' sent to the calendar)')
+    .then(function(){ return Promise.all(pushed.map(function(r){ return pushRowToCalendar(r, null); })); })
+    .then(function(){ if(pushed.length) toast(pushed.length + ' cohort' + (pushed.length === 1 ? '' : 's') + ' added to the AI Native calendar'); })
+    .catch(function(e){ console.warn('calendar sync', e); });
 }
 /* redraw the cohort map when calendar data arrives or changes */
 var calRedrawT = null;
@@ -12856,7 +12910,7 @@ function cohortCalendarHtml(rows){
     if(e && s && e > s) put(e, r, 'end');
   });
   meetRows().forEach(function(mt){ put(parseDate(mt.Date), mt, 'meet'); });
-  var plan = calPlan(rowsOf('cohorts')), sc = calSyncCounts(plan);
+  var plan = calPlan(rowsOf('cohorts')), sc = calSyncCounts(plan), pushN = calPushRows(rowsOf('cohorts'), plan).length;
   plan.forEach(function(p){ if(p.isNew) put(p.ev.d, p.ev, 'cal'); });
   var chip = function(it){
     if(it.kind === 'cal'){
@@ -12898,9 +12952,10 @@ function cohortCalendarHtml(rows){
     + '<div class="pm-cal-wrap"><div class="pm-cal">'
     + ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(w){ return '<div class="pm-cal-dow">' + w + '</div>'; }).join('')
     + cells + '</div></div>'
-    + '<div class="pm-sync-note">' + (plan.length
-        ? '🗓 <span>AI Native calendar: ' + plan.length + ' cohort' + (plan.length === 1 ? '' : 's') + (sc.add ? ', <b>' + sc.add + ' not in the cohort map yet</b> (dashed)' : ', all in the cohort map') + (sc.upd ? ', ' + sc.upd + ' with newer status, date or learners' : '') + '.</span>'
-          + (pmAllowed() && sc.any ? '<button class="pm-btn primary" id="pmCalSync" title="Copy the AI Native calendar cohorts into this cohort map">⟳ Sync from AI Native calendar</button>' : '')
+    + '<div class="pm-sync-note">' + (plan.length || pushN
+        ? '🗓 <span>AI Native calendar: ' + plan.length + ' cohort' + (plan.length === 1 ? '' : 's') + (sc.add ? ', <b>' + sc.add + ' not in the cohort map yet</b> (dashed)' : ', all in the cohort map') + (sc.upd ? ', ' + sc.upd + ' with newer status, date or learners' : '') + '.'
+          + (pushN ? ' <b>' + pushN + ' cohort-map date' + (pushN === 1 ? '' : 's') + ' not on the AI Native calendar yet.</b>' : '') + '</span>'
+          + (pmAllowed() && (sc.any || pushN) ? '<button class="pm-btn primary" id="pmCalSync" title="Copy cohorts both ways between this cohort map and the AI Native calendar">⟳ Sync with AI Native calendar</button>' : '')
         : '🗓 <span>No AI Native calendar cohorts loaded yet.</span>') + '</div>'
     + '<div class="chart-legend"><span><i style="background:var(--available)"></i>Delivered</span><span><i style="background:var(--confirmed)"></i>Confirmed / planned / pilot / onboarding</span>'
     + '<span><i style="background:var(--proposed)"></i>Tentative / to confirm / MoU in progress</span><span><i style="background:var(--cancelled)"></i>Partner to find</span>'
