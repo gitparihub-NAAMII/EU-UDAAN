@@ -227,7 +227,7 @@ code{font-family:var(--mono);font-size:.85em;background:var(--track);padding:1px
 
 <section id="philosophy">
   <h2>Experience first, theory second</h2>
-  <p>Each lesson starts with a realistic agricultural situation or workplace task, not a theoretical explanation. Participants meet a challenge, observe it, discover the concepts they need, practise the skills and apply them to their group project. Theory arrives when it is needed.</p>
+  <p>Each lesson starts with a realistic agricultural situation or workplace task, not a theoretical explanation. Participants meet a challenge, observe it, discover the concepts they need, practise the skills and apply them to their group project. Theory arrives when it is needed. The exception is Module 3 (Development Infrastructure and GitHub), a practical setup task.</p>
   <div class="cycle">
     <div><b>1. Experience</b><span>Encounter a realistic scenario</span><i>What is happening in the real world?</i></div>
     <div><b>2. Observe</b><span>Identify the challenge and information gaps</span><i>What do we notice?</i></div>
@@ -504,14 +504,13 @@ const M=[
   Apply:["Create the formal U0 record and add it to the Agricultural Problem Bank. Teaching example: <code>AG-U0-001</code> Fruit Fly Infestation and Management Challenges in Cucumber Production."]},
  deliv:["U0 Problem Formulation","Evidence & Uncertainty Register","Investigation Questions","Scope & Constraints","Updated Data Requirements","Problem Bank entry"],
  caution:"The cucumber case is a teaching scenario. Infestation rates, species, causes and intervention effects must come from evidence, not be invented."},
-{id:"m3",t:"Development Infrastructure and GitHub",s:2,w:1,purpose:"Establish the collaborative development environment.",
+{id:"m3",t:"Development Infrastructure and GitHub",s:2,w:1,purpose:"Get every participant working in the shared GitHub repository, using the shared folder structure and the GitHub workflow. This is a practical setup task; it does not follow the five-step cycle.",
  steps:{
-  Experience:["Several people work on the same project and must manage changes without overwriting each other."],
-  Observe:["Why files need organisation, changes need tracking, contributions need review and shared resources need controlled updates."],
-  Discover:["Git and GitHub; repositories, folders and branches; commits, push and pull; pull requests and review; Markdown; branch protection."],
-  Practice:["Clone, branch, write Markdown, commit and push, open a pull request, review changes."],
-  Apply:["Each group sets up its project folder and branches."]},
- deliv:["Working repository","Group & member branches","Standard folder structure","README & contribution guide","Practice pull request"]},
+  "Before (trainers)":["Create the central repository <code>Agricultural-Agentic-AI</code>.","Add the shared folder structure and the ten group folders.","Add <code>README.md</code>, <code>COURSE.md</code> and development guidelines with contribution rules.","Protect <code>main</code>: pull requests only, at least one trainer approval.","Create group branches <code>group-01</code> to <code>group-10</code> from <code>main</code>.","Invite participants; give each group coordinator review rights on the group branch."],
+  "Self-study (2 h)":["Create a GitHub account and accept the invitation.","Install Git and set name and email.","Clone the repository.","Learn <code>clone</code>, <code>status</code>, <code>add</code>, <code>commit</code>, <code>push</code>, <code>pull</code>, <code>checkout</code>.","Learn basic Markdown: headings, lists, links, tables, code blocks."],
+  "Workshop (1 h)":["Each member creates a personal branch from the group branch, e.g. <code>group-01/member-01</code>.","Each member adds a short <code>README.md</code> in their member folder (name, role, sub-topic).","Commit, push and open a pull request to the group branch.","The group coordinator reviews and merges member pull requests.","The group updates its group <code>README.md</code> (theme, members, roles).","The group opens a pull request to <code>main</code> for trainer review."],
+  "Rules":["No direct commits to <code>main</code>.","Work only in your group folder unless authorised to change shared resources.","Pull before starting; commit small changes with clear messages.","Never commit large raw datasets, passwords or API keys."]},
+ deliv:["Every participant cloned and pushed","Group branch + four member branches","Member PRs merged into group branch","Completed group README","Approved group PR to main"]},
 {id:"m4",t:"U1: Descriptive Analytics",s:5,w:2,kq:"What is happening?",
  steps:{
   Experience:["A dataset tied to the group's problem, e.g. fruits inspected and damaged across ten cucumber farms. What can we learn from it?"],

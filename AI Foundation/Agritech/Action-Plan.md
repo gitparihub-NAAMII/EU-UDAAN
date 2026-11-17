@@ -233,7 +233,9 @@ apply those skills to their group project.
   -----------------------------------------------------------------------
 
 This cycle applies to every module, including agriculture, data
-preparation, analytics, RAG and Agentic AI.
+preparation, analytics, RAG and Agentic AI. The exception is Module 3
+(Development Infrastructure and GitHub), which is a practical setup
+task.
 
 ### 3.3 Example: introducing agricultural data
 
@@ -654,56 +656,67 @@ invented.
 **Self-study:** 2 hours\
 **Workshop:** 1 hour
 
-**Purpose:** Establish the collaborative development environment.
+**Purpose:** Get every participant working in the shared GitHub
+repository, using the structure in Section 14 and the workflow in
+Section 15.
 
-### 7.1 Experience
+This module is a practical setup task. It does not follow the
+five-step learning cycle.
 
-Participants experience the problem of multiple people working on the
-same project and needing to manage changes without overwriting one
-another's work.
+### 7.1 Before the module (trainers)
 
-### 7.2 Observe
+1.  Create the central repository `Agricultural-Agentic-AI` on GitHub.
+2.  Add the shared folder structure (Section 14.1) and the ten group
+    folders (Section 14.3).
+3.  Add `README.md`, `COURSE.md` and `docs/development-guidelines.md`
+    with the contribution rules.
+4.  Protect `main`: pull requests only, at least one trainer approval.
+5.  Create the ten group branches (`group-01` to `group-10`) from
+    `main`.
 
-Discuss:
+### 7.2 Self-study (2 hours)
 
--   Why project files need organisation.
--   Why changes need to be tracked.
--   Why individual and group contributions need review.
--   Why shared resources need controlled updates.
+Each participant completes the following on their own computer:
 
-### 7.3 Discover
+1.  Create a GitHub account and accept the repository invitation.
+2.  Install Git and set up their name and email.
+3.  Clone the repository.
+4.  Learn the basic commands: `clone`, `status`, `add`, `commit`,
+    `push`, `pull`, `checkout`.
+5.  Learn basic Markdown: headings, lists, links, tables and code
+    blocks.
 
-Introduce:
+### 7.3 Workshop (1 hour)
 
--   Git and GitHub.
--   Repositories, folders and branches.
--   Commits and push/pull.
--   Pull requests and code review.
--   Markdown documentation.
--   Branch protection and collaboration.
+Each group, guided by a trainer:
 
-### 7.4 Practice
+1.  Each member creates a personal branch from the group branch, for
+    example `group-01/member-01`.
+2.  Each member adds a short `README.md` in their member folder (name,
+    role, assigned sub-topic).
+3.  Each member commits, pushes and opens a pull request to the group
+    branch.
+4.  The group coordinator reviews and merges all member pull requests.
+5.  The group updates its group `README.md` (theme, members, roles).
+6.  The group opens a pull request from the group branch to `main` for
+    trainer review.
 
-Participants practise:
+### 7.4 Rules
 
--   Cloning the repository.
--   Creating branches.
--   Creating and editing Markdown files.
--   Committing and pushing changes.
--   Opening pull requests.
--   Reviewing changes.
-
-### 7.5 Apply
-
-Each group establishes its project folder and branching structure.
+-   No direct commits to `main`.
+-   Members work only in their group folder unless authorised to change
+    shared resources.
+-   Pull before starting work; commit small changes with clear messages.
+-   Do not commit large raw datasets, passwords or API keys.
 
 **Required deliverables:**
 
--   Working GitHub repository.
--   Group branches and member branches.
--   Standard project folder structure.
--   README and contribution instructions.
--   Successful practice pull request.
+-   Every participant has cloned the repository and pushed to their
+    member branch.
+-   Each group has a group branch and four member branches.
+-   Each group has merged member pull requests into its group branch.
+-   Each group has a completed group `README.md`.
+-   One approved pull request from each group to `main`.
 
 ## 8. Module 4 --- U1: Descriptive Analytics
 
