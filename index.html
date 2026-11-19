@@ -12813,8 +12813,12 @@ function pushRowToCalendar(r, prev){
 function calPushRows(rows, plan){
   var t = toIso(new Date()), matched = {};
   (plan || []).forEach(function(p){ if(p.row) matched[p.row.id] = 1; });
-  var known = {}; (plan || []).forEach(function(p){ known[p.ev.calId] = 1; });
-  return rows.filter(function(r){ return calSendable(r) && !matched[r.id] && (!r.calId || !known[r.calId]) && toIso(r.Date) >= t && !/^(delivered|cancelled)$/.test(low(r.Status)); });
+  // any AI Native calendar entry (whatever its status) counts: a date already there is never sent again, so its status there is never overwritten
+  var all = []; try{ all = evsForProgram('ai_native') || []; }catch(e){}
+  var known = {}; all.forEach(function(e){ if(e && e.id) known[e.id] = 1; });
+  var onCal = function(r){ var iso = toIso(r.Date), rw = nameWords(r.Partner);
+    return all.some(function(e){ return e && e.date === iso && e.status !== 'available' && (!rw.length || nameWords(e.title || e.location).some(function(w){ return rw.indexOf(w) >= 0; })); }); };
+  return rows.filter(function(r){ return calSendable(r) && !matched[r.id] && !(r.calId && known[r.calId]) && !onCal(r) && toIso(r.Date) >= t && !/^(delivered|cancelled)$/.test(low(r.Status)); });
 }
 function nameWords(s){ return low(s).replace(/\(.*?\)/g, ' ').split(/[^a-z0-9]+/).filter(function(w){ return w.length > 2 && !/^(the|and|for|college|cohort|ai|native|open|of|nepal|campus)$/.test(w); }); }
 /* Which cohort-map row is this calendar cohort? Linked rows first, then same date with a similar name. */
