@@ -11584,6 +11584,7 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
   #pmTab .pm-cal-ev.late{ background:#fff; color:var(--cancelled-ink); border:1px dashed var(--cancelled); border-left:3px solid var(--cancelled); }
   #pmTab .pm-cal-ev.fnd{ box-shadow:inset -3px 0 0 var(--reserved); }
   #pmTab .pm-cal-ev.mt{ background:var(--paper); color:var(--charcoal-soft); border:1px solid var(--line); border-left:3px solid var(--charcoal-soft); }
+  #pmTab .pm-cal-ev.mt.rec{ border-style:dashed; border-left-style:solid; opacity:.8; }
   #pmTab .pm-flag{ display:inline-block; font-size:10.5px; font-weight:800; padding:2px 7px; border-radius:999px; margin-left:6px; vertical-align:middle; }
   #pmTab .pm-flag.new{ background:var(--confirmed-bg); color:var(--confirmed-ink); }
   #pmTab .pm-flag.late{ background:var(--cancelled-bg); color:var(--cancelled-ink); }
@@ -12929,12 +12930,26 @@ function cohortCalendarHtml(rows){
     if(e && s && e > s) put(e, r, 'end');
   });
   meetRows().forEach(function(mt){ put(parseDate(mt.Date), mt, 'meet'); });
+  // weekly meetings for the whole project (Apr 2026 – Apr 2029): Monday team check-in and Tuesday UDAAN project meeting,
+  // shown on days that have no minutes yet (cohort map only; nothing is saved until minutes are started)
+  var PROJ_START = new Date(2026, 3, 1), PROJ_END = new Date(2029, 3, 30);
+  for(var rd = 1; rd <= new Date(y, m + 1, 0).getDate(); rd++){
+    var rdt = new Date(y, m, rd), wd = rdt.getDay();
+    if((wd !== 1 && wd !== 2) || rdt < PROJ_START || rdt > PROJ_END) continue;
+    var rtype = MEET_TYPES[wd === 1 ? 0 : 1], rstr = fmtDate(rdt);
+    if(meetRows().some(function(mt){ return mt.Meeting === rtype && toIso(mt.Date) === toIso(rstr); })) continue;
+    put(rdt, { Meeting:rtype, Date:rstr }, 'rmeet');
+  }
   var plan = calPlan(rowsOf('cohorts')), sc = calSyncCounts(plan), pushN = calPushRows(rowsOf('cohorts'), plan).length;
   plan.forEach(function(p){ if(p.isNew) put(p.ev.d, p.ev, 'cal'); });
   var chip = function(it){
     if(it.kind === 'cal'){
       var e = it.r;
       return '<div class="pm-cal-ev cal' + (e.status === 'completed' ? ' done' : '') + '" data-cal="' + esc(e.calId) + '" title="' + esc('AI Native calendar · ' + e.Partner + ' · ' + (STATUS_LABEL[e.status] || e.status) + (e.Learners ? ' · ' + e.Learners + ' learners' : '') + ' · not in the cohort map yet' + (pmAllowed() ? ': click to add it' : '')) + '">🗓 ' + esc(e.Partner.slice(0, 36)) + '</div>';
+    }
+    if(it.kind === 'rmeet'){
+      var rshort = it.r.Meeting === MEET_TYPES[0] ? 'Mon check-in' : 'Tue UDAAN meeting';
+      return '<div class="pm-cal-ev mt rec" data-recmeet="' + esc(it.r.Meeting) + '" data-recdate="' + esc(it.r.Date) + '" title="' + esc('Weekly ' + it.r.Meeting + ' · ' + it.r.Date + (pmAllowed() ? ' · click to start the agenda or minutes' : '')) + '">📝 ' + rshort + '</div>';
     }
     if(it.kind === 'meet'){
       var short = it.r.Meeting === MEET_TYPES[0] ? 'Mon check-in' : (it.r.Meeting === MEET_TYPES[1] ? 'Tue UDAAN meeting' : 'Meeting');
@@ -13234,6 +13249,14 @@ function wire(box){
       e.stopPropagation();
       var ev = calEvents().find(function(x){ return x.calId === el.dataset.cal; }); if(!ev) return;
       openEditor('cohorts', null, { calId:ev.calId, Programme:'AI Native', Date:fmtDate(ev.d), Partner:ev.Partner, Sector:ev.Sector, Format:ev.Format, Learners:ev.Learners, Status:ev.Status, Notes:ev.Notes });
+    });
+  });
+  // a weekly meeting with no minutes yet: start its agenda/minutes on that date
+  if(pmAllowed()) box.querySelectorAll('.pm-cal-ev[data-recmeet]').forEach(function(el){
+    el.addEventListener('click', function(e){
+      e.stopPropagation();
+      var m = newMeeting(el.dataset.recmeet); m.Date = el.dataset.recdate; m.Agenda = autoAgenda(m.Meeting, m.Date);
+      st.page = 'meetings'; st.meetDraft = m; render(); try{ window.scrollTo({ top:0 }); }catch(x){}
     });
   });
   var cs = box.querySelector('#pmCalSync'); if(cs) cs.addEventListener('click', calSync);
