@@ -47,7 +47,7 @@ so none are recorded here.
 
 | Q | Topic | Answer | Points at |
 |---|---|---|---|
-| 1 | Big Tech AI infrastructure spend, 2026 | ~$700B | Problem solving: knowing what to ask |
+| 1 | Big Tech AI infrastructure spend, 2026 | ~$800B | Problem solving: knowing what to ask |
 | 2 | Moffatt v. Air Canada (2024) | The airline paid | Responsible AI: accountability |
 | 3 | What GPT stands for | Generative Pre-trained Transformer | How AI works |
 | 4 | Same prompt, two fresh chats | Two different answers | Context engineering → agents |
@@ -59,7 +59,27 @@ so none are recorded here.
 | 10 | Is pasted text used for training? | Depends on tier and setting | Privacy |
 
 **Check facts before each delivery.** Q1, Q10 and the Part 5 cases rely on figures and product
-policies that change. Last checked: not yet recorded.
+policies that change. **Last checked: 19 Nov 2026.** That check replaced four of the five Part 5
+cases with newer ones and updated Q1, Q2, Q5–Q10 and slide 118. Sources used:
+
+| Where | Claim | Source |
+|---|---|---|
+| Q1 | 2026 capex ≈ $800B (Amazon ~$220B, Alphabet $195–205B, Microsoft ~$170B, Meta $135–145B, Oracle FY27 $90–95B); ~1.8× 2025; >15× Nepal's GDP | CNBC, 29 Oct 2026; Oracle Q1 FY27 call, 10 Sep 2026; IMF WEO Oct 2026 |
+| Q2 | Moffatt v. Air Canada, 2024 BCCRT 149: chatbot misstated the bereavement policy; "remarkable submission" | BC Civil Resolution Tribunal decision, 14 Feb 2024 |
+| Q5 | 2,312 logged AI-hallucination court cases; two US federal judges withdrew rulings (2025) | damiencharlotin.com/hallucinations (18 Nov 2026); ABA Journal, Oct 2025 |
+| Q6 | 15% / ~30% (QJE 2025; the 30% is from secondary reporting, check the paper's tables); 22–25-year-olds −13% | Brynjolfsson, Li & Raymond, QJE 140(2); Stanford "Canaries in the Coal Mine", Aug 2025 |
+| Q7 | HK$200M (~US$25.6M), 15 transfers, 5 accounts; no recovery reported | SCMP, May 2024 |
+| Q8 | Thaler v. Perlmutter: cert denied 2 Mar 2026 | Supreme Court No. 25-449 |
+| Q9 | Mobley v. Workday: nationwide age-discrimination collective, May 2025 | N.D. Cal. docket |
+| Q10 | ChatGPT personal: training on by default; Claude: user chooses (since Aug 2025); Gemini: separate training control from 16 Nov 2026 (rolling out; check the default for existing users before delivery) | OpenAI Data Controls FAQ; Anthropic, Aug 2025; Google, Nov 2026 |
+| Case 1 | Telangana Samagra Vedika: 1.86M cards cancelled 2014–19; 15,471 of 205,734 restored on recheck; state says <5% error | Al Jazeera / Pulitzer Center, 24 Jan 2024; Amnesty, Apr 2024 |
+| Case 2 | South Africa draft national AI policy: Cabinet-approved Mar 2026, ≥6 of 67 references fictitious, withdrawn 26 Apr 2026 | Reuters, 27–28 Apr 2026; Mail & Guardian, 27 Apr 2026 |
+| Case 3 | Rite Aid FTC ban Dec 2023; all stores closed 2025 | FTC, 19 Dec 2023; Becker's Hospital Review, 2025 |
+| Case 4 | Australian Catholic University, Turnitin detector: ~6,000 alleged cases in 2024 (disputed), tool dropped Mar 2025 | ABC News, 9 Oct 2025 |
+| Case 5 | NSW Reconstruction Authority: 2,031 people's data uploaded to ChatGPT, Mar 2025, disclosed Oct 2025 | NSW Government breach notice; iTnews, Oct 2025 |
+| Slide 118 | EU AI Act Digital Omnibus in force 27 Jul 2026: Annex III high-risk duties from 2 Dec 2027, Annex I from 2 Aug 2028; Nepal National AI Policy 2082 approved Aug 2025 | Lewis Silkin, 27 Jul 2026; The Himalayan Times, 14 Aug 2025 |
+
+Retired cases, still accurate, if you need them: Dutch childcare benefits (now 43,000+ parents recognised, €11.7bn reserved), Deloitte Australia (A$97,587 refunded, Oct 2025), NYC MyCity (shut down Feb 2026), ChatGPT shared links indexed by Google (Jul–Aug 2025).
 
 ## Participant files
 

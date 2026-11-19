@@ -50,7 +50,7 @@ The workshop never says BRIEF, AGENT or TRUST, and must keep it that way (see
 |---|---|
 | Before you act: check the name, number, date, citation | T, Trace |
 | Before you paste; the never-paste table | R, Respect |
-| Case 1 (Dutch benefits), Q9 (Amazon) | U, Uncover. The workshop names it but has no swap-test exercise |
+| Case 1 (Telangana ration cards), Q9 (Amazon, Workday) | U, Uncover. The workshop names it but has no swap-test exercise |
 | "Do you have to say it was AI?" | S, Show |
 | Who-decides-what table, "a named human must" | T, Take |
 
@@ -66,8 +66,8 @@ The workshop never says BRIEF, AGENT or TRUST, and must keep it that way (see
    only after the motorcycle warm-up has made the gap felt. That suits a one-day session; it would
    break the rule in `4-courses/`.
 3. **Real cases and citations.** The course keeps Maya's story free of citations. The workshop
-   leads with real, cited cases (Air Canada, Mata v. Avianca, Arup, Deloitte, Rite Aid, NYC,
-   Dutch benefits). Both are fine in their own track.
+   leads with real, cited cases (Air Canada, Mata v. Avianca, Arup, Telangana ration cards,
+   South Africa's AI policy, Rite Aid, Australian Catholic University, NSW flood data). Both are fine in their own track.
 4. **Voice.** These lines would break build manual §3.5 ("no claim about what AI knows") if they
    were moved into `4-courses/`. They're fine as workshop delivery:
    - slide 26: "AI only knows what you put in front of it"
