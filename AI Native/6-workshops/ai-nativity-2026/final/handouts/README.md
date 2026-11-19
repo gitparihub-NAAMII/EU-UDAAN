@@ -8,7 +8,7 @@ imported 2026-11-16.
 
 | File | Status | Used in | Notes |
 |---|---|---|---|
-| [`D1-02_listener_prompt.txt`](D1-02_listener_prompt.txt) | In repo, **rebuilt** | Part 3 → Part 4 | The original file wasn't in the zip. Rebuilt 2026-11-16 from D2-03 Worker 1, word for word, and checked against slides 81 and 85. The stray opening `“` is dropped and the `TRANSCRIPT: [paste it here]` line is added back (slide 85 and D2-03 say to delete it when building the skill). If the original Day 1 file turns up, compare it with this one and replace this one |
+| [`D1-02_listener_prompt.txt`](D1-02_listener_prompt.txt) | In repo, **rebuilt** | Part 3 → Part 4 | The original file wasn't in the zip. Rebuilt 2026-11-16 from D2-03 Worker 1, word for word, and checked against slides 82 and 86. The stray opening `“` is dropped and the `TRANSCRIPT: [paste it here]` line is added back (slide 86 and D2-03 say to delete it when building the skill). If the original Day 1 file turns up, compare it with this one and replace this one |
 | [`D2-01_thursday_transcript.txt`](D2-01_thursday_transcript.txt) | In repo | Parts 3, 4 | Himalaya Trade Concern Thursday call. Carries everything the arc needs (see below) |
 | [`D2-02_team_and_contacts.txt`](D2-02_team_and_contacts.txt) | In repo | Part 4 | The file attached to the Writer and Checker skills: colleagues, five outside parties with language, the "never leaves the building" list |
 | [`D2-03_prompt-library_agentic-ai_v6.txt`](D2-03_prompt-library_agentic-ai_v6.txt) | In repo, **v6 2026-11-16** | Part 4 | Prompt library v6: v5 plus the fix-and-recheck loop (Writer revise rules, Checker round rule, the stopping rule). v5 was the first Gemini skills version. Each worker gets a name, a description, instructions and files. Also covers how to call a worker (`/name`, one new chat each), the expected output, the two rules, and the take-home, including how to download and share a skill. Instructions are v4's, word for word, except that the Writer and the Checker now point at "the file attached to this skill" (one reworded line in the Writer, one added line in the Checker). v4 (Gems, `.docx` + twin) is in git history before this change |
@@ -37,7 +37,7 @@ If anyone edits D2-01, these must survive, because Parts 3–5 depend on them:
 - **The deck and D2-03 disagree on the Shrestha catch.** D2-03 says it did *not* appear in testing
   ("all three other drafts came back SEND") and tells the facilitator to say so honestly. Deck
   slide 100 said *"Read every HOLD out loud… Especially the Shrestha one"*, which assumed it would
-  appear, while slide 101 hedged ("If it also caught…"). **Fixed 2026-11-16:** the run slide (96) now reads *"Then look hard at the Shrestha draft. It may pass."*
+  appear, while slide 101 hedged ("If it also caught…"). **Fixed 2026-11-16:** the run slide (97) now reads *"Then look hard at the Shrestha draft. It may pass."*
 - **Binod Shrestha vs Shrestha Suppliers.** A colleague and a vendor share a surname. It's harmless
   in testing so far, but it's a plausible way for the Writer to route a message wrongly. Watch it,
   or use it as a teaching moment.

@@ -29,7 +29,7 @@ The workshop never says BRIEF, AGENT or TRUST, and must keep it that way (see
 | Style | No letter | Partly I (audience) and E (show your voice) |
 | Limits | F, Format (the must-not part) + CU4 grounding | Format is split in two |
 | No dial | I, Intent | The workshop folds intent into the instruction itself |
-| No dial | E, Examples | **Not taught in the workshop** |
+| No dial | E, Examples | **Not taught in the workshop.** Slide 65 only names it, as the thing most public templates skip |
 
 **Part 4, three workers ↔ AGENT** (revealed at Agentic SCU 5.0)
 
@@ -72,10 +72,10 @@ The workshop never says BRIEF, AGENT or TRUST, and must keep it that way (see
    were moved into `4-courses/`. They're fine as workshop delivery:
    - slide 26: "AI only knows what you put in front of it"
    - slide 50: "The AI knows nothing about you"
-   - slide 116: "what it already believed"
+   - slide 117: "what it already believed"
 
    Rewrite them in mechanism terms ("it only has what you put in front of it") if they move.
-5. **Illustrative figure.** Slide 102's 90% → 81% → 73% is 0.9ⁿ, an illustration, not
+5. **Illustrative figure.** Slide 103's 90% → 81% → 73% is 0.9ⁿ, an illustration, not
    measured data. Never quote it as a statistic in either track.
 
 6. **Build tool.** As of 2026-11-16, the workshop builds its workers as Gemini **skills**. The
@@ -105,7 +105,7 @@ The workshop never says BRIEF, AGENT or TRUST, and must keep it that way (see
 - **Limits as visible labels** (UNASSIGNED · NOT STATED · CONFLICT · INAUDIBLE) is a sharper,
   more teachable version of CE CU4's grounding. It's a candidate example for SCU 4.2.
 - **The Checker as a separate worker** is a concrete form of Agentic CU4's nod points.
-- **Tokens** (slides 103–104, added 2026-11-19). The workshop names tokens after people have
+- **Tokens** (slides 104–105, added 2026-11-19). The workshop names tokens after people have
   felt a long chat slow down, and gives three habits: a new chat per job, paste only what the
   worker needs, ask for less back. Nothing in `4-courses/` covers this yet. It's a candidate
   for CE (context as a cost) or Agentic (why each worker starts fresh).
