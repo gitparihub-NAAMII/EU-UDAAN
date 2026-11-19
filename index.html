@@ -12754,7 +12754,7 @@ function wireMeetings(box){
    Its cohorts are shown on the cohort map's calendar, and the owner can copy them into the
    cohort list with one click. A copied row remembers its calendar entry (calId), so later
    syncs update it (date, status, learners) instead of adding it twice. */
-var CAL_SYNC = { booked:1, reserved:1, confirmed:1 };   // only booked and reserved dates are synced; available (green) slots and other statuses are updated by hand
+var CAL_SYNC = { booked:1, reserved:1, confirmed:1, proposed:1 };   // proposed = tentative   // only booked and reserved dates are synced; available (green) slots and other statuses are updated by hand
 var CAL_STATUS = { completed:'Delivered', confirmed:'Confirmed', booked:'Planned', reserved:'Planned', proposed:'Tentative', cancelled:'Cancelled' };
 function calEvents(){
   var evs = [];
@@ -12877,7 +12877,7 @@ function calSync(){
     + (push.length ? push.length + ' cohort-map date' + (push.length === 1 ? '' : 's') + ' added to the AI Native calendar.\n' : '')
     + 'From the calendar: ' + c.add + ' new cohort' + (c.add === 1 ? '' : 's') + ', ' + c.upd + ' updated'
     + (c.link ? ', ' + c.link + ' linked (no change)' : '') + '.\n\n' + lines.slice(0, 25).join('\n') + (lines.length > 25 ? '\n… and ' + (lines.length - 25) + ' more' : '')
-    + '\n\nOnly booked, reserved and confirmed dates are copied. The AI Native calendar itself is not changed. Rows marked Delivered keep their status. Nothing is deleted.';
+    + '\n\nOnly booked, reserved, confirmed and tentative (proposed) dates are copied. The AI Native calendar itself is not changed. Rows marked Delivered keep their status. Nothing is deleted.';
   if(!confirm(msg)) return;
   var nd = cloneData(), byId = {};
   if(!nd.cohorts) nd.cohorts = { cols:defOf('cohorts').cols.slice(), rows:[], desc:'AI School cohorts: delivered and tentative' };
@@ -12913,7 +12913,7 @@ function cohortCalendarHtml(rows){
   var first = new Date(y, m, 1), daysIn = new Date(y, m + 1, 0).getDate(), lead = first.getDay();   // weeks start on Sunday
   var byDay = {};
   // AI Native calendar entries booked, reserved or confirmed by a person (not ones whose status was last set from this cohort map)
-  var realEvs = []; try{ realEvs = (evsForProgram('ai_native') || []).filter(function(e){ return e && /^(booked|reserved|confirmed)$/.test(e.status) && !/\(cohort map\)\s*$/.test(e.lastActionBy || ''); }); }catch(x){}
+  var realEvs = []; try{ realEvs = (evsForProgram('ai_native') || []).filter(function(e){ return e && /^(booked|reserved|confirmed|proposed)$/.test(e.status) && !/\(cohort map\)\s*$/.test(e.lastActionBy || ''); }); }catch(x){}
   var onRealCal = function(r){
     if(r.calId && realEvs.some(function(e){ return e.id === r.calId; })) return true;
     var iso = toIso(r.Date), rw = nameWords(r.Partner);
@@ -12988,9 +12988,9 @@ function cohortCalendarHtml(rows){
     + ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(w){ return '<div class="pm-cal-dow">' + w + '</div>'; }).join('')
     + cells + '</div></div>'
     + '<div class="pm-sync-note">' + (plan.length || pushN
-        ? '🗓 <span>AI Native calendar: ' + plan.length + ' booked or reserved cohort' + (plan.length === 1 ? '' : 's') + (sc.add ? ', <b>' + sc.add + ' not in the cohort map yet</b> (dashed)' : ', all in the cohort map') + (sc.upd ? ', ' + sc.upd + ' with newer status, date or learners' : '') + '.'
+        ? '🗓 <span>AI Native calendar: ' + plan.length + ' booked, confirmed or tentative cohort' + (plan.length === 1 ? '' : 's') + (sc.add ? ', <b>' + sc.add + ' not in the cohort map yet</b> (dashed)' : ', all in the cohort map') + (sc.upd ? ', ' + sc.upd + ' with newer status, date or learners' : '') + '.'
           + (pushN ? ' <b>' + pushN + ' cohort-map date' + (pushN === 1 ? '' : 's') + ' not on the AI Native calendar yet.</b>' : '') + '</span>'
-          + (pmAllowed() && (sc.any || pushN) ? '<button class="pm-btn primary" id="pmCalSync" title="Copy booked, reserved and confirmed dates from the AI Native calendar into this cohort map">⟳ Sync with AI Native calendar</button>' : '')
+          + (pmAllowed() && (sc.any || pushN) ? '<button class="pm-btn primary" id="pmCalSync" title="Copy booked, confirmed and tentative dates from the AI Native calendar into this cohort map">⟳ Sync with AI Native calendar</button>' : '')
         : '🗓 <span>No AI Native calendar cohorts loaded yet.</span>') + '</div>'
     + '<div class="chart-legend"><span><i style="background:var(--available)"></i>Delivered</span><span><i style="background:var(--confirmed)"></i>Confirmed / planned / pilot / onboarding</span>'
     + '<span><i style="background:var(--proposed)"></i>Tentative / to confirm / MoU in progress</span><span><i style="background:var(--cancelled)"></i>Partner to find</span>'
