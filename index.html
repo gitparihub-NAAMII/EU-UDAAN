@@ -12330,7 +12330,7 @@ function openEditor(k, id, preset){
     if(row){ nd[k].rows = nd[k].rows.map(function(r){ return r.id === row.id ? o : r; }); }
     else nd[k].rows.push(o);
     // an AI Native cohort also goes on (or updates) the AI Native calendar
-    var toCal = k === 'cohorts' && (calEligible(o) || (o.calId && low(o.Status) === 'cancelled'));
+    var toCal = k === 'cohorts' && calSendable(o);
     if(toCal && !o.calId) o.calId = newEvId();
     var btn = ov.querySelector('#pmSave'); btn.disabled = true; btn.textContent = 'Saving…';
     save(nd, (row ? 'edited ' : 'added ') + def.one).then(function(){
@@ -12753,11 +12753,12 @@ function wireMeetings(box){
    Its cohorts are shown on the cohort map's calendar, and the owner can copy them into the
    cohort list with one click. A copied row remembers its calendar entry (calId), so later
    syncs update it (date, status, learners) instead of adding it twice. */
+var CAL_SYNC = { booked:1, reserved:1 };   // only booked and reserved dates are synced; available (green) slots and other statuses are updated by hand
 var CAL_STATUS = { completed:'Delivered', confirmed:'Confirmed', booked:'Planned', reserved:'Planned', proposed:'Tentative', cancelled:'Cancelled' };
 function calEvents(){
   var evs = [];
   try{ evs = (typeof evsForProgram === 'function' ? evsForProgram('ai_native') : []) || []; }catch(e){ evs = []; }
-  return evs.filter(function(e){ return e && e.id && e.date && CAL_STATUS[e.status] && !(typeof isIndividual === 'function' && isIndividual(e)); })
+  return evs.filter(function(e){ return e && e.id && e.date && CAL_SYNC[e.status] && !(typeof isIndividual === 'function' && isIndividual(e)); })
     .map(function(e){
       var n = 0;
       try{ n = e.status === 'completed' ? unitPeopleTrained(e, evs) : unitPlanned(e, evs); }catch(x){ n = parseInt(e.participants, 10) || 0; }
@@ -12782,6 +12783,8 @@ function toCalStatus(s){
 }
 /* An AI Native cohort with a date and a partner goes on the calendar ("Partner to find" rows stay in the map only). */
 function calEligible(r){ return !!r && r.Programme === 'AI Native' && !!toIso(r.Date) && low(r.Status) !== 'partner to find'; }
+/* Only booked cohorts (Planned, Onboarding or Pilot in the map) are sent to the calendar; the rest are added there by hand. */
+function calSendable(r){ return calEligible(r) && toCalStatus(r.Status) === 'booked'; }
 function newEvId(){ return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function plainTxt(s){ return String(s || '').replace(/<br>/gi, ' ').trim(); }
 /* Create or update the calendar entry for one cohort-map row. prev = the row before this edit (only changed fields are sent). */
@@ -12789,7 +12792,7 @@ function pushRowToCalendar(r, prev){
   if(!r || !r.calId || typeof persistEventToProgram !== 'function') return Promise.resolve();
   var evs = []; try{ evs = evsForProgram('ai_native') || []; }catch(e){}
   var ex = evs.find(function(e){ return e.id === r.calId; }), status = toCalStatus(r.Status);
-  if(!ex && (status === 'cancelled' || !calEligible(r))) return Promise.resolve();
+  if(!calSendable(r)) return Promise.resolve();
   var now = new Date().toISOString(), who = (typeof adminName !== 'undefined' && adminName) || 'Admin';
   var ev = ex ? JSON.parse(JSON.stringify(ex)) : { id:r.calId, createdAt:now, ownerId:(typeof profile !== 'undefined' && profile) ? profile.userId : null, capacity:'',
     location:low(r.Format) === 'online' ? 'Online' : '', notes:['Added from the Program Management cohort map', plainTxt(r.Notes)].filter(Boolean).join(' · '), history:[] };
@@ -12811,7 +12814,7 @@ function calPushRows(rows, plan){
   var t = toIso(new Date()), matched = {};
   (plan || []).forEach(function(p){ if(p.row) matched[p.row.id] = 1; });
   var known = {}; (plan || []).forEach(function(p){ known[p.ev.calId] = 1; });
-  return rows.filter(function(r){ return calEligible(r) && !matched[r.id] && (!r.calId || !known[r.calId]) && toIso(r.Date) >= t && !/^(delivered|cancelled)$/.test(low(r.Status)); });
+  return rows.filter(function(r){ return calSendable(r) && !matched[r.id] && (!r.calId || !known[r.calId]) && toIso(r.Date) >= t && !/^(delivered|cancelled)$/.test(low(r.Status)); });
 }
 function nameWords(s){ return low(s).replace(/\(.*?\)/g, ' ').split(/[^a-z0-9]+/).filter(function(w){ return w.length > 2 && !/^(the|and|for|college|cohort|ai|native|open|of|nepal|campus)$/.test(w); }); }
 /* Which cohort-map row is this calendar cohort? Linked rows first, then same date with a similar name. */
@@ -12867,7 +12870,7 @@ function calSync(){
     + (push.length ? push.length + ' cohort-map date' + (push.length === 1 ? '' : 's') + ' added to the AI Native calendar.\n' : '')
     + 'From the calendar: ' + c.add + ' new cohort' + (c.add === 1 ? '' : 's') + ', ' + c.upd + ' updated'
     + (c.link ? ', ' + c.link + ' linked (no change)' : '') + '.\n\n' + lines.slice(0, 25).join('\n') + (lines.length > 25 ? '\n… and ' + (lines.length - 25) + ' more' : '')
-    + '\n\nRows marked Delivered keep their status. Nothing is deleted.';
+    + '\n\nOnly booked and reserved dates are synced. Available (green) slots and all other dates are left as they are. Rows marked Delivered keep their status. Nothing is deleted.';
   if(!confirm(msg)) return;
   var nd = cloneData(), byId = {};
   if(!nd.cohorts) nd.cohorts = { cols:defOf('cohorts').cols.slice(), rows:[], desc:'AI School cohorts: delivered and tentative' };
@@ -12953,7 +12956,7 @@ function cohortCalendarHtml(rows){
     + ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(w){ return '<div class="pm-cal-dow">' + w + '</div>'; }).join('')
     + cells + '</div></div>'
     + '<div class="pm-sync-note">' + (plan.length || pushN
-        ? '🗓 <span>AI Native calendar: ' + plan.length + ' cohort' + (plan.length === 1 ? '' : 's') + (sc.add ? ', <b>' + sc.add + ' not in the cohort map yet</b> (dashed)' : ', all in the cohort map') + (sc.upd ? ', ' + sc.upd + ' with newer status, date or learners' : '') + '.'
+        ? '🗓 <span>AI Native calendar: ' + plan.length + ' booked or reserved cohort' + (plan.length === 1 ? '' : 's') + (sc.add ? ', <b>' + sc.add + ' not in the cohort map yet</b> (dashed)' : ', all in the cohort map') + (sc.upd ? ', ' + sc.upd + ' with newer status, date or learners' : '') + '.'
           + (pushN ? ' <b>' + pushN + ' cohort-map date' + (pushN === 1 ? '' : 's') + ' not on the AI Native calendar yet.</b>' : '') + '</span>'
           + (pmAllowed() && (sc.any || pushN) ? '<button class="pm-btn primary" id="pmCalSync" title="Copy cohorts both ways between this cohort map and the AI Native calendar">⟳ Sync with AI Native calendar</button>' : '')
         : '🗓 <span>No AI Native calendar cohorts loaded yet.</span>') + '</div>'
