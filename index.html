@@ -12909,11 +12909,19 @@ function cohortCalendarHtml(rows){
   var y = st.calMonth.getFullYear(), m = st.calMonth.getMonth();
   var first = new Date(y, m, 1), daysIn = new Date(y, m + 1, 0).getDate(), lead = first.getDay();   // weeks start on Sunday
   var byDay = {};
+  // AI Native calendar entries booked, reserved or confirmed by a person (not ones whose status was last set from this cohort map)
+  var realEvs = []; try{ realEvs = (evsForProgram('ai_native') || []).filter(function(e){ return e && /^(booked|reserved|confirmed)$/.test(e.status) && !/\(cohort map\)\s*$/.test(e.lastActionBy || ''); }); }catch(x){}
+  var onRealCal = function(r){
+    if(r.calId && realEvs.some(function(e){ return e.id === r.calId; })) return true;
+    var iso = toIso(r.Date), rw = nameWords(r.Partner);
+    return realEvs.some(function(e){ return e.date === iso && rw.length && nameWords(e.title || e.location).some(function(w){ return rw.indexOf(w) >= 0; }); });
+  };
   var put = function(d, r, kind){ if(!d || d.getFullYear() !== y || d.getMonth() !== m) return; (byDay[d.getDate()] = byDay[d.getDate()] || []).push({ r:r, kind:kind }); };
   rows.forEach(function(r){
     if(low(r.Status) === 'cancelled') return;
-    // by default the calendar shows only booked (Planned, Onboarding, Pilot) and Confirmed cohorts and the meetings; "Show all cohorts" brings back the rest
-    if(!st.calAll && !/^(booked|confirmed)$/.test(toCalStatus(r.Status))) return;
+    // by default the calendar shows only cohorts that a person booked, reserved or confirmed on the AI Native calendar, plus the meetings;
+    // "Show all cohorts" brings back the rest
+    if(!st.calAll && !onRealCal(r)) return;
     var s = parseDate(r.Date), e = parseDate(r['End date']);
     put(s, r, e && e > s ? 'start' : 'one');
     if(e && s && e > s) put(e, r, 'end');
@@ -12957,7 +12965,7 @@ function cohortCalendarHtml(rows){
   return '<div class="pt-card"><div class="pm-card-head"><div><h3>Training calendar</h3><div class="sub">'
     + MONTHS_LONG[m] + ': ' + doneN + ' delivered (' + doneL + ' learners) · ' + upN + ' still to run (' + upL + ' learners)'
     + (checkN ? ' · <b style="color:var(--cancelled-ink)">' + checkN + ' date passed, not marked delivered</b>' : '') + '. Click a cohort to edit it.</div></div>'
-    + '<div class="pm-cal-nav"><button class="pm-btn" id="pmCalPrev" title="Previous month">‹</button><b>' + MONTHS_LONG[m] + ' ' + y + '</b><button class="pm-btn" id="pmCalNext" title="Next month">›</button><button class="pm-btn" id="pmCalToday">Today</button><button class="pm-btn" id="pmCalAll" title="' + (st.calAll ? 'Show only booked and confirmed cohorts and meetings' : 'Also show delivered, tentative and other cohorts') + '">' + (st.calAll ? 'Booked and confirmed only' : 'Show all cohorts') + '</button></div></div>'
+    + '<div class="pm-cal-nav"><button class="pm-btn" id="pmCalPrev" title="Previous month">‹</button><b>' + MONTHS_LONG[m] + ' ' + y + '</b><button class="pm-btn" id="pmCalNext" title="Next month">›</button><button class="pm-btn" id="pmCalToday">Today</button><button class="pm-btn" id="pmCalAll" title="' + (st.calAll ? 'Show only cohorts booked or confirmed on the AI Native calendar, and the meetings' : 'Also show every other cohort in the cohort map') + '">' + (st.calAll ? 'Calendar bookings only' : 'Show all cohorts') + '</button></div></div>'
     + '<div class="pm-cal-wrap"><div class="pm-cal">'
     + ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(w){ return '<div class="pm-cal-dow">' + w + '</div>'; }).join('')
     + cells + '</div></div>'
