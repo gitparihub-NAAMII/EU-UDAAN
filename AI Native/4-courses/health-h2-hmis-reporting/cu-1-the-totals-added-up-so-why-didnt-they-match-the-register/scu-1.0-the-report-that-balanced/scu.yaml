@@ -1,0 +1,33 @@
+# Sub-Content Unit — Tangible story §4.6
+# "The atomic capability spec." Everything is keyed to this id.
+
+id: scu.h2.u1.0
+cu: cu.h2.u1
+title: "The report that balanced"
+
+# Type tag from the audit-investigation vocabulary, 1-how-we-built-it/five-ways.md §3.
+# Set by design in the course README, not inferred from a title.
+type_tag: the-handover
+type_tag_source: health-programme-design
+
+# Story §4.6. None assigned until a skill mapper row exists for this course.
+skills: []
+
+knowledge:
+  - kb.world.bheri-corridor
+  - kb.rules.practice-hmis-registers
+
+actor: human
+mode: pedagogy
+
+# Story §6.1 compartmentalization, declared honestly. vocabulary-map.md §1.1 and five-ways.md §5.
+liftable: false
+assumes: []
+
+# Story §6.1 artifact tier model. Not yet authored unless artifact.path says otherwise.
+artifact:
+  tier: 1
+  target_tier: 1
+  path: null
+
+duration_min: null   # set when the lesson is written

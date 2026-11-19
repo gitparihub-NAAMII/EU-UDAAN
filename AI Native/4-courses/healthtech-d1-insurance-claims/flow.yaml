@@ -6,6 +6,7 @@
 
 id: flow.healthtech-insurance-claims.udaan-v1
 problem: prob.healthtech-insurance-claims
+pedagogy_pattern: udaan-8-step   # the Story way, 1-how-we-built-it/five-ways.md §3.1
 approach: >
   Problem-based, narrative-driven, on the shipped UDAAN shape. Five units, each opening on a
   failure created by the previous unit's success. No jargon until earned. Bikash, an insurance

@@ -1,0 +1,22 @@
+# Content Unit — Tangible story §4.8
+# "CUs are ordered sequences of SCUs forming one coherent unit."
+# In pedagogy mode a CU is a lesson. Here: one unit of a health programme course
+# (3-course-flow/health-programme.md), taught the udaan-8-step way (1-how-we-built-it/five-ways.md).
+
+id: cu.h1.u3
+flow: flow.health-patient-instructions.udaan-v1
+title: "Everything's there. So why can't he follow it?"
+concept: "Fits the reader and the channel; read it back"
+
+# The learner-facing title is the learner's complaint, in their voice.
+# Build manual §3.2 step 1: name the failure, not the topic.
+
+scus:
+  - scu.h1.u3.0
+  - scu.h1.u3.1
+  - scu.h1.u3.2
+  - scu.h1.u3.3
+  - scu.h1.u3.4
+
+# Skills are declared per-SCU, not here. None assigned: no skill mapper row exists for this
+# course yet (story §13, provenance over assertion).

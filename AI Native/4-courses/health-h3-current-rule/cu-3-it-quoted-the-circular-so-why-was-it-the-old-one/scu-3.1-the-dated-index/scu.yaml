@@ -1,0 +1,40 @@
+# Sub-Content Unit — Tangible story §4.6
+# "The atomic capability spec." Everything is keyed to this id.
+
+id: scu.h3.u3.1
+cu: cu.h3.u3
+title: "The dated index"
+
+# Type tag from the build-the-kit vocabulary, 1-how-we-built-it/five-ways.md §3.
+# Set by design in the course README, not inferred from a title.
+type_tag: spec
+type_tag_source: health-programme-design
+
+# Story §4.6. None assigned until a skill mapper row exists for this course.
+skills: []
+
+knowledge:
+  - kb.world.bheri-corridor
+  - kb.rules.practice-circulars
+  - kb.framework.reply
+
+actor: human
+mode: pedagogy
+
+# Story §6.1 compartmentalization, declared honestly. vocabulary-map.md §1.1 and five-ways.md §5.
+liftable: true
+assumes:
+  - scu.h3.u3.0
+
+# Story §6.1 artifact tier model. Not yet authored unless artifact.path says otherwise.
+artifact:
+  tier: 1
+  target_tier: 1
+  path: null
+
+duration_min: null   # set when the lesson is written
+
+# Story §8.2, "how to learn it". The concept-carrying sub-unit of the build-the-kit way.
+pedagogy:
+  pattern: build-the-kit
+  targets_habit: true   # vocabulary-map.md §2.3, upstream Q1

@@ -38,10 +38,21 @@ LEVELS = {"awareness", "application", "mastery", "influence"}
 # Story §4.5.
 EDGE_TYPES = {"prereq", "part-of", "specializes", "uses", "alternative", "co-occurs", "extends"}
 
-TYPE_TAGS = {
-    "experience-the-problem", "discover-it-yourself", "put-it-together",
-    "try-it-yourself", "name-it-generalise", "the-payoff", "the-whole-journey",
+# The five ways, 1-how-we-built-it/five-ways.md §3. Each flow declares `pedagogy_pattern`;
+# a flow that doesn't is the Story way (the three shipped courses and D1). An SCU's type_tag
+# must come from its flow's vocabulary or the two shared course-closing tags.
+PATTERNS = {
+    "udaan-8-step": {
+        "experience-the-problem", "discover-it-yourself", "put-it-together",
+        "try-it-yourself", "name-it-generalise",
+    },
+    "rounds-staged-case": {"present-the-case", "reveal-the-record", "the-attending-question", "your-case"},
+    "drill-station": {"station-cold-run", "debrief", "station-with-the-check", "reflex-card"},
+    "audit-investigation": {"the-handover", "dig", "the-finding", "the-memo"},
+    "build-the-kit": {"the-job", "spec", "build-and-test", "ship-it"},
 }
+CLOSING_TAGS = {"the-payoff", "the-whole-journey"}
+DEFAULT_PATTERN = "udaan-8-step"
 
 errors: list[str] = []
 incomplete: list[str] = []
@@ -159,6 +170,12 @@ def main() -> int:
             err(f"{rel(ff)}: problem {flow.get('problem')!r} disagrees with "
                 f"problems.yaml, which attaches this flow to {declared_flows[fid]!r}")
 
+        pattern = flow.get("pedagogy_pattern") or DEFAULT_PATTERN
+        if pattern not in PATTERNS:
+            err(f"{rel(ff)}: unknown pedagogy_pattern {pattern!r} (five-ways.md §3)")
+            pattern = DEFAULT_PATTERN
+        allowed_tags = PATTERNS[pattern] | CLOSING_TAGS
+
         listed_cus = flow.get("cus") or []
         if not listed_cus:
             err(f"{rel(ff)}: flow lists no CUs")
@@ -194,8 +211,13 @@ def main() -> int:
                     err(f"{rel(sf)}: declares cu {scu.get('cu')!r}, found under {cid!r}")
 
                 tag = scu.get("type_tag")
-                if tag not in TYPE_TAGS:
-                    err(f"{rel(sf)}: unknown type_tag {tag!r}")
+                if tag not in allowed_tags:
+                    err(f"{rel(sf)}: type_tag {tag!r} is not in the {pattern} vocabulary "
+                        f"(five-ways.md §3)")
+                scu_pattern = (scu.get("pedagogy") or {}).get("pattern")
+                if scu_pattern and scu_pattern != pattern:
+                    err(f"{rel(sf)}: pedagogy.pattern {scu_pattern!r} disagrees with the flow's "
+                        f"pedagogy_pattern {pattern!r}")
                 if not scu.get("type_tag_source"):
                     err(f"{rel(sf)}: type_tag_source not declared")
                 elif scu["type_tag_source"] == "inferred":

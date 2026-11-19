@@ -1,0 +1,45 @@
+# Sub-Content Unit — Tangible story §4.6
+# "The atomic capability spec." Everything is keyed to this id.
+
+# REFERENCE LESSON for this course and this way: the one sub-unit written out.
+
+id: scu.h2.u1.2
+cu: cu.h2.u1
+title: "The figure nobody counted"
+
+# Type tag from the audit-investigation vocabulary, 1-how-we-built-it/five-ways.md §3.
+# Set by design in the course README, not inferred from a title.
+type_tag: the-finding
+type_tag_source: health-programme-design
+
+# Story §4.6. None assigned until a skill mapper row exists for this course.
+skills: []
+
+knowledge:
+  - kb.world.bheri-corridor
+  - kb.rules.practice-hmis-registers
+  - kb.framework.count
+
+actor: human
+mode: pedagogy
+
+# Story §6.1 compartmentalization, declared honestly. vocabulary-map.md §1.1 and five-ways.md §5.
+liftable: true
+assumes:
+  - scu.h2.u1.0
+  - scu.h2.u1.1
+
+# Story §6.1 artifact tier model. The course's reference lesson, written as a draft on the
+# Audit way's step flow (five-ways.md §3.4).
+artifact:
+  tier: 1
+  target_tier: 1
+  status: draft   # form, extracts and replies invented; replies expected, not yet reproduced; see the authoring notes
+  path: artifact.md
+
+duration_min: null   # set when the lesson is written
+
+# Story §8.2, "how to learn it". The concept-carrying sub-unit of the audit-investigation way.
+pedagogy:
+  pattern: audit-investigation
+  targets_habit: true   # vocabulary-map.md §2.3, upstream Q1

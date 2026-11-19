@@ -14,6 +14,7 @@ Part IV proposal in graph terms so it becomes actionable in this repo, or (b) ar
 | `course-4-ai-enabled-problem-solving.md` | Graph framing over build manual §4.2 | Draft |
 | `sector-problem-statements.md` | New: seven problem statements by type of work across the 11 sectors, and a review of all 65 problems in the problem bank | Draft for discussion |
 | `sector-courses/healthtech-d1-insurance-claims.md` | New: health-tech sector course outline on problem D1 (insurance claims and rejections) | Skeleton built in `4-courses/healthtech-d1-insurance-claims/`; outline kept for the design reasoning and open questions until the course is built |
+| `sector-courses/health-h1-patient-instructions.md` | New: health sector course outline on problem H1 (plain-Nepali patient instructions), the Story way of the health programme | Skeleton built in `4-courses/health-h1-patient-instructions/`; outline kept for the design reasoning and open questions. The other four health courses (H2–H5) carry their design in their own READMEs; the programme is `3-course-flow/health-programme.md` and the method proposal `1-how-we-built-it/five-ways.md` |
 
 ## Promotion
 

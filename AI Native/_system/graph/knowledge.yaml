@@ -120,3 +120,203 @@ knowledge:
     description: >
       Native / Foundation / Deep capability layers and the four AI-Native skill areas the
       course map comes from. Shared theory with the canon; conflicts escalate (vocabulary-map.md §5 Q1).
+
+  # ══ The health programme: five problems, five ways ═══════════════════════
+  # 3-course-flow/health-programme.md · 1-how-we-built-it/five-ways.md
+  # Everything below is placeholder or candidate: proposed 2026-11-19, not yet confirmed by
+  # anyone who works in these facilities, and no lesson's practice material is reviewed.
+
+  # ── The shared world ────────────────────────────────────────────────────
+  - id: kb.world.bheri-corridor
+    name: Bheri corridor world bible (health programme)
+    kind: world
+    version: "0.1"
+    status: placeholder   # cast and setting proposed, not yet confirmed
+    source: 3-course-flow/health-programme.md
+    problems:
+      - prob.health-patient-instructions
+      - prob.health-hmis-reporting
+      - prob.health-current-rule
+      - prob.health-misinformation
+      - prob.health-referral-notes
+    description: >
+      One stretch of Nepal's health system, seen from five desks. A health post in a rural
+      palika of Bardiya; the primary health care centre (PHCC) on the highway, an hour from
+      Nepalgunj; the health office in Gulariya; and the 100-bed private hospital in Nepalgunj
+      that kb.world.nepalgunj-claims-desk describes, which is the same hospital. Monsoon, the
+      end-of-Asar fiscal year-end, WhatsApp forwards, phone photos of paper, handwritten
+      registers.
+    cast:
+      - "Pooja: staff nurse at the PHCC, posted from Kathmandu Valley two years ago. Speaks Nepali; many of her patients speak Tharu or Awadhi (H1)"
+      - "Dr. Rijal: the PHCC's only doctor, prescriptions in English shorthand. Busy, not careless. Owns the dose (H1)"
+      - "Phulmati: Female Community Health Volunteer (FCHV) who speaks Tharu. The fluent reader (H1)"
+      - "Sangita: HMIS focal person at the same PHCC. Keeps the registers and the monthly report (H2)"
+      - "Nirmala: public health officer at the health office in Gulariya. Fields 'what is the current rule?' from every facility in the district (H3)"
+      - "Sunil: information officer at the Nepalgunj hospital. Runs its Facebook page and the phone the forwards arrive on (H4)"
+      - "Ramesh: health assistant in charge of the health post. Refers patients to the PHCC and to Nepalgunj (H5)"
+      - "Dr. Basnet: medical officer in the Nepalgunj hospital's emergency, who reads Ramesh's referral notes. Her questions are the attending's questions (H5)"
+      - "Bikash, Ms. Karki, Dr. Adhikari: the Nepalgunj hospital's insurance desk, finance head and surgeon, exactly as kb.world.nepalgunj-claims-desk describes them (D1). That knowledge base stays authoritative for them"
+    shared_episode: >
+      One patient's file passes every desk, and only the closing unit of each course touches
+      it. An adult patient from rural Bardiya (always anonymised; never a name, age or ID in a
+      lesson) is seen at the health post on the 1st with abdominal pain and referred (Ramesh's
+      note), admitted in Nepalgunj on the 3rd, has a laparoscopic cholecystectomy (Dr.
+      Adhikari) and is discharged on the 6th, comes to Pooja's counter with the discharge slip
+      for follow-up, is counted in Sangita's monthly report, has the claim checked by Bikash,
+      is the subject of a call to Nirmala about the follow-up rule, and of a post about the
+      hospital that lands on Sunil's phone. The dates are the ones already in D1 2.1 and stay so.
+    rules:
+      - Every protagonist is competent throughout; the failures are structural
+      - No protagonist's story carries a citation
+      - Every slip, register, circular, post, record, patient and rule in a lesson is invented; no real patient data
+      - No lesson states a real clinical rule, dose or guideline as fact; a clinician reviews every slip before anything ships
+      - A character may appear in more than one course but is never re-characterised; the first course to describe them is the one the others agree with
+      - Separate from kb.world.himalayan-getaways. Never borrow Maya's cast, vocabulary or the course acronyms
+
+  # ── Practice material the learner checks against, one per course ────────
+  - id: kb.rules.practice-prescriptions
+    name: Practice prescriptions and instruction slips (H1)
+    kind: rules
+    version: null
+    staleness: high
+    review: by a clinician or pharmacist, before any lesson ships
+    status: placeholder
+    source: 5-roadmap/sector-courses/health-h1-patient-instructions.md
+    problem: prob.health-patient-instructions
+    description: >
+      The invented prescriptions, must-not-change lists and warning lines Pooja rewrites. Each
+      is practice material in the shape of a real slip, and a clinician confirms it is safe to
+      show before a lesson ships. Nothing here is advice. Published drug leaflets and national
+      treatment protocols are the source material to point to from _system/source/, with dates.
+  - id: kb.rules.practice-hmis-registers
+    name: Practice registers, monthly form and indicator definitions (H2)
+    kind: rules
+    version: null
+    staleness: high
+    review: per HMIS form or indicator-definition change
+    status: placeholder
+    source: 4-courses/health-h2-hmis-reporting/README.md
+    problem: prob.health-hmis-reporting
+    description: >
+      Invented register extracts with planted problems, the monthly report in the shape of the
+      real form, and the indicator definitions Sangita quotes. Unit 3 needs two months' extracts
+      and Unit 5 a missing page. The real form and definitions are the source material to point
+      to from _system/source/, with a version date; none of them is reproduced in a lesson.
+  - id: kb.rules.practice-circulars
+    name: Practice circulars and the dated index (H3)
+    kind: rules
+    version: null
+    staleness: high
+    review: per circular change
+    status: placeholder
+    source: 4-courses/health-h3-current-rule/README.md
+    problem: prob.health-current-rule
+    description: >
+      Invented circulars in the shape of real ones, on subjects a facility asks about, including
+      two dated versions of one circular for Unit 3. Nothing in a lesson is a real rule. The
+      circulars the health office actually holds are the source material for the learner's own
+      kit, never for the course.
+  - id: kb.rules.practice-forwards
+    name: Practice forwards, posts and the sources they are checked against (H4)
+    kind: rules
+    version: null
+    staleness: high
+    review: per cohort; claims date quickly
+    status: placeholder
+    source: 4-courses/health-h4-health-misinformation/README.md
+    problem: prob.health-misinformation
+    description: >
+      Invented WhatsApp forwards, Facebook posts and screenshots of notices, each with its
+      planted problem, and pointers to the published sources a check ends at. No real remedy,
+      figure or notice is reproduced as fact, and no real post is quoted. The bank review rates
+      the evidence for this problem low; confirm with practitioners before building further.
+  - id: kb.rules.practice-referral-records
+    name: Practice register pages, referral forms and the receiving desk's sheet (H5)
+    kind: rules
+    version: null
+    staleness: high
+    review: by a clinician, before any lesson ships
+    status: placeholder
+    source: 4-courses/health-h5-referral-notes/README.md
+    problem: prob.health-referral-notes
+    description: >
+      Invented health-post register entries and referral notes in the shape of the real form,
+      and what the receiving emergency desk does with each one. Every finding, time and value is
+      practice material; a clinician confirms each case is plausible and safe to show. No case
+      teaches medicine; every case teaches the note.
+
+  # ── Framework candidates, one per course ────────────────────────────────
+  # Build manual §3.3: letters are earned from failures, not fitted to a word, so every one of
+  # these is provisional and changes if a unit changes during the build. Each carries its
+  # disclosure rule and is never named before its reveal sub-unit.
+  - id: kb.framework.safer
+    name: SAFER — Source fixed, All warnings kept, Fits the reader, Extras removed, Read by a fluent person
+    kind: framework
+    version: "0.1"
+    status: candidate
+    provisional: true
+    provisional_reason: >
+      Candidate from the H1 outline. Describes the result more than the act, which build manual
+      §3.3 rule 2 calls weaker than BRIEF or TRUST. Working label, not a decision.
+    source: 5-roadmap/sector-courses/health-h1-patient-instructions.md
+    problem: prob.health-patient-instructions
+    disclosure_rule:
+      reveal_scu: scu.h1.u5.3   # Five checks, one sheet
+      rule: Never name SAFER before this sub-unit
+  - id: kb.framework.count
+    name: COUNT — Counted not predicted, One month one file, Use the manual's definition, No cause without a source, Tell the gap
+    kind: framework
+    version: "0.1"
+    status: candidate
+    provisional: true
+    provisional_reason: >
+      Letters earned in units 1, 3, 4, 2, 5 and presented in word order (§3.3 rule 5). The word
+      describes the act. Changes if a unit changes during the build.
+    source: 4-courses/health-h2-hmis-reporting/README.md
+    problem: prob.health-hmis-reporting
+    disclosure_rule:
+      reveal_scu: scu.h2.u5.4   # Five findings, one protocol
+      rule: Never name COUNT before this sub-unit
+  - id: kb.framework.reply
+    name: REPLY — Read the circular, Exact words first, Pin the date, Look at the asker's situation, Your name on it
+    kind: framework
+    version: "0.1"
+    status: candidate
+    provisional: true
+    provisional_reason: >
+      Letters earned in teaching order. The word describes the act. Changes if a unit changes
+      during the build.
+    source: 4-courses/health-h3-current-rule/README.md
+    problem: prob.health-current-rule
+    disclosure_rule:
+      reveal_scu: scu.h3.u5.4   # Five parts, one desk
+      rule: Never name REPLY before this sub-unit
+  - id: kb.framework.share
+    name: SHARE — Source behind the verdict, Hold and open the link, Answer the fear, Read what it read, Ends with a person
+    kind: framework
+    version: "0.1"
+    status: candidate
+    provisional: true
+    provisional_reason: >
+      Letters earned in teaching order. The word names what the learner does before they share
+      or reply. Changes if a unit changes during the build.
+    source: 4-courses/health-h4-health-misinformation/README.md
+    problem: prob.health-misinformation
+    disclosure_rule:
+      reveal_scu: scu.h4.u5.4   # The full shift: five cards
+      rule: Never name SHARE before this sub-unit
+  - id: kb.framework.route
+    name: ROUTE — Reason first, Observed only, Urgency as a time, Transcription confirmed, Explicit who decides
+    kind: framework
+    version: "0.1"
+    status: candidate
+    provisional: true
+    provisional_reason: >
+      Letters earned in teaching order. The word describes the act of referring. The fifth
+      letter is the weakest fit and the first to revisit. Changes if a unit changes during the
+      build.
+    source: 4-courses/health-h5-referral-notes/README.md
+    problem: prob.health-referral-notes
+    disclosure_rule:
+      reveal_scu: scu.h5.u5.4   # Grand round: five questions
+      rule: Never name ROUTE before this sub-unit

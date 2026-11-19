@@ -5,11 +5,11 @@ reference in `4-courses/` against these files.
 
 | File | Holds | Count |
 |---|---|:-:|
-| `domains.yaml` | The capability domain the problems anchor in, and the scenario setting kept apart from it | 1 + 1 |
+| `domains.yaml` | The capability domains the problems anchor in (`ai-native-practice`, `health`), and the scenario setting kept apart from them | 2 + 1 |
 | `skills.yaml` | Skill clusters, the named skills, and typed edges between skills | 4 · 22 · 10 |
-| `knowledge.yaml` | Knowledge bases: the world bible, the three frameworks, the case, evidence, theory | 7 |
-| `problems.yaml` | One problem per course, plus the unbuilt Course 4 | 4 |
-| `escalations.yaml` | The bright line: a named human decides about people | 1 |
+| `knowledge.yaml` | Knowledge bases: two world bibles and the health programme's shared world, the three frameworks and five candidates, the case, evidence, theory, and six practice-material bases | 20 |
+| `problems.yaml` | One problem per course: three shipped, the unbuilt Course 4, D1, and the five health courses | 10 |
+| `escalations.yaml` | The bright line, the signer checks the source, a fluent reader checks the translation | 3 |
 
 ## Provenance
 

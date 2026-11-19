@@ -1,0 +1,46 @@
+# Sub-Content Unit — Tangible story §4.6
+# "The atomic capability spec." Everything is keyed to this id.
+
+# REFERENCE LESSON for this course and this way: the one sub-unit written out.
+
+id: scu.h1.u2.1
+cu: cu.h1.u2
+title: "Check it backwards"
+
+# Type tag from the udaan-8-step vocabulary, 1-how-we-built-it/five-ways.md §3.
+# Set by design in the course README, not inferred from a title.
+type_tag: discover-it-yourself
+type_tag_source: health-programme-design
+
+# Story §4.6. None assigned until a skill mapper row exists for this course.
+skills: []
+
+knowledge:
+  - kb.world.bheri-corridor
+  - kb.rules.practice-prescriptions
+  - kb.framework.safer
+
+actor: human
+mode: pedagogy
+
+# Story §6.1 compartmentalization, declared honestly. vocabulary-map.md §1.1 and five-ways.md §5.
+liftable: true
+assumes:
+  - scu.h1.u2.0
+
+# Story §6.1 artifact tier model. The course's reference lesson, written as a draft on the
+# 8-step flow, modelled on scu.c1.u2.1 and scu.d1.u2.1.
+artifact:
+  tier: 1
+  target_tier: 3
+  target_tier_reason: >
+    Step 4 is a 2–4 variant one-variable experiment that depends on model behaviour. As Tier 3 the learner runs it live and a failure to reproduce shows instead of silently making the lesson false (vocabulary-map.md §3.4).
+  status: draft   # step 4 replies are expected, not yet reproduced; see the authoring notes
+  path: artifact.md
+
+duration_min: null   # set when the lesson is written
+
+# Story §8.2, "how to learn it". The concept-carrying sub-unit of the udaan-8-step way.
+pedagogy:
+  pattern: udaan-8-step
+  targets_habit: true   # vocabulary-map.md §2.3, upstream Q1

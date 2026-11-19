@@ -34,7 +34,7 @@ its `liftable` status, and (once the skill mapper lands) its skills at levels.
 
 ## Things that look like mistakes and are not
 
-- **268 `INCOMPLETE` results.** Deliberate and accurate — see `5-roadmap/corpus-gaps.md`. Do not
+- **655 `INCOMPLETE` results.** Deliberate and accurate — see `5-roadmap/corpus-gaps.md`. Do not
   "fix" them by inventing skill assignments. Story §13: *"provenance over assertion."* If the
   skill mapper spreadsheet isn't in `_system/source/`, the skills aren't known.
 - **`type_tag_source: inferred` on 62 SCUs.** The tags were derived from sub-unit titles, not read
@@ -46,6 +46,14 @@ its `liftable` status, and (once the skill mapper lands) its skills at levels.
   sequence-dependent (build manual §3.0 commitments 2 and 3). `vocabulary-map.md` §4.1.
 - **`_system/graph/` has no `tools.yaml`.** This contribution is pedagogy-mode only. ChatGPT and Gemini
   appear as subjects of study, not as wired MCP integrations, so they are not typed tool assets.
+- **Type tags that aren't in the build manual** (`present-the-case`, `debrief`, `the-finding`,
+  `spec`, …). They belong to the four non-Story ways; the validator checks each sub-unit's tag
+  against its flow's `pedagogy_pattern`. Don't retag them into the UDAAN set.
+- **Five framework candidates with `status: candidate`.** Proposed, not earned yet; each changes
+  if its course's units change during the build. Don't clear `provisional` on one.
+- **Two escalation points besides the bright line.** `esc.signer-checks-source` and
+  `esc.fluent-reader-check` were proposed in the D1 and H1 outlines and added with the health
+  programme. Neither is a decision about a person, so neither is the bright line.
 
 ## Writing content
 
@@ -61,11 +69,21 @@ Voice rules are in build manual §3.5 and they are strict. The ones most often b
 
 Consistency: every artifact must agree with `kb.world.himalayan-getaways` (`_system/graph/knowledge.yaml`).
 Sector courses have their own world: the health-tech course (`4-courses/healthtech-d1-insurance-claims/`)
-agrees with `kb.world.nepalgunj-claims-desk` instead, and never borrows Maya's cast or the course acronyms.
-Characters and world objects may be reused across problems but must not be re-characterised.
+agrees with `kb.world.nepalgunj-claims-desk`, and the five health courses (`4-courses/health-h1-*`
+to `health-h5-*`) agree with `kb.world.bheri-corridor`, which includes that hospital. None of them
+borrows Maya's cast or the course acronyms. Characters and world objects may be reused across
+problems but must not be re-characterised; the first course to describe a character is the one
+the others agree with. No health lesson states a real dose, clinical rule or guideline as fact.
 
 Framework acronyms (BRIEF, AGENT, TRUST) must **never be named before their reveal sub-unit** —
-5.2, 5.0, 5.2 respectively. Each knowledge base carries the rule as `disclosure_rule`.
+5.2, 5.0, 5.2 respectively. The health candidates (SAFER, COUNT, REPLY, SHARE, ROUTE) are
+provisional and follow the same rule: named only in their course's payoff sub-unit, and in
+READMEs and outlines, never in an earlier lesson. Each knowledge base carries the rule as
+`disclosure_rule`.
+
+The five health courses are taught five **ways** (`1-how-we-built-it/five-ways.md`). A lesson in
+a non-Story course follows its way's step flow, not the 8-step flow, and carries its way's type
+tags. The invariants in five-ways.md §1 hold in every way.
 
 ## Repo conventions
 

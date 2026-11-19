@@ -131,3 +131,167 @@ problems:
         - >
           Given a correct rejection, explain why it should be accepted or appealed with the
           true record, and show what the AI suggested that would have made the claim dishonest
+
+  # ── Health programme: five problems, five ways ─────────────────────────────
+  # 3-course-flow/health-programme.md. The five health problems the bank review passed
+  # (5-roadmap/sector-problem-statements.md), each taught one way (1-how-we-built-it/five-ways.md)
+  # from one desk in a shared world (kb.world.bheri-corridor). Status is draft throughout:
+  # skeletons, one written lesson each, no failure reproduced, no review.
+
+  - id: prob.health-patient-instructions
+    title: Teach plain-language patient instructions
+    sector: health
+    problem_bank_id: H1
+    work_type: 7   # official words into plain words
+    way: story
+    domain: health
+    creator_of_record: NAAMII Education & Outreach Division
+    mode: pedagogy
+    status: draft
+    difficulty: null
+    capability: Turning a prescription into instructions a patient can act on, with AI, without losing what matters
+    flows:
+      - flow.health-patient-instructions.udaan-v1
+    knowledge:
+      - kb.world.bheri-corridor
+      - kb.rules.practice-prescriptions
+      - kb.framework.safer
+    escalations:
+      - esc.signer-checks-source
+      - esc.fluent-reader-check
+    prereq_problems: []
+    validation:
+      artifact: >
+        The learner's own one-page instruction sheet, plus one checked plain version of an
+        instruction they really give out, built from an invented prescription in the same form,
+        with the source alongside and every line traceable
+      interview_seeds:
+        - >
+          Produce a version of the same instruction for a different reader and channel (a voice
+          note for an older patient, say) and show which checks changed and why
+
+  - id: prob.health-hmis-reporting
+    title: Teach the monthly report that says what was counted
+    sector: health
+    problem_bank_id: H2
+    work_type: 1   # same output, new contents
+    way: audit
+    domain: health
+    creator_of_record: NAAMII Education & Outreach Division
+    mode: pedagogy
+    status: draft
+    difficulty: null
+    capability: Assembling the monthly HMIS report with AI so that every figure traces to a register line and every gap is reported as a gap
+    flows:
+      - flow.health-hmis-reporting.audit-v1
+    knowledge:
+      - kb.world.bheri-corridor
+      - kb.rules.practice-hmis-registers
+      - kb.framework.count
+    escalations:
+      - esc.signer-checks-source
+    prereq_problems: []
+    validation:
+      artifact: >
+        One monthly report assembled from invented register extracts, with a trace for every
+        figure, the period stated, each indicator's definition quoted, a narrative that only
+        reports, and every gap marked "not counted", plus the learner's five finding memos
+      interview_seeds:
+        - >
+          Given a report that balances, find the figure that was never counted and show the
+          register line that proves it
+
+  - id: prob.health-current-rule
+    title: Teach answering "what is the current rule?" from the circular
+    sector: health
+    problem_bank_id: H3   # reframed as the bank review asks: the recurring part is staff asking for the current rule
+    work_type: 4   # the question that keeps coming back
+    way: build
+    domain: health
+    creator_of_record: NAAMII Education & Outreach Division
+    mode: pedagogy
+    status: draft
+    difficulty: null
+    capability: Answering staff questions about the current rule from the dated circular, with AI, under a named person's signature
+    flows:
+      - flow.health-current-rule.build-v1
+    knowledge:
+      - kb.world.bheri-corridor
+      - kb.rules.practice-circulars
+      - kb.framework.reply
+    escalations:
+      - esc.signer-checks-source
+    prereq_problems: []
+    validation:
+      artifact: >
+        The learner's own circular desk: a circular file, an answer template that quotes before
+        it explains, a dated index, the three ask-back questions and a signed answer format,
+        tested on three real questions from their own facility
+      interview_seeds:
+        - >
+          Take a question the kit cannot answer from any circular it holds, and show what the
+          answer says instead
+
+  - id: prob.health-misinformation
+    title: Teach checking a health claim before it is shared or answered
+    sector: health
+    problem_bank_id: H4
+    work_type: 7
+    way: drill
+    evidence: low   # bank review verdict "check first": no Nepali health-specific data yet
+    domain: health
+    creator_of_record: NAAMII Education & Outreach Division
+    mode: pedagogy
+    status: draft
+    difficulty: null
+    capability: Checking a forwarded health claim with AI before sharing or replying, and answering it so that a worried person can act
+    flows:
+      - flow.health-misinformation.drill-v1
+    knowledge:
+      - kb.world.bheri-corridor
+      - kb.rules.practice-forwards
+      - kb.framework.share
+    escalations:
+      - esc.signer-checks-source
+    prereq_problems: []
+    validation:
+      artifact: >
+        The learner's reflex-card deck, plus three forwarded claims from their own feed checked
+        with the cards: the source found and opened, the reply written for the worried reader,
+        the screenshot's fields read and confirmed, and the one that needed a named person
+      interview_seeds:
+        - >
+          Given a forward with three confident references, show which one you opened first and
+          what you found
+
+  - id: prob.health-referral-notes
+    title: Teach the referral note that carries findings, not the call
+    sector: health
+    problem_bank_id: H5
+    work_type: 3   # the draft that has to pass
+    way: rounds
+    domain: health
+    creator_of_record: NAAMII Education & Outreach Division
+    mode: pedagogy
+    status: draft
+    difficulty: null
+    capability: Writing a referral note with AI that leads with the reason, holds only what was observed, states urgency as a time, is confirmed against the register, and leaves the call to a person
+    flows:
+      - flow.health-referral-notes.rounds-v1
+    knowledge:
+      - kb.world.bheri-corridor
+      - kb.rules.practice-referral-records
+      - kb.framework.route
+    escalations:
+      - esc.bright-line
+    prereq_problems: []
+    validation:
+      artifact: >
+        The learner's rounds book: five questions, each with the case that earned it, plus one
+        referral note of their own drafted with AI from an invented register entry, with the
+        reason in the first line, nothing not observed, the urgency as a time, the transcription
+        confirmed, and the call left to a named person
+      interview_seeds:
+        - >
+          Given a note that reads perfectly, find the line the register doesn't support and say
+          what you would send instead

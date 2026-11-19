@@ -3,7 +3,7 @@
 What `env/bin/python _system/tools/validate.py` currently reports, ordered by what unblocks the most.
 Regenerate the numbers before trusting them; this is a snapshot, not a ledger.
 
-**Current state:** 4 problems · 3 flows · 15 CUs · 63 SCUs · 0 errors · 268 incomplete.
+**Current state:** 10 problems · 9 flows · 45 CUs · 194 SCUs · 0 errors · 655 incomplete (the three shipped courses as before; the D1 and H1–H5 sector-course skeletons add 131 SCUs with no skills, no durations and six written lessons between them).
 
 ---
 

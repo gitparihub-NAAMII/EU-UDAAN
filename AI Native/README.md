@@ -46,6 +46,10 @@ Read the numbered folders in order. Each one opens with a README.
 - **Not yet in this repo:** the lesson text of the other 62 sub-units (still in the decks) and the
   per-sub-unit skill mapping (in `AI_Native_Skill_Mapper.xlsx`). See
   [`5-roadmap/corpus-gaps.md`](5-roadmap/corpus-gaps.md).
+- **Sector courses, as skeletons:** a health-tech course on insurance claims (D1), and a
+  [health programme](3-course-flow/health-programme.md) of five courses that teach five health
+  problems [five different ways](1-how-we-built-it/five-ways.md), one written lesson each. Drafts:
+  nothing reviewed, no AI failure reproduced yet.
 
 ## For contributors
 

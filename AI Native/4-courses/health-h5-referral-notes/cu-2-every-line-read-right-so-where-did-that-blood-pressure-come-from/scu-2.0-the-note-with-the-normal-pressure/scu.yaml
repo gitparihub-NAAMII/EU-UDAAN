@@ -1,0 +1,35 @@
+# Sub-Content Unit — Tangible story §4.6
+# "The atomic capability spec." Everything is keyed to this id.
+
+id: scu.h5.u2.0
+cu: cu.h5.u2
+title: "The note with the normal pressure"
+
+# Type tag from the rounds-staged-case vocabulary, 1-how-we-built-it/five-ways.md §3.
+# Set by design in the course README, not inferred from a title.
+type_tag: present-the-case
+type_tag_source: health-programme-design
+
+# Story §4.6. None assigned until a skill mapper row exists for this course.
+skills: []
+
+knowledge:
+  - kb.world.bheri-corridor
+  - kb.rules.practice-referral-records
+
+actor: human
+mode: pedagogy
+
+# Story §6.1 compartmentalization, declared honestly. vocabulary-map.md §1.1 and five-ways.md §5.
+liftable: false
+assumes: []
+
+# Story §6.1 artifact tier model. Not yet authored unless artifact.path says otherwise.
+artifact:
+  tier: 1
+  target_tier: 3
+  target_tier_reason: >
+    The commit before the reveal is the way's mechanism (five-ways.md §4). On a page nothing stops the learner scrolling; as Tier 3 the record stays hidden until a commitment is written.
+  path: null
+
+duration_min: null   # set when the lesson is written

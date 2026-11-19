@@ -30,3 +30,60 @@ escalations:
       - scu.c3.u1.5   # The line that changes everything
       - scu.c3.u3.4   # The line that keeps it fair
       - scu.d1.u5.2   # The claim says what happened (health-tech sector course)
+      - scu.h5.u5.2   # "Whose call is that?" (health programme, H5)
+
+  # ── Added with the health programme, 2026-11-19 ──────────────────────────
+  # Proposed in the D1 outline ("The human lines") and the H1 outline. Neither is a decision
+  # about a person, so esc.bright-line doesn't cover them.
+  - id: esc.signer-checks-source
+    name: The signer checks the source
+    statement: "What leaves under a named person's name has been checked by that person against the source it was made from."
+    trigger:
+      type: policy-rule
+      condition: >
+        An AI-assisted output is about to leave under a person's name: an instruction slip, a
+        monthly report, an answer about the current rule, a public reply, a referral note, a
+        claim. Anything in it that the tool read, counted, quoted or translated.
+    target:
+      type: named-human
+      description: >
+        The person whose name goes on it. Not the tool, not "the office". Where a field's owner
+        is someone else (the prescriber owns the dose, the register owns the count, the circular
+        owns the rule), what can't be confirmed goes back to that owner as a question.
+    context_travels:
+      - the output, in full
+      - the source it was made from (the slip, the register, the circular, the post, the record)
+      - the fields the tool read, counted, quoted or translated, marked as such
+      - the checks already run
+    resumption: >
+      The signer confirms each load-bearing field against the source and signs. A field that
+      can't be confirmed is marked, not guessed, and the output says so.
+    referenced_by:
+      - scu.h1.u4.3   # Every line traced, one question sent (H1)
+      - scu.h2.u5.2   # A gap is a gap (H2)
+      - scu.h3.u5.1   # Your name on it (H3)
+      - scu.h4.u5.1   # A person speaks for the hospital (H4)
+
+  - id: esc.fluent-reader-check
+    name: A fluent reader checks the translation
+    statement: "A version in a language the signer can't read goes out only after a fluent reader of that language has checked it."
+    trigger:
+      type: policy-rule
+      condition: >
+        The output is in a language the person signing it cannot read fluently (Tharu, Awadhi,
+        Maithili or any other), whether the tool translated it or a person did.
+    target:
+      type: fluent-reader
+      description: >
+        A named person fluent in that language, who reads it aloud against the source version.
+        Not a decision-maker: a reader. The H1 outline names this as a new target type.
+    context_travels:
+      - the source version, usually Nepali
+      - the translated version
+      - the must-not-change list
+    resumption: >
+      The reader's changes are recorded and the checked version goes out under the signer's
+      name. If no fluent reader is available, the source-language version goes out instead,
+      never an unchecked translation.
+    referenced_by:
+      - scu.h1.u5.2   # A fluent person is the check (H1)

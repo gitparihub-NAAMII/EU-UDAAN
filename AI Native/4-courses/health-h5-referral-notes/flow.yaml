@@ -1,0 +1,25 @@
+# Flow — Tangible story §4.8
+# "Flows are ordered CUs that take one approach to one problem."
+#
+# Health programme, problem bank H5. One of five courses that each teach one health problem
+# one way: 3-course-flow/health-programme.md. The way: 1-how-we-built-it/five-ways.md.
+
+id: flow.health-referral-notes.rounds-v1
+problem: prob.health-referral-notes
+pedagogy_pattern: rounds-staged-case
+approach: >
+  The Rounds way: each unit is one case, presented in stages, and the learner commits before
+  each reveal. Ramesh, the health assistant in charge of a health post in rural Bardiya,
+  drafts referral notes with AI; Dr. Basnet, who reads them in the Nepalgunj emergency, asks
+  the one question that would have caught each failure. The note carries findings and the
+  question; the call stays with a person. Way: 1-how-we-built-it/five-ways.md §3.2.
+status: draft
+mode: pedagogy
+actor: human
+
+cus:
+  - cu.h5.u1
+  - cu.h5.u2
+  - cu.h5.u3
+  - cu.h5.u4
+  - cu.h5.u5

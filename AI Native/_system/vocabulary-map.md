@@ -67,6 +67,27 @@ sub-SCUs — the eight steps are not independently liftable and none of them exe
 Recorded on the SCU as `pedagogy.pattern: udaan-8-step` so the corpus can later learn that this
 pattern exists and which actors it works for (Tangible §8.2, "how to learn it").
 
+### 1.3 Five pedagogy patterns, five type-tag vocabularies (added 2026-11-19)
+
+The health programme teaches five problems five ways (`1-how-we-built-it/five-ways.md`). Each
+way is a `pedagogy_pattern` declared on the flow, and each has its own sub-unit type tags with
+the same liftability logic as §1.1: two of four sub-units per unit are concept-carrying and
+liftable, two are connective tissue.
+
+| Pattern | Unit shape (tags) | Liftable | Concept-carrying |
+|---|---|---|---|
+| `udaan-8-step` (Story) | experience-the-problem → discover-it-yourself ×n → put-it-together | discover, name-it | discover-it-yourself |
+| `rounds-staged-case` (Rounds) | present-the-case → reveal-the-record → the-attending-question → your-case | question, your-case | the-attending-question |
+| `drill-station` (Drill) | station-cold-run → debrief → station-with-the-check → reflex-card | debrief, station-with-the-check | debrief |
+| `audit-investigation` (Audit) | the-handover → dig → the-finding → the-memo | finding, memo | the-finding |
+| `build-the-kit` (Build) | the-job → spec → build-and-test → ship-it | spec, build-and-test | spec |
+
+`the-payoff` and `the-whole-journey` close every way. The validator checks a sub-unit's tag
+against its flow's pattern, and a flow with no pattern is `udaan-8-step`, so the shipped courses
+and D1 are unchanged. This is the first content in the repo that varies the "how to learn it"
+dimension, which is the thing §8.2 says the platform learns from; until a second way has been
+delivered to a cohort, the patterns are a proposal and the telemetry is zero.
+
 ---
 
 ## 2. Competency levels — the reconciliation that had to happen
@@ -269,6 +290,13 @@ domain with no separate scenario domain. The first is the health-tech course (D1
 claims), anchored in a new `health` domain, marked provisional because whether health-tech
 separates from health is a curation question. Sector courses have their own story worlds and
 their own ids (`cu.d1.*`, `scu.d1.*`), and are not part of the three-course chain.
+
+*The health programme (added 2026-11-19).* Five health courses (H1–H5, `cu.h1.*` to `cu.h5.*`)
+anchor in the same `health` domain, share one world (`kb.world.bheri-corridor`, which includes
+D1's hospital), and each take a different pedagogical approach: `3-course-flow/health-programme.md`.
+A problem's `way` is recorded on the problem for the reader and as `pedagogy_pattern` on the flow
+for the validator (§1.3). Nothing about the domain mapping changes: the sector is the capability
+context, so there is still no separate scenario domain.
 
 ### 4.3 The program level has no home
 

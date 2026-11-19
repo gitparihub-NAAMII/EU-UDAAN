@@ -1,0 +1,25 @@
+# Flow — Tangible story §4.8
+# "Flows are ordered CUs that take one approach to one problem."
+#
+# Health programme, problem bank H1. One of five courses that each teach one health problem
+# one way: 3-course-flow/health-programme.md. The way: 1-how-we-built-it/five-ways.md.
+
+id: flow.health-patient-instructions.udaan-v1
+problem: prob.health-patient-instructions
+pedagogy_pattern: udaan-8-step
+approach: >
+  The Story way: problem-based, narrative-driven, on the shipped UDAAN shape. Five units, each
+  opening on a failure created by the previous unit's success. Pooja, a staff nurse at a
+  primary health care centre in Bardiya, learns to turn a prescription into instructions a
+  patient can act on without losing what matters. Outline:
+  5-roadmap/sector-courses/health-h1-patient-instructions.md. Way: 1-how-we-built-it/five-ways.md §3.1.
+status: draft
+mode: pedagogy
+actor: human
+
+cus:
+  - cu.h1.u1
+  - cu.h1.u2
+  - cu.h1.u3
+  - cu.h1.u4
+  - cu.h1.u5
