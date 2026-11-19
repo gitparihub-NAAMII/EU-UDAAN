@@ -12924,7 +12924,8 @@ function cohortCalendarHtml(rows){
     if(low(r.Status) === 'cancelled') return;
     // by default the calendar shows only cohorts that a person booked, reserved or confirmed on the AI Native calendar, plus the meetings;
     // "Show all cohorts" brings back the rest
-    if(!st.calAll && !onRealCal(r)) return;
+    // AI Foundation cohorts are not on the AI Native calendar, so they always show
+    if(!st.calAll && r.Programme !== 'AI Foundation' && !onRealCal(r)) return;
     var s = parseDate(r.Date), e = parseDate(r['End date']);
     put(s, r, e && e > s ? 'start' : 'one');
     if(e && s && e > s) put(e, r, 'end');
