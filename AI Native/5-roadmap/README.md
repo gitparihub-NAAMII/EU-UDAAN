@@ -13,7 +13,7 @@ Part IV proposal in graph terms so it becomes actionable in this repo, or (b) ar
 | `banking-reskin.md` | New | Proposed, not actioned. **Kept local only** (draws on the confidential canon) |
 | `course-4-ai-enabled-problem-solving.md` | Graph framing over build manual §4.2 | Draft |
 | `sector-problem-statements.md` | New: seven problem statements by type of work across the 11 sectors, and a review of all 65 problems in the problem bank | Draft for discussion |
-| `sector-courses/healthtech-d1-insurance-claims.md` | New: health-tech sector course outline on problem D1 (insurance claims and rejections) | Draft outline, unreviewed |
+| `sector-courses/healthtech-d1-insurance-claims.md` | New: health-tech sector course outline on problem D1 (insurance claims and rejections) | Skeleton built in `4-courses/healthtech-d1-insurance-claims/`; outline kept for the design reasoning and open questions until the course is built |
 
 ## Promotion
 

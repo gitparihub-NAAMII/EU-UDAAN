@@ -21,6 +21,21 @@ domains:
       AI-Native Professional Fluency — get original work from AI, delegate repeatable work to
       safe agents, and stand behind every output.
 
+  # Sector courses (5-roadmap/sector-courses/). Here the sector is the capability context, not
+  # only the setting: a desk officer who finishes the D1 course has checked claims against
+  # health-insurance rules. So the problem anchors in the sector's own domain, which is the
+  # "re-skin per sector" answer to vocabulary-map.md §5 Q2.
+  - id: health
+    name: Health
+    type: applied
+    # Story §4.1 names `health` as an applied domain. It is provisional here only because this
+    # contribution adds it, and because whether health-tech separates from health is undecided.
+    provisional: true
+    provisional_reason: >
+      Added by this contribution for the health-tech sector course (D1, insurance claims).
+      Open curation question: insurance claims sit between health and insurance, and there is
+      no `health-tech` domain. Settle with the programme leads before the course ships.
+
 # The setting the problems are told in, recorded apart from the capability domain.
 # vocabulary-map.md §4.2 and upstream Q2.
 scenario_domains:
@@ -29,3 +44,4 @@ scenario_domains:
     note: >
       Maya Gurung at Himalayan Getaways, Kathmandu. Narrative setting only; it says nothing
       about sector experience.
+

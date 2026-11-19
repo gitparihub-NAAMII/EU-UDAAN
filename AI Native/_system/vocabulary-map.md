@@ -263,6 +263,13 @@ three problems. Tangible §4.8 explicitly allows multiple flows per problem. The
 
 Filed in `5-roadmap/` as the highest-leverage item in the repo, not actioned.
 
+*Sector courses (added 2026-11-19).* A sector course is the other half of the Q2 answer: the
+problem is set in a sector and teaches work done in that sector, so it anchors in the sector's
+domain with no separate scenario domain. The first is the health-tech course (D1, insurance
+claims), anchored in a new `health` domain, marked provisional because whether health-tech
+separates from health is a curation question. Sector courses have their own story worlds and
+their own ids (`cu.d1.*`, `scu.d1.*`), and are not part of the three-course chain.
+
 ### 4.3 The program level has no home
 
 UDAAN's Level 1 capability — *AI-Native Professional Fluency*, "after the whole program" — sits

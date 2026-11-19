@@ -29,3 +29,4 @@ escalations:
     referenced_by:
       - scu.c3.u1.5   # The line that changes everything
       - scu.c3.u3.4   # The line that keeps it fair
+      - scu.d1.u5.2   # The claim says what happened (health-tech sector course)

@@ -95,3 +95,39 @@ problems:
     knowledge:
       - kb.theory.ai-pyramid
     prereq_problems: []
+
+  # ── Sector courses ─────────────────────────────────────────────────────────
+  # One course per sector, each on one problem from the problem bank
+  # (5-roadmap/sector-problem-statements.md), built with the UDAAN method. Not part of the
+  # AI-Native three-course chain, so no `course` number and no prereq_problems.
+
+  # Health-tech, D1. Outline: 5-roadmap/sector-courses/healthtech-d1-insurance-claims.md.
+  # Status is draft: the course skeleton exists, one lesson is written, and none of the five
+  # AI failures it is built on has been reproduced yet (outline, "Test before writing").
+  - id: prob.healthtech-insurance-claims
+    title: Teach checking claims against the rules
+    sector: health-tech
+    problem_bank_id: D1
+    domain: health
+    creator_of_record: NAAMII Education & Outreach Division
+    mode: pedagogy
+    status: draft
+    difficulty: null
+    capability: Checking insurance claims against the rules with AI
+    flows:
+      - flow.healthtech-insurance-claims.udaan-v1
+    knowledge:
+      - kb.world.nepalgunj-claims-desk
+      - kb.rules.practice-claim-rules
+    escalations:
+      - esc.bright-line
+    prereq_problems: []
+    validation:
+      artifact: >
+        The learner's own written checklist for one kind of claim they handle, plus a check of
+        one invented claim file run against it, with every flag cited to its clause, the
+        rule-set date stated, and the fields confirmed against the paper
+      interview_seeds:
+        - >
+          Given a correct rejection, explain why it should be accepted or appealed with the
+          true record, and show what the AI suggested that would have made the claim dishonest

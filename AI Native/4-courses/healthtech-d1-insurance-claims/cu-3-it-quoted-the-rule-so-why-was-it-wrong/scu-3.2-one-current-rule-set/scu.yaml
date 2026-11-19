@@ -1,0 +1,39 @@
+# Sub-Content Unit — Tangible story §4.6
+# "The atomic capability spec." Everything is keyed to this id.
+
+id: scu.d1.u3.2
+cu: cu.d1.u3
+title: "One current rule set"
+
+# UDAAN type tag — build manual §3.1. Set by design in the D1 outline, not inferred from a title.
+type_tag: discover-it-yourself
+type_tag_source: d1-outline
+
+# Story §4.6. None assigned until a skill mapper row exists for this course.
+skills: []
+
+knowledge:
+  - kb.world.nepalgunj-claims-desk
+  - kb.rules.practice-claim-rules
+
+actor: human
+mode: pedagogy
+
+# Story §6.1 compartmentalization, declared honestly. vocabulary-map.md §1.1.
+liftable: true
+assumes:
+  - scu.d1.u3.0
+  - scu.d1.u3.1
+
+# Story §6.1 artifact tier model. Not yet authored: the course is a skeleton.
+artifact:
+  tier: 1
+  target_tier: 1
+  path: null
+
+duration_min: null   # set when the lesson is written
+
+# Story §8.2. The 8-step discovery flow, build manual §3.1 Level 2.
+pedagogy:
+  pattern: udaan-8-step
+  targets_habit: true   # vocabulary-map.md §2.3, upstream Q1

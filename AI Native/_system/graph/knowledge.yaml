@@ -22,6 +22,28 @@ knowledge:
       - Maya's story carries no citations
       - Localisation is structural (Kathmandu, Pokhara, monsoon, Tihar, WhatsApp), per build manual §3.6
 
+  - id: kb.world.nepalgunj-claims-desk
+    name: Nepalgunj claims desk world bible (health-tech sector course)
+    kind: world
+    version: "0.1"
+    status: placeholder   # cast and setting proposed in the outline, not yet confirmed
+    source: 5-roadmap/sector-courses/healthtech-d1-insurance-claims.md
+    problem: prob.healthtech-insurance-claims
+    description: >
+      Bikash, insurance desk officer at a 100-bed private hospital in Nepalgunj, the one
+      colleagues bring tangled claim files to. Ms. Karki, the hospital's finance head, worried
+      about months of unpaid claims, not corrupt. Dr. Adhikari, a surgeon whose discharge
+      summaries are handwritten. The insurance programme's claim reviewer, never seen, known
+      only through rejection notes. A peer desk officer at another Nepalgunj hospital with the
+      same free tool and a lower rejection rate. Channels: paper files, phone photos of
+      documents, the hospital's claim portal, rejection notes. Calendar: the end-of-month
+      submission rush, and the fiscal year-end in mid-July (end of Asar).
+    rules:
+      - Bikash is competent throughout; the failures are structural
+      - Bikash's story carries no citations
+      - Every claim file, patient and rule in a lesson is invented; no real patient data
+      - Separate from kb.world.himalayan-getaways. Do not borrow Maya's cast or vocabulary
+
   # ── The frameworks ──────────────────────────────────────────────────────
   # Each carries its disclosure rule: the acronym is never named before its reveal sub-unit.
   # Build manual §3.3 rule 3.
@@ -72,6 +94,22 @@ knowledge:
     description: >
       The evidence set the programme argues from. Several figures are standing arguments and
       several will be wrong within a year; review per 1-how-we-built-it/authoring-workflow.md.
+
+  # ── Rules the learner checks against ────────────────────────────────────
+  - id: kb.rules.practice-claim-rules
+    name: Practice claim rules and checklists (health-tech sector course)
+    kind: rules
+    version: null   # stamp with a date once the rule set is drafted and reviewed
+    staleness: high
+    review: per published package-rule change
+    status: placeholder
+    source: 5-roadmap/sector-courses/healthtech-d1-insurance-claims.md
+    problem: prob.healthtech-insurance-claims
+    description: >
+      The checklists, package rules and rates Bikash checks claim files against. Invented for
+      practice until someone who knows the published package rules confirms they can be used
+      as practice material (outline, "Reviews needed"). Unit 3 depends on there being two dated
+      versions of the rules, so this knowledge base must carry its version date.
 
   # ── Theory ──────────────────────────────────────────────────────────────
   - id: kb.theory.ai-pyramid

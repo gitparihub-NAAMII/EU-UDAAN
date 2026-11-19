@@ -33,6 +33,18 @@ voice. Click a course heading for its sub-unit detail.
 | [4](../4-courses/3-responsible-ai-trust/cu-4-whose-data-did-you-just-paste/) | Whose data did you just paste? | Respect (R) | 4.0 The paste you can't take back · 4.1 What have you pasted this month? · 4.2 Follow the records out the door · 4.3 What you're really handing over · 4.4 Classify first, paste second |
 | [5](../4-courses/3-responsible-ai-trust/cu-5-show-your-work-and-sign-it/) | Show your work, and sign it | Show, Take (S, T) | 5.0 The three she nearly sent unsigned · 5.1 Show your work, and sign it · 5.2 Everything spells TRUST · 5.3 Your one-page AI policy · 5.4 Point TRUST at what you built · 5.5 The loop closes |
 
+## [Sector course — Health-tech, insurance claims (D1)](../4-courses/healthtech-d1-insurance-claims/)
+
+Skeleton, draft. Not part of the three-course chain.
+
+| Unit | The learner's problem | Concept | Sub-units |
+|---|---|---|---|
+| [1](../4-courses/healthtech-d1-insurance-claims/cu-1-it-said-everything-was-in-order/) | It said everything was in order. So why did it come back? | A written checklist; silence isn't "all clear" | 1.0 The claim that came back · 1.1 Three gaps, one question · 1.2 Silence isn't all clear · 1.3 Bikash writes the checklist |
+| [2](../4-courses/healthtech-d1-insurance-claims/cu-2-it-found-a-problem-so-why-wasnt-it-real/) | It found a problem. So why wasn't the problem real? | Cite the clause | 2.0 The approval nobody needed · 2.1 Point to the rule · 2.2 Only the rules it was given · 2.3 Every flag, its clause |
+| [3](../4-courses/healthtech-d1-insurance-claims/cu-3-it-quoted-the-rule-so-why-was-it-wrong/) | It quoted the rule word for word. So why was it wrong? | One current, dated rule set | 3.0 Last year's rate · 3.1 Which list, which date? · 3.2 One current rule set · 3.3 A check that states its date |
+| [4](../4-courses/healthtech-d1-insurance-claims/cu-4-every-rule-was-right-so-why-was-the-date-wrong/) | Every rule was right. So why was the date wrong? | Confirm what it read | 4.0 The 3rd that became the 8th · 4.1 Read first, judge second · 4.2 When the page can't be read · 4.3 Read, confirm, then check |
+| [5](../4-courses/healthtech-d1-insurance-claims/cu-5-it-found-a-way-to-get-it-approved/) | It found a way to get it approved. So why does it feel wrong? | Honest claim, signed -> one-page sheet | 5.0 The suggestion that sounded reasonable · 5.1 A different question · 5.2 The claim says what happened · 5.3 Five checks, one sheet · 5.4 The whole desk, before and after |
+
 ---
 
-**Totals:** 3 courses · 15 units · 63 sub-units (21 · 16 · 26).
+**Totals:** 3 courses · 15 units · 63 sub-units (21 · 16 · 26), plus 1 sector course skeleton · 5 units · 21 sub-units.

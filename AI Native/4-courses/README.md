@@ -8,6 +8,16 @@
 
 Take them in order. Each course opens on a problem the previous one created.
 
+## Sector courses
+
+One course per sector, each on one problem from the problem bank
+(`5-roadmap/sector-problem-statements.md`), built the same way. Separate from the three-course
+chain above; each has its own story world.
+
+| Course | Problem | Units | Sub-units | Status |
+|---|---|:-:|:-:|---|
+| [Health-tech — Insurance claims and rejections](healthtech-d1-insurance-claims/) | D1 | 5 | 21 | Skeleton; one lesson drafted |
+
 ## How a course folder is laid out
 
 ```

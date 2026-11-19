@@ -1,0 +1,46 @@
+# Sub-Content Unit — Tangible story §4.6
+# "The atomic capability spec." Everything is keyed to this id.
+#
+# REFERENCE LESSON for the health-tech course, modelled on scu.c1.u2.1. The only sub-unit
+# in this course with a written lesson; the other 20 are skeleton.
+
+id: scu.d1.u2.1
+cu: cu.d1.u2
+title: "Point to the rule"
+
+# UDAAN type tag — build manual §3.1. Set by design in the D1 outline, not inferred from a title.
+type_tag: discover-it-yourself
+type_tag_source: d1-outline
+
+# Story §4.6. None assigned until a skill mapper row exists for this course.
+skills: []
+
+knowledge:
+  - kb.world.nepalgunj-claims-desk
+  - kb.rules.practice-claim-rules
+
+actor: human
+mode: pedagogy
+
+# Story §6.1 compartmentalization, declared honestly. vocabulary-map.md §1.1.
+liftable: true
+assumes:
+  - scu.d1.u2.0
+
+# Story §6.1 artifact tier model. The course's reference lesson, written as a draft.
+artifact:
+  tier: 1
+  target_tier: 3
+  target_tier_reason: >
+    Step 4 is a four-variant one-variable experiment that depends on model behaviour. As Tier 3
+    the learner runs it live, and if it stops reproducing the lesson fails visibly instead of
+    silently becoming false. Same case as scu.c1.u2.1, vocabulary-map.md §3.4.
+  status: draft   # step 4 replies are expected, not yet reproduced; see the authoring notes
+  path: artifact.md
+
+duration_min: null   # set when the lesson is written
+
+# Story §8.2. The 8-step discovery flow, build manual §3.1 Level 2.
+pedagogy:
+  pattern: udaan-8-step
+  targets_habit: true   # vocabulary-map.md §2.3, upstream Q1

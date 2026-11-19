@@ -1,0 +1,21 @@
+# Content Unit — Tangible story §4.8
+# "CUs are ordered sequences of SCUs forming one coherent unit."
+# In pedagogy mode a CU is a lesson. Here: one unit of the health-tech sector course (D1).
+
+id: cu.d1.u5
+flow: flow.healthtech-insurance-claims.udaan-v1
+title: "It found a way to get it approved. So why does it feel wrong?"
+concept: "An honest claim, signed by a person -> the one-page claim-check sheet"
+
+# The learner-facing title is the learner's complaint, in their voice.
+# Build manual §3.2 step 1: name the failure, not the topic.
+
+scus:
+  - scu.d1.u5.0
+  - scu.d1.u5.1
+  - scu.d1.u5.2
+  - scu.d1.u5.3
+  - scu.d1.u5.4
+
+# Skills are declared per-SCU, not here. None assigned: the outline names likely candidates,
+# but no skill mapper row exists for this course yet (story §13, provenance over assertion).

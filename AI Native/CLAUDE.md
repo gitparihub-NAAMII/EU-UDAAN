@@ -60,6 +60,8 @@ Voice rules are in build manual §3.5 and they are strict. The ones most often b
 - Maya's story carries no citations. Keep the evidence layer and the narrative layer separate
 
 Consistency: every artifact must agree with `kb.world.himalayan-getaways` (`_system/graph/knowledge.yaml`).
+Sector courses have their own world: the health-tech course (`4-courses/healthtech-d1-insurance-claims/`)
+agrees with `kb.world.nepalgunj-claims-desk` instead, and never borrows Maya's cast or the course acronyms.
 Characters and world objects may be reused across problems but must not be re-characterised.
 
 Framework acronyms (BRIEF, AGENT, TRUST) must **never be named before their reveal sub-unit** —

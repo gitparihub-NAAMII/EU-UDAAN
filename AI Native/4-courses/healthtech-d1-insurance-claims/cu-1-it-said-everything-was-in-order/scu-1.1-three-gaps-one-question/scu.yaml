@@ -1,0 +1,32 @@
+# Sub-Content Unit — Tangible story §4.6
+# "The atomic capability spec." Everything is keyed to this id.
+
+id: scu.d1.u1.1
+cu: cu.d1.u1
+title: "Three gaps, one question"
+
+# UDAAN type tag — build manual §3.1. Set by design in the D1 outline, not inferred from a title.
+type_tag: try-it-yourself
+type_tag_source: d1-outline
+
+# Story §4.6. None assigned until a skill mapper row exists for this course.
+skills: []
+
+knowledge:
+  - kb.world.nepalgunj-claims-desk
+
+actor: human
+mode: pedagogy
+
+# Story §6.1 compartmentalization, declared honestly. vocabulary-map.md §1.1.
+liftable: false
+assumes:
+  - scu.d1.u1.0
+
+# Story §6.1 artifact tier model. Not yet authored: the course is a skeleton.
+artifact:
+  tier: 1
+  target_tier: 1
+  path: null
+
+duration_min: null   # set when the lesson is written

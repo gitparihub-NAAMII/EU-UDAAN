@@ -1,7 +1,8 @@
 # [PROPOSAL] Health-tech sector course: insurance claims and rejections (D1)
 
-**Status:** draft outline, 2026-11-16. Not reviewed by the programme leads or by anyone who
-works an insurance desk. None of the AI failures below has been reproduced yet. See
+**Status:** draft outline, 2026-11-16. Skeleton built 2026-11-19 in
+`4-courses/healthtech-d1-insurance-claims/` (flow, 5 units, 21 sub-units, one lesson drafted:
+2.1). Not reviewed by the programme leads or by anyone who works an insurance desk. None of the AI failures below has been reproduced yet. See
 [Test before writing](#test-before-writing).
 
 **Chosen problem:** D1 · Insurance claims and rejections, problem bank. Type 6, *check it
