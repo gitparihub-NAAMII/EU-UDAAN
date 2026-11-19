@@ -62,7 +62,7 @@ The workshop never says BRIEF, AGENT or TRUST, and must keep it that way (see
    into `4-courses/` unless you first add them to the course world, because CLAUDE.md requires
    every course artifact to match that world.
 2. **Naming order.** The course follows "problem first, name it after": the framework is revealed
-   only at the end. The workshop names the five dials on slide 52, before the five rounds, though
+   only at the end. The workshop names the five dials on slide 51, before the five rounds, though
    only after the motorcycle warm-up has made the gap felt. That suits a one-day session; it would
    break the rule in `4-courses/`.
 3. **Real cases and citations.** The course keeps Maya's story free of citations. The workshop
@@ -70,12 +70,12 @@ The workshop never says BRIEF, AGENT or TRUST, and must keep it that way (see
    Dutch benefits). Both are fine in their own track.
 4. **Voice.** These lines would break build manual §3.5 ("no claim about what AI knows") if they
    were moved into `4-courses/`. They're fine as workshop delivery:
-   - slide 27: "AI only knows what you put in front of it"
-   - slide 51: "The AI knows nothing about you"
+   - slide 26: "AI only knows what you put in front of it"
+   - slide 50: "The AI knows nothing about you"
    - slide 116: "what it already believed"
 
    Rewrite them in mechanism terms ("it only has what you put in front of it") if they move.
-5. **Illustrative figure.** Slide 104's 90% → 81% → 73% is 0.9ⁿ, an illustration, not
+5. **Illustrative figure.** Slide 102's 90% → 81% → 73% is 0.9ⁿ, an illustration, not
    measured data. Never quote it as a statistic in either track.
 
 6. **Build tool.** As of 2026-11-16, the workshop builds its workers as Gemini **skills**. The
@@ -99,12 +99,16 @@ The workshop never says BRIEF, AGENT or TRUST, and must keep it that way (see
   | Stress-test | Verify the reasoning |
   | Commit | Explain the call |
 
-  "Do not defend the plan" (slide 42) is a working anti-sycophancy device, which is the unit the
+  "Do not defend the plan" (slide 41) is a working anti-sycophancy device, which is the unit the
   proposal rates strongest. Per the proposal, letters must be earned from units, so treat this as
   evidence, not a decision.
 - **Limits as visible labels** (UNASSIGNED · NOT STATED · CONFLICT · INAUDIBLE) is a sharper,
   more teachable version of CE CU4's grounding. It's a candidate example for SCU 4.2.
 - **The Checker as a separate worker** is a concrete form of Agentic CU4's nod points.
+- **Tokens** (slides 103–104, added 2026-11-19). The workshop names tokens after people have
+  felt a long chat slow down, and gives three habits: a new chat per job, paste only what the
+  worker needs, ask for less back. Nothing in `4-courses/` covers this yet. It's a candidate
+  for CE (context as a cost) or Agentic (why each worker starts fresh).
 
 **Course → workshop**
 

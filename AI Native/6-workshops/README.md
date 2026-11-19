@@ -43,7 +43,7 @@ them in each session's `crosswalk.md`, not in `_system/graph/`.
 
 | Session | Status | What it is |
 |---|---|---|
-| [`ai-nativity-2026/`](ai-nativity-2026/README.md) | `final/`: Part 4 on Gemini skills (2026-11-16, 128 slides). Part 4 on Gemini skills, one skill-form slide per worker (87, 92, 97), 126 slides; `testing/` holds paste-ready prompts. Promoted 2026-11-16. Fix-and-recheck loop added and promoted (slides 100–101, D2-03 v6, 128 slides); not tested live yet. `working/` = `final/` | One-day, five-part hands-on session: problem solving, context engineering, agentic AI, responsible AI |
+| [`ai-nativity-2026/`](ai-nativity-2026/README.md) | `final/`: 128 slides. Part 4 on Gemini skills, one skill-form slide per worker (85, 90, 95), fix-and-recheck loop (98–99, not tested live yet), two slides on spending fewer tokens (103–104, added 2026-11-19). `testing/` holds paste-ready prompts. `working/` = `final/` | One-day, five-part hands-on session: problem solving, context engineering, agentic AI, responsible AI |
 
 ## Layout of a session
 
