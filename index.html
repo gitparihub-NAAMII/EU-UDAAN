@@ -12925,7 +12925,9 @@ function cohortCalendarHtml(rows){
     // by default the calendar shows only cohorts that a person booked, reserved or confirmed on the AI Native calendar, plus the meetings;
     // "Show all cohorts" brings back the rest
     // AI Foundation cohorts are not on the AI Native calendar, so they always show
-    if(!st.calAll && r.Programme !== 'AI Foundation' && !onRealCal(r)) return;
+    // tentative AI Native cohorts from the map also show (they are not on the AI Native calendar)
+    var tentative = /^(tentative|to confirm|mou in progress|partner to find)$/.test(low(r.Status));
+    if(!st.calAll && r.Programme !== 'AI Foundation' && !tentative && !onRealCal(r)) return;
     var s = parseDate(r.Date), e = parseDate(r['End date']);
     put(s, r, e && e > s ? 'start' : 'one');
     if(e && s && e > s) put(e, r, 'end');
