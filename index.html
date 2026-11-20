@@ -12423,7 +12423,10 @@ function syncTabButton(){
   if(role !== lastRole){ stopListening(); st.view = 'home'; st.page = 'overview'; lastRole = role; }
   b.style.display = role ? '' : 'none';
   if(!role && b.classList.contains('active')){ var c = document.querySelector('.tab-btn[data-tab="cal"]'); if(c) c.click(); }
-  if(role === 'owner' && !st.wtRouted && location.hash === WT_HASH) st.wtRouted = wtRoute();   // opened from the weekly-targets link
+  if(role === 'owner' && location.hash === WT_HASH && (st.wtTries || 0) < 10){   // opened from the weekly-targets link: keep trying until the page is showing
+    var pt = document.getElementById('pmTab');
+    if(pt && pt.style.display !== 'none' && st.page === 'weekly' && st.view === 'program') st.wtTries = 10; else { st.wtTries = (st.wtTries || 0) + 1; wtRoute(); }
+  }
   if(role === 'owner' && !st.err) listen();        // keeps merging team updates while the owner is signed in, on any tab
 }
 if(typeof updateRoleUI === 'function'){
@@ -13100,13 +13103,13 @@ function cohortSummaryHtml(sh){
 
 /* ---------- Weekly target mapping: AI Native and AI Foundation ----------
    Its own link: index.html#udaan-weekly-targets (opens straight on this page for the owner).
-   Targets and learners per cohort are set here. Delivered and planned learners come live from
+   Targets and learners per cohort are set here. Delivered learners come from completed calendar cohorts; delivered and planned rows also come live from
    the cohort map (start week of each cohort; a planned cohort with no learner count is counted
    at the standard cohort size). */
 var WT_HASH = '#udaan-weekly-targets';
 var WT_PROGS = [
-  { p:'AI Native',     short:'Native',     target:22000, size:50, color:'var(--confirmed)', ink:'var(--confirmed-ink)' },
-  { p:'AI Foundation', short:'Foundation', target:1500,  size:40, color:'var(--reserved)',  ink:'var(--reserved-ink)' }
+  { p:'AI Native',     key:'ai_native',     short:'Native',     target:22000, size:50, color:'var(--confirmed)', ink:'var(--confirmed-ink)' },
+  { p:'AI Foundation', key:'ai_foundation', short:'Foundation', target:1500,  size:40, color:'var(--reserved)',  ink:'var(--reserved-ink)' }
 ];
 var WT_START = new Date(2026, 5, 29);   // Monday of the week delivery starts (month 4 = July 2026)
 var WT_END   = new Date(2029, 8, 30);   // delivery ends (month 42 = September 2029)
@@ -13121,12 +13124,22 @@ function wtModel(){
   var rows = st.data ? rowsOf('cohorts') : [], zero = function(){ return weeks.map(function(){ return 0; }); };
   var progs = WT_PROGS.map(function(g){
     var done = zero(), doneC = zero(), plan = zero(), planC = zero(), before = 0, beforeC = 0, overdue = 0;
+    // delivered learners: completed cohorts on the programme's calendar (participants trained)
+    var compl = []; try{ compl = (evsForProgram(g.key) || []).filter(function(e){ return e && e.status === 'completed' && e.date; }); }catch(x){}
+    var complIds = {}, complDates = {};
+    compl.forEach(function(e){
+      complIds[e.id] = 1; complDates[e.date] = 1;
+      var d = new Date(e.date + 'T00:00:00'); if(isNaN(d)) return;
+      var n = participantsNum(e), i = idx[+wtMonday(d)];
+      if(i == null){ if(d < WT_START){ before += n; beforeC++; } return; }
+      done[i] += n; doneC[i]++;
+    });
     rows.forEach(function(r){
       if(r.Programme !== g.p || !(cohortDone(r) || cohortLive(r))) return;
       var d = parseDate(r.Date); if(!d) return;
       var i = idx[+wtMonday(d)], n = learnersOf(r);
-      if(i == null){ if(d < WT_START && cohortDone(r)){ before += n; beforeC++; } return; }
-      if(cohortDone(r)){ done[i] += n; doneC[i]++; }
+      if(i == null){ if(d < WT_START && cohortDone(r) && !complIds[r.calId] && !complDates[toIso(r.Date)]){ before += n; beforeC++; } return; }
+      if(cohortDone(r)){ if(complIds[r.calId] || complDates[toIso(r.Date)]) return; done[i] += n; doneC[i]++; }   // already counted from the calendar
       else { plan[i] += n || g.size; planC[i]++; if(i < curI) overdue++; }
     });
     var cohorts = Math.ceil(g.target / g.size);
@@ -13161,7 +13174,7 @@ function pageWeeklyTargets(){
   var seg = function(id, cur, opts){ return '<span class="pm-wt-seg">' + opts.map(function(o){ return '<button class="pm-btn' + (cur === o[0] ? ' primary' : '') + '" data-' + id + '="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</span>'; };
   var head = '<div class="pt-card"><div class="pm-card-head"><div><h3>📈 Weekly target mapping</h3><div class="sub">AI Native: <b>22,000 learners</b> at <b>50 per cohort</b> (' + M.progs[0].cohorts + ' cohorts). AI Foundation: <b>1,500 learners</b> at <b>40 per cohort</b> (' + M.progs[1].cohorts + ' cohorts). '
     + 'Delivery runs from the week of ' + fmtDate(WT_START) + ' to ' + fmtDate(WT_END) + ' (' + M.W + ' weeks, months 4 to 42 of the action), with ' + M.left + ' weeks left. '
-    + 'Delivered and planned learners come live from the cohort map.</div></div>'
+    + 'Delivered learners come live from the completed cohorts on the AI Native and AI Foundation calendars (participants trained), plus any cohort marked Delivered in the cohort map; planned learners come from the cohort map.</div></div>'
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="pm-btn" data-pg="cohorts">← Cohort map</button><button class="pm-btn" id="pmWtCsv">⬇ Download CSV</button></div></div>'
     + '<div class="pm-wt-controls"><span class="pm-muted">Pace</span>' + seg('wtpace', st.wtPace, [['catch', 'Catch-up from this week'], ['even', 'Even pace from July 2026']])
     + '<span class="pm-muted">Show</span>' + seg('wtview', st.wtView, [['week', 'Weekly'], ['month', 'Monthly']])
