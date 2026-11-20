@@ -12059,22 +12059,36 @@ function publishPeople(){
       .catch(function(e){ delete st.peopleSig[m.email]; console.warn('Could not share rows with ' + m.email, e); });
   });
 }
-/* When the owner adds or edits one of THEIR OWN to-dos in the To-do list, it is also listed on
-   Team updates under their name, as if they had sent it from My updates (already applied). */
-function logOwnTodo(before, after){
+/* Whatever the owner adds, edits or deletes directly in the tracker (goals, weekly plan, targets,
+   to-dos, deliverables, challenges, risks, cohort map) is also listed on Team updates under their
+   name automatically, already applied, so nothing has to be submitted by hand. */
+var LOG_SHEETS = { goals:1, week:1, targets:1, todo:1, deliv:1, chal:1, risk:1, cohorts:1 };
+/* several rows added at once (e.g. to-dos and decisions created when minutes are saved) */
+function logOwnerAdds(adds, where){
   var m = memberOf(curEmail()), c = col(UPDATES_COLLECTION);
-  if(!m || !c || !ownsRow(m, after)) return;
-  var u = { byEmail:curEmail(), byName:m.name, at:stamp(), status:'pending', patches:[], adds:[], note:'', direct:true };
-  if(before){
-    var fields = {};
-    Object.keys(after).forEach(function(f){ if(f !== 'id' && String(after[f] || '') !== String(before[f] || '')) fields[f] = String(after[f] || ''); });
-    if(!Object.keys(fields).length) return;
-    u.patches = [{ k:'todo', id:after.id, title:titleOf('todo', after), fields:fields }];
-  }else u.adds = [{ k:'todo', row:after }];
+  if(!m || !c || !adds.length) return;
   var ref = c.doc();
   st.mergedIds = st.mergedIds || {}; st.mergedIds[ref.id] = 1;        // already in the tracker: never merge it again
-  ref.set(u).then(function(){ return ref.update({ status:'merged', result:'Changed directly in the To-do list', mergedAt:stamp() }); })
-    .catch(function(e){ console.warn('Could not list the to-do on Team updates', e); });
+  ref.set({ byEmail:curEmail(), byName:m.name, at:stamp(), status:'pending', patches:[], adds:adds, dels:[], note:'', direct:true })
+    .then(function(){ return ref.update({ status:'merged', result:'Added from ' + where, mergedAt:stamp() }); })
+    .catch(function(e){ console.warn('Could not list the change on Team updates', e); });
+}
+function logOwnerChange(k, before, after){
+  var m = memberOf(curEmail()), c = col(UPDATES_COLLECTION), def = defOf(k);
+  if(!m || !c || !def || !LOG_SHEETS[k]) return;
+  var u = { byEmail:curEmail(), byName:m.name, at:stamp(), status:'pending', patches:[], adds:[], dels:[], note:'', direct:true };
+  if(before && after){
+    var fields = {};
+    Object.keys(after).forEach(function(f){ if(f !== 'id' && f !== 'calId' && String(after[f] || '') !== String(before[f] || '')) fields[f] = String(after[f] || ''); });
+    if(!Object.keys(fields).length) return;
+    u.patches = [{ k:k, id:after.id, title:titleOf(k, after), fields:fields }];
+  }else if(after) u.adds = [{ k:k, row:after }];
+  else if(before) u.dels = [{ k:k, id:before.id, title:titleOf(k, before) }];
+  else return;
+  var ref = c.doc();
+  st.mergedIds = st.mergedIds || {}; st.mergedIds[ref.id] = 1;        // already in the tracker: never merge it again
+  ref.set(u).then(function(){ return ref.update({ status:'merged', result:'Changed directly in ' + def.label, mergedAt:stamp() }); })
+    .catch(function(e){ console.warn('Could not list the change on Team updates', e); });
 }
 /* Merge every pending team update into the main tracker (owner's browser only). */
 function mergePending(){
@@ -12247,7 +12261,8 @@ function updateCardHtml(u){
   var lines = (u.patches || []).map(function(p){
     var d = defOf(p.k) || { label:p.k };
     return '<li><b>' + esc(d.label) + ':</b> ' + esc(p.title || '') + ' → ' + Object.keys(p.fields || {}).map(function(f){ return esc(f) + ' <i>' + esc(String(p.fields[f]).replace(/<br>/gi, ' ')) + '</i>'; }).join(', ') + '</li>';
-  }).concat((u.adds || []).map(function(a){ var d = defOf(a.k) || { one:a.k }; return '<li><b>New ' + esc(d.one) + ':</b> ' + esc(titleOf(a.k, a.row || {})) + '</li>'; }));
+  }).concat((u.adds || []).map(function(a){ var d = defOf(a.k) || { one:a.k }; return '<li><b>New ' + esc(d.one) + ':</b> ' + esc(titleOf(a.k, a.row || {})) + '</li>'; }))
+    .concat((u.dels || []).map(function(a){ var d = defOf(a.k) || { one:a.k }; return '<li><b>Deleted ' + esc(d.one) + ':</b> ' + esc(a.title || '') + '</li>'; }));
   return '<div class="pm-upd"><div class="pm-upd-h"><b>' + esc(u.byName || u.byEmail) + '</b> ' + badge('Status', u.status === 'pending' ? 'Pending' : (u.status === 'merged' ? 'Merged' : 'Skipped'))
     + '<span class="pm-muted">' + esc(whenStr(tsDate(u.at))) + '</span></div>'
     + (lines.length ? '<ul>' + lines.join('') + '</ul>' : '')
@@ -12353,7 +12368,7 @@ function openEditor(k, id, preset){
     var btn = ov.querySelector('#pmSave'); btn.disabled = true; btn.textContent = 'Saving…';
     save(nd, (row ? 'edited ' : 'added ') + def.one).then(function(){
       close();
-      if(k === 'todo') logOwnTodo(row, o);
+      logOwnerChange(k, row, o);
       if(toCal) pushRowToCalendar(o, row).then(function(){ toast('Also ' + (row && row.calId ? 'updated on' : 'added to') + ' the AI Native calendar'); }).catch(function(e){ console.warn('calendar', e); });
     }).catch(function(){ btn.disabled = false; btn.textContent = row ? 'Save changes' : 'Add'; });
   });
@@ -12362,7 +12377,7 @@ function openEditor(k, id, preset){
     var titleCol = def.title || def.cols[def.k === 'risk' ? 1 : 0];
     if(!confirm('Delete this ' + def.one + '?\n\n' + String(row[titleCol] || '').replace(/<br>/gi, ' ').slice(0, 160) + '\n\nThis cannot be undone (export to Excel first if you want a copy).')) return;
     var nd = cloneData(); nd[k].rows = nd[k].rows.filter(function(r){ return r.id !== row.id; });
-    save(nd, 'deleted ' + def.one).then(close).catch(function(){});
+    save(nd, 'deleted ' + def.one).then(function(){ close(); logOwnerChange(k, row, null); }).catch(function(){});
   });
 }
 
@@ -12703,7 +12718,9 @@ function saveMeeting(){
   var i = nd.meetings.rows.findIndex(function(r){ return r.id === m.id; });
   if(i >= 0) nd.meetings.rows[i] = m; else nd.meetings.rows.push(m);
   var btn = document.getElementById('pmMeetSave'); if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
-  save(nd, 'saved minutes: ' + m.Meeting + ', ' + m.Date).then(function(){ st.meetDraft = meetClone(m); render(); })
+  var oldIds = {}; ['todo', 'risk'].forEach(function(k){ ((st.data && st.data[k] && st.data[k].rows) || []).forEach(function(r){ oldIds[k + ':' + r.id] = 1; }); });
+  var newRows = []; ['todo', 'risk'].forEach(function(k){ nd[k].rows.forEach(function(r){ if(!oldIds[k + ':' + r.id]) newRows.push({ k:k, row:r }); }); });
+  save(nd, 'saved minutes: ' + m.Meeting + ', ' + m.Date).then(function(){ st.meetDraft = meetClone(m); render(); if(newRows.length) logOwnerAdds(newRows, 'the minutes of ' + m.Meeting + ', ' + m.Date); })
     .catch(function(){ if(btn){ btn.disabled = false; btn.textContent = 'Save minutes'; } });
 }
 function pageMinutesRead(){
