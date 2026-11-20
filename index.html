@@ -11590,6 +11590,24 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
   #pmTab .pm-flag.late{ background:var(--cancelled-bg); color:var(--cancelled-ink); }
   #pmTab .pm-flag.soon{ background:var(--proposed-bg); color:var(--proposed-ink); }
   #pmTab .pm-mitem.fresh{ box-shadow:inset 3px 0 0 var(--confirmed); }
+  #pmTab .pm-wt-link{ display:flex; gap:12px; align-items:center; margin:0 0 16px; padding:14px 18px; border:1px solid var(--line); border-left:5px solid var(--confirmed); border-radius:12px; background:var(--paper); color:var(--charcoal); text-decoration:none; }
+  #pmTab .pm-wt-link:hover{ border-color:var(--brand); box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  #pmTab .pm-wt-link .ic{ font-size:22px; }
+  #pmTab .pm-wt-link b{ display:block; font-size:14.5px; color:var(--brand); }
+  #pmTab .pm-wt-link small{ display:block; color:var(--charcoal-soft); font-size:12.5px; margin-top:2px; }
+  #pmTab .pm-wt-controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; font-size:12.5px; }
+  #pmTab .pm-wt-seg{ display:inline-flex; gap:4px; }
+  #pmTab .pm-wt-prog h3{ margin-top:0; }
+  #pmTab .pm-wt-prog .kpi-grid{ grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); }
+  #pmTab .pm-wt-next{ display:flex; flex-direction:column; gap:3px; font-size:12.5px; }
+  #pmTab .prow.pm-wt-now, #pmTab tr.pm-wt-now td{ background:var(--proposed-bg); }
+  #pmTab tr.pm-wt-past td{ opacity:.7; }
+  #pmTab .pm-wt-flag, #pmTab .pm-wt-gap{ font-style:normal; font-weight:700; font-size:11.5px; padding:1px 7px; border-radius:999px; }
+  #pmTab .pm-wt-flag.ok, #pmTab .pm-wt-gap.ok{ color:var(--available-ink); background:var(--available-bg, rgba(14,124,65,.1)); }
+  #pmTab .pm-wt-flag.short, #pmTab .pm-wt-gap.short{ color:var(--cancelled-ink); background:var(--cancelled-bg, rgba(176,4,4,.08)); }
+  #pmTab .pm-wt-wrap{ max-height:70vh; overflow:auto; }
+  #pmTab .pm-wt-table th.pm-wt-grp{ text-align:center; font-size:11.5px; }
+  #pmTab .pm-wt-table td:nth-child(6), #pmTab .pm-wt-table th:nth-child(6){ border-right:2px solid var(--line); }
   #pmTab .pm-todo-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
   #pmTab .pm-todo-col{ border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:var(--paper); }
   #pmTab .pm-todo-col h4{ margin:0 0 6px; font-size:13.5px; display:flex; justify-content:space-between; gap:6px; align-items:baseline; }
@@ -12405,6 +12423,7 @@ function syncTabButton(){
   if(role !== lastRole){ stopListening(); st.view = 'home'; st.page = 'overview'; lastRole = role; }
   b.style.display = role ? '' : 'none';
   if(!role && b.classList.contains('active')){ var c = document.querySelector('.tab-btn[data-tab="cal"]'); if(c) c.click(); }
+  if(role === 'owner' && !st.wtRouted && location.hash === WT_HASH) st.wtRouted = wtRoute();   // opened from the weekly-targets link
   if(role === 'owner' && !st.err) listen();        // keeps merging team updates while the owner is signed in, on any tab
 }
 if(typeof updateRoleUI === 'function'){
@@ -13046,7 +13065,7 @@ function cohortSummaryHtml(sh){
   var soon = rows.filter(function(r){ var d = parseDate(r.Date); return cohortLive(r) && d && d >= today && d - today <= 21 * 864e5; })
     .sort(function(a, b){ return parseDate(a.Date) - parseDate(b.Date); });
   var html = '<div class="kpi-grid">'
-    + kpi(natDone.toLocaleString(), 'AI Native learners delivered', nat.filter(cohortDone).length + ' cohorts · grant target 20,000', 'cohorts', true, natDone / 200)
+    + kpi(natDone.toLocaleString(), 'AI Native learners delivered', nat.filter(cohortDone).length + ' cohorts · target 22,000', 'cohorts', true, natDone / 220)
     + kpi(natPlan.toLocaleString(), 'AI Native learners planned', nat.filter(cohortLive).length + ' upcoming cohorts', 'cohorts')
     + kpi(nat26.toLocaleString() + ' / 2,000', 'AI Native 2026 (delivered + planned)', Math.round(nat26 / 20) + '% of the 2026 goal', 'cohorts', false, nat26 / 20)
     + kpi(fndDone + ' / 1,500', 'AI Foundation learners delivered', fnd.filter(cohortLive).length + ' cohorts planned · ' + fndPlan + ' learners', 'cohorts', false, fndDone / 15)
@@ -13071,11 +13090,153 @@ function cohortSummaryHtml(sh){
     var txt = Object.keys(m.n).map(function(p){ return m.n[p] + ' ' + esc(p.replace('AI ', '')); }).join(' · ');
     return '<div class="prow"><div class="pr-name">' + m.label + '<small>' + txt + '</small></div><div class="pm-stack" style="margin:0;background:transparent">' + bar + '</div><div class="pr-fig">' + tot + '<small>learners</small></div></div>';
   }).join('');
-  return html + cohortCalendarHtml(rows) + '<div class="pt-2col">'
+  return html + cohortCalendarHtml(rows)
+    + '<a class="pm-wt-link" href="' + WT_HASH + '"><span class="ic">📈</span><span><b>Weekly target mapping</b><small>AI Native 22,000 learners · 50 per cohort  ·  AI Foundation 1,500 learners · 40 per cohort. See the detailed week-by-week plan →</small></span></a>'
+    + '<div class="pt-2col">'
     + '<div class="pt-card"><h3>Next three weeks</h3><div class="sub">Click a cohort to change its date, partner or status.</div>' + soonHtml + '</div>'
     + '<div class="pt-card"><h3>Month by month</h3><div class="sub">Learners per month (cancelled cohorts left out). <span style="color:var(--confirmed-ink)">■</span> AI Native <span style="color:var(--reserved-ink)">■</span> AI Foundation</div>' + monthHtml + '</div>'
     + '</div>';
 }
+
+/* ---------- Weekly target mapping: AI Native and AI Foundation ----------
+   Its own link: index.html#udaan-weekly-targets (opens straight on this page for the owner).
+   Targets and learners per cohort are set here. Delivered and planned learners come live from
+   the cohort map (start week of each cohort; a planned cohort with no learner count is counted
+   at the standard cohort size). */
+var WT_HASH = '#udaan-weekly-targets';
+var WT_PROGS = [
+  { p:'AI Native',     short:'Native',     target:22000, size:50, color:'var(--confirmed)', ink:'var(--confirmed-ink)' },
+  { p:'AI Foundation', short:'Foundation', target:1500,  size:40, color:'var(--reserved)',  ink:'var(--reserved-ink)' }
+];
+var WT_START = new Date(2026, 5, 29);   // Monday of the week delivery starts (month 4 = July 2026)
+var WT_END   = new Date(2029, 8, 30);   // delivery ends (month 42 = September 2029)
+function wtMonday(d){ d = new Date(d); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d; }
+function wtWeeks(){ var w = [], d = new Date(WT_START); while(d <= WT_END){ w.push(new Date(d)); d.setDate(d.getDate() + 7); } return w; }
+function wtSpread(total, n){ var out = [], prev = 0; for(var i = 1; i <= n; i++){ var c = Math.round(total * i / n); out.push(c - prev); prev = c; } return out; }
+function wtNum(n){ return Math.round(n).toLocaleString(); }
+function wtModel(){
+  var weeks = wtWeeks(), W = weeks.length, idx = {}, cur = +wtMonday(new Date()), curI;
+  weeks.forEach(function(w, i){ idx[+w] = i; });
+  curI = idx[cur] != null ? idx[cur] : (cur < +WT_START ? 0 : W);
+  var rows = st.data ? rowsOf('cohorts') : [], zero = function(){ return weeks.map(function(){ return 0; }); };
+  var progs = WT_PROGS.map(function(g){
+    var done = zero(), doneC = zero(), plan = zero(), planC = zero(), before = 0, beforeC = 0, overdue = 0;
+    rows.forEach(function(r){
+      if(r.Programme !== g.p || !(cohortDone(r) || cohortLive(r))) return;
+      var d = parseDate(r.Date); if(!d) return;
+      var i = idx[+wtMonday(d)], n = learnersOf(r);
+      if(i == null){ if(d < WT_START && cohortDone(r)){ before += n; beforeC++; } return; }
+      if(cohortDone(r)){ done[i] += n; doneC[i]++; }
+      else { plan[i] += n || g.size; planC[i]++; if(i < curI) overdue++; }
+    });
+    var cohorts = Math.ceil(g.target / g.size);
+    var deliveredBefore = before + done.slice(0, curI).reduce(function(a, b){ return a + b; }, 0);
+    var delivered = before + done.reduce(function(a, b){ return a + b; }, 0);
+    var deliveredC = beforeC + doneC.reduce(function(a, b){ return a + b; }, 0);
+    var planned = plan.slice(curI).reduce(function(a, b){ return a + b; }, 0), plannedC = planC.slice(curI).reduce(function(a, b){ return a + b; }, 0);
+    var left = Math.max(0, W - curI), remaining = Math.max(0, g.target - deliveredBefore);
+    var even = wtSpread(g.target, W), evenC = wtSpread(cohorts, W);
+    var catchT = zero(), catchC = zero();
+    if(left){ var a = wtSpread(remaining, left), c = wtSpread(Math.ceil(remaining / g.size), left); for(var i = 0; i < left; i++){ catchT[curI + i] = a[i]; catchC[curI + i] = c[i]; } }
+    return { g:g, cohorts:cohorts, done:done, doneC:doneC, plan:plan, planC:planC, before:before, delivered:delivered, deliveredC:deliveredC,
+      planned:planned, plannedC:plannedC, remaining:Math.max(0, g.target - delivered), overdue:overdue,
+      perWeek:left ? remaining / left : 0, cohortsPerWeek:left ? remaining / g.size / left : 0,
+      tgt:st.wtPace === 'even' ? even : catchT, tgtC:st.wtPace === 'even' ? evenC : catchC, evenPerWeek:g.target / W };
+  });
+  return { weeks:weeks, W:W, curI:curI, left:Math.max(0, W - curI), progs:progs };
+}
+function wtPeriods(M){
+  // weekly rows, or the same numbers added up per month
+  var out = [];
+  M.weeks.forEach(function(w, i){
+    var key = st.wtView === 'month' ? w.getFullYear() * 100 + w.getMonth() : i, last = out[out.length - 1];
+    if(!last || last.key !== key){ last = { key:key, i0:i, i1:i, w:w, label:st.wtView === 'month' ? MONTHS[w.getMonth()] + ' ' + w.getFullYear() : fmtDate(w) }; out.push(last); }
+    last.i1 = i;
+  });
+  return out;
+}
+function pageWeeklyTargets(){
+  st.wtPace = st.wtPace || 'catch'; st.wtView = st.wtView || 'week';
+  var M = wtModel(), periods = wtPeriods(M), sumR = function(arr, a, b){ var s = 0; for(var i = a; i <= b; i++) s += arr[i]; return s; };
+  var seg = function(id, cur, opts){ return '<span class="pm-wt-seg">' + opts.map(function(o){ return '<button class="pm-btn' + (cur === o[0] ? ' primary' : '') + '" data-' + id + '="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</span>'; };
+  var head = '<div class="pt-card"><div class="pm-card-head"><div><h3>📈 Weekly target mapping</h3><div class="sub">AI Native: <b>22,000 learners</b> at <b>50 per cohort</b> (' + M.progs[0].cohorts + ' cohorts). AI Foundation: <b>1,500 learners</b> at <b>40 per cohort</b> (' + M.progs[1].cohorts + ' cohorts). '
+    + 'Delivery runs from the week of ' + fmtDate(WT_START) + ' to ' + fmtDate(WT_END) + ' (' + M.W + ' weeks, months 4 to 42 of the action), with ' + M.left + ' weeks left. '
+    + 'Delivered and planned learners come live from the cohort map.</div></div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="pm-btn" data-pg="cohorts">← Cohort map</button><button class="pm-btn" id="pmWtCsv">⬇ Download CSV</button></div></div>'
+    + '<div class="pm-wt-controls"><span class="pm-muted">Pace</span>' + seg('wtpace', st.wtPace, [['catch', 'Catch-up from this week'], ['even', 'Even pace from July 2026']])
+    + '<span class="pm-muted">Show</span>' + seg('wtview', st.wtView, [['week', 'Weekly'], ['month', 'Monthly']])
+    + '<label class="pm-muted" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="pmWtPast"' + (st.wtPast ? ' checked' : '') + '> Show past ' + (st.wtView === 'month' ? 'months' : 'weeks') + '</label></div></div>';
+  var kpis = M.progs.map(function(P){
+    var g = P.g, pct = P.delivered / g.target * 100;
+    return '<div class="pt-card pm-wt-prog" style="border-top:4px solid ' + g.color + '"><h3>' + esc(g.p) + '</h3><div class="kpi-grid">'
+      + kpi(wtNum(g.target), 'Target learners', g.size + ' per cohort · ' + P.cohorts + ' cohorts', 'weekly', true)
+      + kpi(wtNum(P.delivered), 'Delivered so far', P.deliveredC + ' cohort' + (P.deliveredC === 1 ? '' : 's') + ' · ' + pct.toFixed(1) + '% of target', 'weekly', false, pct)
+      + kpi(wtNum(P.planned), 'Planned in the cohort map', P.plannedC + ' upcoming cohort' + (P.plannedC === 1 ? '' : 's') + (P.overdue ? ' · ' + P.overdue + ' past date, not marked delivered' : ''), 'cohorts')
+      + kpi(wtNum(P.remaining), 'Still to deliver', Math.ceil(P.remaining / g.size) + ' cohorts of ' + g.size, 'weekly')
+      + kpi(wtNum(P.perWeek), 'Learners needed per week', (P.cohortsPerWeek).toFixed(2) + ' cohorts a week from now · even pace was ' + wtNum(P.evenPerWeek), 'weekly')
+      + kpi(wtNum(P.perWeek * 52 / 12), 'Learners needed per month', (P.cohortsPerWeek * 52 / 12).toFixed(1) + ' cohorts a month', 'weekly')
+      + '</div></div>';
+  }).join('');
+  // next 8 weeks at a glance
+  var next = '';
+  for(var i = M.curI; i < Math.min(M.W, M.curI + 8); i++){
+    next += '<div class="prow' + (i === M.curI ? ' pm-wt-now' : '') + '"><div class="pr-name">' + (i === M.curI ? 'This week' : 'Week of') + '<small>' + fmtDate(M.weeks[i]) + '</small></div><div class="pm-wt-next">'
+      + M.progs.map(function(P){
+          var have = P.plan[i] + P.done[i], t = P.tgt[i], ok = have >= t;
+          return '<span><b style="color:' + P.g.ink + '">' + P.g.short + '</b> ' + wtNum(have) + ' / ' + wtNum(t) + ' learners · ' + (P.planC[i] + P.doneC[i]) + ' / ' + P.tgtC[i] + ' cohorts '
+            + (t ? '<i class="pm-wt-flag ' + (ok ? 'ok' : 'short') + '">' + (ok ? 'on target' : wtNum(t - have) + ' short') + '</i>' : '') + '</span>';
+        }).join('') + '</div></div>';
+  }
+  var nextHtml = '<div class="pt-card"><h3>Next eight weeks</h3><div class="sub">Learners in the cohort map (planned or delivered) against the weekly target, for each programme. Add or move cohorts in the cohort map to close a gap.</div>' + (next || '<div class="pm-empty">Delivery period has ended.</div>') + '</div>';
+  // the detailed table
+  var cum = M.progs.map(function(){ return { t:0, a:0 }; });
+  var body = periods.map(function(pd){
+    var isPast = pd.i1 < M.curI, isNow = pd.i0 <= M.curI && M.curI <= pd.i1;
+    var cells = M.progs.map(function(P, j){
+      var t = sumR(P.tgt, pd.i0, pd.i1), tc = sumR(P.tgtC, pd.i0, pd.i1), d = sumR(P.done, pd.i0, pd.i1), pl = sumR(P.plan, pd.i0, pd.i1), c = sumR(P.doneC, pd.i0, pd.i1) + sumR(P.planC, pd.i0, pd.i1);
+      if(pd.i0 === 0){ cum[j].a += P.before; if(st.wtPace !== 'even') cum[j].t += P.before; }
+      for(var k = pd.i0; k <= pd.i1; k++) cum[j].t += (st.wtPace !== 'even' && k < M.curI) ? P.done[k] : P.tgt[k];   // catch-up: past weeks count what was delivered
+      cum[j].a += d + pl;
+      var gap = cum[j].a - cum[j].t;
+      return '<td class="num">' + (isPast && st.wtPace !== 'even' ? '<span class="pm-muted">–</span>' : wtNum(t) + ' <small class="pm-muted">(' + tc + ')</small>') + '</td>'
+        + '<td class="num">' + (d ? '<b>' + wtNum(d) + '</b>' : '') + (pl ? (d ? ' + ' : '') + '<i title="planned">' + wtNum(pl) + '</i>' : '') + (!d && !pl ? '<span class="pm-muted">0</span>' : '') + ' <small class="pm-muted">(' + c + ')</small></td>'
+        + '<td class="num">' + wtNum(cum[j].t) + '</td><td class="num">' + wtNum(cum[j].a) + '</td>'
+        + '<td class="num"><span class="pm-wt-gap ' + (gap >= 0 ? 'ok' : 'short') + '">' + (gap >= 0 ? '+' : '−') + wtNum(Math.abs(gap)) + '</span></td>';
+    }).join('');
+    if(isPast && !st.wtPast) return '';
+    return '<tr class="' + (isNow ? 'pm-wt-now' : (isPast ? 'pm-wt-past' : '')) + '"><td>' + esc(pd.label) + (isNow ? ' <span class="pm-badge">now</span>' : '') + '</td>' + cells + '</tr>';
+  }).join('');
+  var grp = M.progs.map(function(P){ return '<th colspan="5" class="pm-wt-grp" style="border-bottom:3px solid ' + P.g.color + '">' + esc(P.g.p) + ' · ' + wtNum(P.g.target) + ' · ' + P.g.size + ' per cohort</th>'; }).join('');
+  var sub = M.progs.map(function(){ return '<th class="num">Target (cohorts)</th><th class="num">Delivered + <i>planned</i></th><th class="num">Cum. target</th><th class="num">Cum. actual</th><th class="num">Ahead / behind</th>'; }).join('');
+  var table = '<div class="pt-card"><h3>' + (st.wtView === 'month' ? 'Month' : 'Week') + ' by ' + (st.wtView === 'month' ? 'month' : 'week') + ' mapping</h3><div class="sub">'
+    + (st.wtPace === 'even' ? 'Even pace: each target spread evenly over all ' + M.W + ' delivery weeks from July 2026.' : 'Catch-up pace: what is still to deliver, spread evenly over the ' + M.left + ' weeks left, starting this week.')
+    + ' Delivered numbers are in bold, planned ones in italics; cohorts are in brackets. Cumulative columns count from the start of delivery (earlier cohorts included).</div>'
+    + '<div class="ptx-tablewrap pm-wt-wrap"><table class="pt-table pm-wt-table"><thead><tr><th></th>' + grp + '</tr><tr><th>' + (st.wtView === 'month' ? 'Month' : 'Week of') + '</th>' + sub + '</tr></thead><tbody>' + body + '</tbody></table></div></div>';
+  return head + '<div class="pt-2col">' + kpis + '</div>' + nextHtml + table;
+}
+function wtCsv(){
+  var M = wtModel(), q = function(v){ v = String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  var head = ['Week of'];
+  M.progs.forEach(function(P){ var s = P.g.short; head.push(s + ' target learners', s + ' target cohorts', s + ' delivered learners', s + ' planned learners', s + ' cohorts in map'); });
+  var lines = [head.map(q).join(',')];
+  M.weeks.forEach(function(w, i){
+    var row = [fmtDate(w)];
+    M.progs.forEach(function(P){ row.push(P.tgt[i], P.tgtC[i], P.done[i], P.plan[i], P.doneC[i] + P.planC[i]); });
+    lines.push(row.map(q).join(','));
+  });
+  var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type:'text/csv;charset=utf-8' }));
+  a.download = 'udaan-weekly-targets-' + (st.wtPace === 'even' ? 'even' : 'catch-up') + '.csv'; a.click();
+}
+function wtRoute(){
+  if(location.hash !== WT_HASH || !pmAllowed()) return false;
+  var b = document.getElementById('pmTabBtn');
+  if(b && !b.classList.contains('active')) b.click();
+  if(st.view !== 'program'){ st.view = 'program'; st.prog = 'udaan'; }
+  listen();
+  if(st.page !== 'weekly') go('weekly'); else render();
+  return true;
+}
+window.addEventListener('hashchange', wtRoute);
 
 function pageSheet(def, sh){
   if(def.k === 'team') return pageTeam(def, sh);
@@ -13182,18 +13343,20 @@ function render(){
       + '<div class="pt-nav-item' + (st.page === 'overview' ? ' active' : '') + '" data-pg="overview"><span class="ic">📊</span><span class="pt-nav-label">Overview</span></div>'
       + '<div class="pt-nav-item' + (st.page === 'updates' ? ' active' : '') + '" data-pg="updates"><span class="ic">📥</span><span class="pt-nav-label">Team updates' + (pendO ? ' <small style="opacity:.7">' + pendO + '</small>' : '') + '</span></div>'
       + '<div class="pt-nav-item' + (st.page === 'meetings' ? ' active' : '') + '" data-pg="meetings"><span class="ic">📝</span><span class="pt-nav-label">Meetings' + (meetRows().length ? ' <small style="opacity:.6;font-weight:600">' + meetRows().length + '</small>' : '') + '</span></div>'
+      + '<div class="pt-nav-item' + (st.page === 'weekly' ? ' active' : '') + '" data-pg="weekly"><span class="ic">📈</span><span class="pt-nav-label">Weekly targets</span></div>'
       + (memberOf(curEmail()) ? '<div class="pt-nav-item' + (st.page === 'mine' ? ' active' : '') + '" data-pg="mine"><span class="ic">✍</span><span class="pt-nav-label">My updates</span></div>' : '')
       + SHEETS.map(function(s){
           var n = st.data ? rowsOf(s.k).length : '';
           return '<div class="pt-nav-item' + (st.page === s.k ? ' active' : '') + '" data-pg="' + s.k + '"><span class="ic">' + s.ic + '</span><span class="pt-nav-label">' + esc(s.label) + (n !== '' ? ' <small style="opacity:.6;font-weight:600">' + n + '</small>' : '') + '</span></div>';
         }).join('');
     var def = defOf(st.page);
-    title = 'UDAAN · ' + (def ? def.label : (st.page === 'updates' ? 'Team updates' : (st.page === 'mine' ? 'My updates' : (st.page === 'meetings' ? (st.meetDraft ? st.meetDraft.Meeting + ', ' + st.meetDraft.Date : 'Meetings') : 'Overview'))));
+    title = 'UDAAN · ' + (def ? def.label : (st.page === 'updates' ? 'Team updates' : (st.page === 'mine' ? 'My updates' : (st.page === 'meetings' ? (st.meetDraft ? st.meetDraft.Meeting + ', ' + st.meetDraft.Date : 'Meetings') : (st.page === 'weekly' ? 'Weekly target mapping' : 'Overview')))));
     if(st.err) page = '<div class="pt-note">' + esc(st.err) + (st.ruleErr ? '<pre class="pm-rule">' + esc(RULE_TXT) + '</pre>' : '') + '</div>';
     else if(st.loading) page = '<div class="pt-note">Loading UDAAN Program Management…</div>';
     else if(!st.data || st.preview){ page = pageImport(); title = 'UDAAN · Load the tracker'; }
     else if(st.page === 'updates') page = pageTeamUpdates();
     else if(st.page === 'meetings') page = pageMeetings();
+    else if(st.page === 'weekly') page = pageWeeklyTargets();
     else if(st.page === 'mine' && memberOf(curEmail())){
       // the owner's own items, taken straight from the tracker
       var me = memberOf(curEmail()), mine = {};
@@ -13225,7 +13388,9 @@ function render(){
 }
 function go(page){
   if(st.meetDraft && st.meetDraft.isNew && page !== 'meetings' && !confirm('These new minutes are not saved yet. Leave without saving?')) return;
-  st.page = page; st.q = ''; st.status = ''; st.owner = ''; st.type = ''; st.meetDraft = null; render(); try{ window.scrollTo({ top:0 }); }catch(e){}
+  st.page = page; st.q = ''; st.status = ''; st.owner = ''; st.type = ''; st.meetDraft = null;
+  try{ if(page === 'weekly' && location.hash !== WT_HASH) history.replaceState(null, '', WT_HASH); else if(page !== 'weekly' && location.hash === WT_HASH) history.replaceState(null, '', location.pathname + location.search); }catch(e){}
+  render(); try{ window.scrollTo({ top:0 }); }catch(e){}
 }
 function pickFile(box){
   var fi = box.querySelector('#pmFile'); if(!fi) return;
@@ -13248,6 +13413,11 @@ function wire(box){
   box.querySelectorAll('[data-pmnav="home"]').forEach(function(el){ el.addEventListener('click', function(){ st.view = 'home'; st.preview = null; render(); }); });
   box.querySelectorAll('.pt-nav-item[data-pg]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.pg); }); });
   box.querySelectorAll('.kpi[data-go]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.go); }); });
+  box.querySelectorAll('.pm-btn[data-pg]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.pg); }); });
+  box.querySelectorAll('[data-wtpace]').forEach(function(el){ el.addEventListener('click', function(){ st.wtPace = el.dataset.wtpace; render(); }); });
+  box.querySelectorAll('[data-wtview]').forEach(function(el){ el.addEventListener('click', function(){ st.wtView = el.dataset.wtview; render(); }); });
+  var wtp = box.querySelector('#pmWtPast'); if(wtp) wtp.addEventListener('change', function(){ st.wtPast = wtp.checked; render(); });
+  var wtc = box.querySelector('#pmWtCsv'); if(wtc) wtc.addEventListener('click', wtCsv);
   if(pmAllowed()){
     box.querySelectorAll('[data-edit]').forEach(function(el){ el.addEventListener('click', function(e){
       if(e.target.closest('a')) return; e.stopPropagation(); var p = el.dataset.edit.split(':'); openEditor(p[0], p[1]); }); });
