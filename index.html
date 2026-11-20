@@ -13094,7 +13094,7 @@ function cohortSummaryHtml(sh){
     return '<div class="prow"><div class="pr-name">' + m.label + '<small>' + txt + '</small></div><div class="pm-stack" style="margin:0;background:transparent">' + bar + '</div><div class="pr-fig">' + tot + '<small>learners</small></div></div>';
   }).join('');
   return html + cohortCalendarHtml(rows)
-    + '<a class="pm-wt-link" href="' + WT_HASH + '"><span class="ic">📈</span><span><b>Weekly target mapping</b><small>AI Native 22,000 learners · 50 per cohort  ·  AI Foundation 1,500 learners · 40 per cohort. See the detailed week-by-week plan →</small></span></a>'
+    + '<a class="pm-wt-link" href="' + WT_HASH + '"><span class="ic">📈</span><span><b>Weekly target mapping</b><small>AI Native 22,000 learners · 50 per cohort  ·  AI Foundation 1,500 learners · 40 per cohort. See the EU monthly cohort targets and the detailed week-by-week plan →</small></span></a>'
     + '<div class="pt-2col">'
     + '<div class="pt-card"><h3>Next three weeks</h3><div class="sub">Click a cohort to change its date, partner or status.</div>' + soonHtml + '</div>'
     + '<div class="pt-card"><h3>Month by month</h3><div class="sub">Learners per month (cancelled cohorts left out). <span style="color:var(--confirmed-ink)">■</span> AI Native <span style="color:var(--reserved-ink)">■</span> AI Foundation</div>' + monthHtml + '</div>'
@@ -13225,7 +13225,47 @@ function pageWeeklyTargets(){
     + (st.wtPace === 'even' ? 'Even pace: each target spread evenly over all ' + M.W + ' delivery weeks from July 2026.' : 'Catch-up pace: what is still to deliver, spread evenly over the ' + M.left + ' weeks left, starting this week.')
     + ' Delivered numbers are in bold, planned ones in italics; cohorts are in brackets. Cumulative columns count from the start of delivery (earlier cohorts included).</div>'
     + '<div class="ptx-tablewrap pm-wt-wrap"><table class="pt-table pm-wt-table"><thead><tr><th></th>' + grp + '</tr><tr><th>' + (st.wtView === 'month' ? 'Month' : 'Week of') + '</th>' + sub + '</tr></thead><tbody>' + body + '</tbody></table></div></div>';
-  return head + '<div class="pt-2col">' + kpis + '</div>' + nextHtml + table;
+  return head + '<div class="pt-2col">' + kpis + '</div>' + wtEuHtml(M) + nextHtml + table;
+}
+/* EU monthly targets, as agreed in the EU UDAAN Weekly Sync of 14 July 2026 (AI Native cohort targets,
+   2026 goal of 2,000 learners, ~91 learners a week). A month holds the weeks whose Monday falls in it.
+   Add later months here when the EU gives them (e.g. from the Logframe, Annex C). */
+var EU_MONTHLY = {
+  'AI Native': { source:'EU UDAAN Weekly Sync, 14 July 2026 (2026 goal: 2,000 learners)', months:[
+    ['2026-08', 'W1 (3 Aug) – W5 (31 Aug)', 455], ['2026-09', 'W6 (7 Sep) – W9 (28 Sep)', 364], ['2026-10', 'W10 (5 Oct) – W13 (26 Oct)', 364],
+    ['2026-11', 'W14 (2 Nov) – W17 (23 Nov)', 363], ['2026-12', 'W18 (30 Nov) – W22 (28 Dec)', 454] ] }
+};
+function wtEuHtml(M){
+  var today = new Date(), curKey = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+  return M.progs.map(function(P){
+    var eu = EU_MONTHLY[P.g.p]; if(!eu) return '';
+    var first = eu.months[0][0], cumT = 0, cumA = 0;
+    // learners delivered before the first EU month count towards the cumulative total
+    M.weeks.forEach(function(w, i){ var k = w.getFullYear() + '-' + String(w.getMonth() + 1).padStart(2, '0'); if(k < first) cumA += P.done[i]; });
+    cumA += P.before;
+    var early = cumA;
+    var rows = eu.months.map(function(m){
+      var d = 0, pl = 0, dc = 0, pc = 0;
+      M.weeks.forEach(function(w, i){ var k = w.getFullYear() + '-' + String(w.getMonth() + 1).padStart(2, '0'); if(k === m[0]){ d += P.done[i]; pl += P.plan[i]; dc += P.doneC[i]; pc += P.planC[i]; } });
+      var past = m[0] < curKey, now = m[0] === curKey, have = d + (past ? 0 : pl), tc = Math.ceil(m[2] / P.g.size);
+      cumT += m[2]; cumA += have;
+      var gap = have - m[2], cgap = cumA - cumT, mm = m[0].split('-');
+      return '<tr class="' + (now ? 'pm-wt-now' : (past ? 'pm-wt-past' : '')) + '"><td><b>' + MONTHS[+mm[1] - 1] + ' ' + mm[0] + '</b>' + (now ? ' <span class="pm-badge">now</span>' : '') + '<br><small class="pm-muted">' + esc(m[1]) + '</small></td>'
+        + '<td class="num"><b>' + wtNum(m[2]) + '</b></td><td class="num"><b>' + tc + '</b> <small class="pm-muted">of ' + P.g.size + '</small></td>'
+        + '<td class="num">' + wtNum(d) + ' <small class="pm-muted">(' + dc + ')</small></td>'
+        + '<td class="num">' + (past ? '<span class="pm-muted">–</span>' : '<i>' + wtNum(pl) + '</i> <small class="pm-muted">(' + pc + ')</small>') + '</td>'
+        + '<td class="num"><span class="pm-wt-gap ' + (gap >= 0 ? 'ok' : 'short') + '">' + (gap >= 0 ? '+' : '−') + wtNum(Math.abs(gap)) + '</span></td>'
+        + '<td class="num">' + wtNum(cumT) + '</td><td class="num">' + wtNum(cumA) + ' <small class="pm-muted">(' + Math.round(cumA / cumT * 100) + '%)</small></td></tr>';
+    }).join('');
+    var totT = eu.months.reduce(function(a, m){ return a + m[2]; }, 0);
+    return '<div class="pt-card" style="border-top:4px solid ' + P.g.color + '"><h3>🇪🇺 EU monthly cohort targets · ' + esc(P.g.p) + '</h3><div class="sub">Source: ' + esc(eu.source) + '. '
+      + wtNum(totT) + ' learners over ' + eu.months.length + ' months = ' + Math.ceil(totT / P.g.size) + ' cohorts of ' + P.g.size + '. Cohorts needed = monthly target ÷ ' + P.g.size + ', rounded up. '
+      + 'Past months show delivered learners only; this month and later add what is planned in the cohort map. '
+      + (early ? 'The cumulative column includes ' + wtNum(early) + ' learners delivered before ' + MONTHS[+first.split('-')[1] - 1] + ' ' + first.split('-')[0] + '. ' : '')
+      + 'No EU monthly targets are on file after ' + MONTHS[+eu.months[eu.months.length - 1][0].split('-')[1] - 1] + ' ' + eu.months[eu.months.length - 1][0].split('-')[0] + '; the weekly mapping below covers the rest of the project.</div>'
+      + '<div class="ptx-tablewrap"><table class="pt-table pm-wt-table"><thead><tr><th>Month (weeks)</th><th class="num">EU target learners</th><th class="num">Cohorts needed</th><th class="num">Delivered (cohorts)</th><th class="num">Planned (cohorts)</th><th class="num">Month ahead / behind</th><th class="num">Cum. EU target</th><th class="num">Cum. delivered + planned</th></tr></thead><tbody>'
+      + rows + '</tbody></table></div></div>';
+  }).join('');
 }
 function wtCsv(){
   var M = wtModel(), q = function(v){ v = String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
