@@ -12059,6 +12059,23 @@ function publishPeople(){
       .catch(function(e){ delete st.peopleSig[m.email]; console.warn('Could not share rows with ' + m.email, e); });
   });
 }
+/* When the owner adds or edits one of THEIR OWN to-dos in the To-do list, it is also listed on
+   Team updates under their name, as if they had sent it from My updates (already applied). */
+function logOwnTodo(before, after){
+  var m = memberOf(curEmail()), c = col(UPDATES_COLLECTION);
+  if(!m || !c || !ownsRow(m, after)) return;
+  var u = { byEmail:curEmail(), byName:m.name, at:stamp(), status:'pending', patches:[], adds:[], note:'', direct:true };
+  if(before){
+    var fields = {};
+    Object.keys(after).forEach(function(f){ if(f !== 'id' && String(after[f] || '') !== String(before[f] || '')) fields[f] = String(after[f] || ''); });
+    if(!Object.keys(fields).length) return;
+    u.patches = [{ k:'todo', id:after.id, title:titleOf('todo', after), fields:fields }];
+  }else u.adds = [{ k:'todo', row:after }];
+  var ref = c.doc();
+  st.mergedIds = st.mergedIds || {}; st.mergedIds[ref.id] = 1;        // already in the tracker: never merge it again
+  ref.set(u).then(function(){ return ref.update({ status:'merged', result:'Changed directly in the To-do list', mergedAt:stamp() }); })
+    .catch(function(e){ console.warn('Could not list the to-do on Team updates', e); });
+}
 /* Merge every pending team update into the main tracker (owner's browser only). */
 function mergePending(){
   if(st.merging || !st.data || !pmAllowed()) return;
@@ -12336,6 +12353,7 @@ function openEditor(k, id, preset){
     var btn = ov.querySelector('#pmSave'); btn.disabled = true; btn.textContent = 'Saving…';
     save(nd, (row ? 'edited ' : 'added ') + def.one).then(function(){
       close();
+      if(k === 'todo') logOwnTodo(row, o);
       if(toCal) pushRowToCalendar(o, row).then(function(){ toast('Also ' + (row && row.calId ? 'updated on' : 'added to') + ' the AI Native calendar'); }).catch(function(e){ console.warn('calendar', e); });
     }).catch(function(){ btn.disabled = false; btn.textContent = row ? 'Save changes' : 'Add'; });
   });
