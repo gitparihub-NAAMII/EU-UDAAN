@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>Kathmandu Valley Local Levels</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=Noto+Sans+Devanagari:wght@400;500&display=swap">
+<style>
+/* Layout: one survey sheet — header with valley totals, then one full-width table per district (scrolls sideways inside itself on phones). */
+:root {
+  --bg: #f6f7f5; --paper: #ffffff; --ink: #1d2523; --muted: #5f6b67; --line: #dde3e0;
+  --ktm: #2f6f8f; --ltp: #b0632b; --bkt: #6b5a9e; --metro: #1d2523; --done: #2e7d4f;
+  --ok-bg: #e4f2ea; --warn: #8a5a00; --warn-bg: #fbf0d9; --bad: #9b3434; --bad-bg: #f7e3e3;
+  --f-display: "Space Grotesk", system-ui, sans-serif;
+  --f-body: "Inter", system-ui, sans-serif;
+  --f-np: "Noto Sans Devanagari", "Mangal", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141917; --paper: #1c2321; --ink: #e7ecea; --muted: #9aa6a2; --line: #2e3836;
+  --ktm: #6fb0d0; --ltp: #e09a62; --bkt: #a99ad8; --metro: #e7ecea; --done: #6cc794;
+  --ok-bg: #1d3a2a; --warn: #e8c070; --warn-bg: #3a2f17; --bad: #ec9a9a; --bad-bg: #3d2222; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #141917; --paper: #1c2321; --ink: #e7ecea; --muted: #9aa6a2; --line: #2e3836;
+  --ktm: #6fb0d0; --ltp: #e09a62; --bkt: #a99ad8; --metro: #e7ecea; --done: #6cc794;
+  --ok-bg: #1d3a2a; --warn: #e8c070; --warn-bg: #3a2f17; --bad: #ec9a9a; --bad-bg: #3d2222; color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 28px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: end; justify-content: space-between; margin-bottom: 22px; }
+.eyebrow { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+h1 { font-family: var(--f-display); font-size: clamp(24px, 4vw, 34px); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+.totals { display: flex; gap: 22px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.totals div { display: grid; }
+.totals b { font-family: var(--f-display); font-size: 24px; }
+.totals span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; font-size: 13px; color: var(--muted); }
+button { font: 500 13px var(--f-body); color: var(--ink); background: var(--paper); border: 1px solid var(--line);
+  border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--ktm); outline-offset: 2px; }
+.progress { margin-left: auto; font-variant-numeric: tabular-nums; }
+.key { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+
+.stack { display: grid; gap: 18px; }
+.district { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; min-width: 0; }
+.district h2 { font-family: var(--f-display); font-size: 18px; margin: 0; padding: 14px 16px 10px; display: flex; flex-wrap: wrap; gap: 4px 12px;
+  justify-content: space-between; align-items: baseline; border-top: 4px solid var(--c); }
+.district h2 small { font: 500 12px var(--f-body); color: var(--muted); }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 1060px; }
+th { text-align: left; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.4; }
+tr:last-child td { border-bottom: 0; }
+th:first-child, td:first-child { padding-left: 16px; }
+th:last-child, td:last-child { padding-right: 16px; }
+.n { color: var(--muted); font-variant-numeric: tabular-nums; width: 20px; }
+.name { font-weight: 600; }
+.np { display: block; font-family: var(--f-np); font-size: 12.5px; color: var(--muted); }
+.type { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.type.metro { color: var(--paper); background: var(--metro); border-color: var(--metro); }
+.type.rural { border-style: dashed; }
+.wards { text-align: right; font-variant-numeric: tabular-nums; }
+.tel { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mail { word-break: break-all; }
+.sub { display: block; font-size: 11.5px; color: var(--muted); }
+.none { color: var(--muted); font-style: italic; }
+.st { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+.st.ok { background: var(--ok-bg); color: var(--done); }
+.st.warn { background: var(--warn-bg); color: var(--warn); }
+.st.bad { background: var(--bad-bg); color: var(--bad); }
+.src a { color: var(--ktm); font-size: 12px; word-break: break-all; }
+.chk { text-align: center; width: 52px; }
+input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--done); cursor: pointer; }
+tr.is-done .name { text-decoration: line-through; text-decoration-color: var(--done); }
+tr.is-done .n { color: var(--done); }
+.note { margin-top: 20px; font-size: 12.5px; color: var(--muted); max-width: 80ch; line-height: 1.55; display: grid; gap: 6px; }
+.note p { margin: 0; }
+#csvBox { width: 100%; margin: 0 0 14px; font: 12px ui-monospace, Consolas, monospace; background: var(--paper); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 6px; padding: 10px; box-sizing: border-box; }
+@media (max-width: 420px) { .totals b { font-size: 20px; } .progress { margin-left: 0; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">Bagmati Province · Mapping checklist and contacts</p>
+      <h1>Kathmandu Valley Local Levels</h1>
+    </div>
+    <div class="totals">
+      <div><b>21</b><span>Local levels</span></div>
+      <div><b>2</b><span>Metropolitan</span></div>
+      <div><b>16</b><span>Municipalities</span></div>
+      <div><b>3</b><span>Rural mun.</span></div>
+      <div><b id="wardTotal">–</b><span>Wards</span></div>
+      <div><b id="okTotal">–</b><span>CAO verified</span></div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <button id="copyCsv" type="button">Copy as CSV</button>
+    <button id="resetBtn" type="button">Clear ticks</button>
+    <span id="msg" role="status"></span>
+    <span class="progress" id="progress"></span>
+  </div>
+  <textarea id="csvBox" rows="8" hidden readonly></textarea>
+
+  <div class="key">
+    <span><span class="st ok">On official site</span> read from the local level's own website on 20 Nov 2026</span>
+    <span><span class="st warn">Confirm</span> found, but the website does not clearly name the person</span>
+    <span><span class="st bad">Site down</span> official website could not be opened; call the office</span>
+  </div>
+
+  <div class="stack" id="stack"></div>
+
+  <div class="note">
+    <p>CAO = Chief Administrative Officer (प्रमुख प्रशासकीय अधिकृत). Contacts are exactly as published on each local level's website on 20 Nov 2026. CAOs are transferred often and the websites show no update date, so call to confirm before relying on a name. Some CAOs publish a personal Gmail or Yahoo address; it is listed as published.</p>
+    <p>Local levels and wards follow the 2017 (2073 BS) restructuring. Ward counts are for planning; check them against MoFAGA / Survey Department boundary data before final mapping. Ticks in the “Mapped” column are saved only in your own browser.</p>
+  </div>
+</div>
+
+<script>
+// d: district, n: name, np: Nepali, t: type, w: wards, s: status (ok|warn|bad),
+// cao, caoNp, ph: CAO phone, em: CAO email, addr: office address, oph: office phone, oem: office email, src: source URL
+const DATA = [
+  {d:"Kathmandu",n:"Kathmandu",np:"काठमाडौं",t:"Metropolitan City",w:32,s:"warn",cao:"Muktiram Aryal",caoNp:"मुक्तिराम अर्याल",ph:"01-4168717",em:"ceo@kathmandu.gov.np",addr:"Kathmandu Plaza, Kathmandu",oph:"1180",oem:"info@kathmandu.gov.np",src:"https://kathmandu.gov.np/np/contact"},
+  {d:"Kathmandu",n:"Budhanilkantha",np:"बुढानीलकण्ठ",t:"Municipality",w:13,s:"ok",cao:"Ajay Bartaula",caoNp:"अजय बर्तौला",ph:"9851240858",em:"budhanilkanthamun@gmail.com",addr:"Hattigauda, Kathmandu",oph:"01-4372725",oem:"info@budhanilkanthamun.gov.np",src:"https://budhanilkanthamun.gov.np/our-team-detail/4/"},
+  {d:"Kathmandu",n:"Chandragiri",np:"चन्द्रागिरि",t:"Municipality",w:15,s:"ok",cao:"Jagdish Chandra Nepali",caoNp:"जग्दिश चन्द्र नेपाली",ph:"9851353213",em:"nepali.jagdish@yahoo.com",addr:"Balambu, Kathmandu",oph:"01-4315766",oem:"chandragirimun@gmail.com",src:"https://chandragirimun.gov.np/our-team-detail/3/"},
+  {d:"Kathmandu",n:"Dakshinkali",np:"दक्षिणकाली",t:"Municipality",w:9,s:"bad",oph:"01-4710417, 01-4710325",src:"https://ebps.dakshinkalimun.gov.np/Hom/ReadMore"},
+  {d:"Kathmandu",n:"Gokarneshwar",np:"गोकर्णेश्वर",t:"Municipality",w:9,s:"bad",src:"https://gokarneshwormun.gov.np/"},
+  {d:"Kathmandu",n:"Kageshwari Manohara",np:"कागेश्वरी मनोहरा",t:"Municipality",w:9,s:"bad",src:"https://kageshworimanoharamun.gov.np/"},
+  {d:"Kathmandu",n:"Kirtipur",np:"कीर्तिपुर",t:"Municipality",w:10,s:"ok",cao:"Devraj Chaulagain",caoNp:"देवराज चौलागाईं",ph:"9851250034",em:"cao@kirtipurmun.gov.np",addr:"Kirtipur, Kathmandu",oph:"01-4331110, 01-4331381",oem:"info@kirtipurmun.gov.np",src:"https://kirtipurmun.gov.np/about/officials"},
+  {d:"Kathmandu",n:"Nagarjun",np:"नागार्जुन",t:"Municipality",w:10,s:"ok",cao:"Ganesh Prasad Aryal",caoNp:"गणेश प्रसाद अर्याल",ph:"9851268111",em:"gparyal35@gmail.com",addr:"Harisiddhi, Sitapaila, Kathmandu",oem:"info@nagarjunmun.gov.np",src:"https://nagarjunmun.gov.np/our-team-detail/285/"},
+  {d:"Kathmandu",n:"Shankharapur",np:"शङ्खरापुर",t:"Municipality",w:9,s:"bad",src:"https://shankharapurmun.gov.np/"},
+  {d:"Kathmandu",n:"Tarakeshwar",np:"तारकेश्वर",t:"Municipality",w:11,s:"ok",cao:"Dharmaraj Lamsal",caoNp:"धर्मराज लम्साल",ph:"9851263111",addr:"Dharmasthali, Kathmandu",oph:"01-5168111, 01-5168123",oem:"info@tarakeshwormun.gov.np",src:"https://tarakeshwormun.gov.np/our-team-detail/3/"},
+  {d:"Kathmandu",n:"Tokha",np:"टोखा",t:"Municipality",w:11,s:"ok",cao:"Ram Prasad Acharya",caoNp:"राम प्रसाद आचार्य",ph:"01-4985013",em:"cao@tokhamun.gov.np",addr:"Maijuhiti, Kathmandu",oph:"01-4985013",oem:"info@tokhamun.gov.np",src:"https://tokhamun.gov.np/our-team-detail/2/"},
+  {d:"Lalitpur",n:"Lalitpur",np:"ललितपुर",t:"Metropolitan City",w:29,s:"bad",src:"https://lalitpurmun.gov.np/"},
+  {d:"Lalitpur",n:"Godawari",np:"गोदावरी",t:"Municipality",w:14,s:"ok",cao:"Tek Raj Aryal",caoNp:"टेकराज अर्याल",ph:"9851315125",em:"cao@godawarimunlalitpur.gov.np",addr:"Bajrabarahi, Lalitpur",oph:"01-5572592",oem:"info@godawarimunlalitpur.gov.np",src:"https://godawarimunlalitpur.gov.np/our-team/"},
+  {d:"Lalitpur",n:"Mahalaxmi",np:"महालक्ष्मी",t:"Municipality",w:10,s:"ok",cao:"Amit Dhungana",caoNp:"अमित ढुंगाना",ph:"9851250015",em:"cao.mahalaxmimun@gmail.com",addr:"Imadol, Lalitpur",oph:"01-5203592, 01-5201633",oem:"info@mahalaxmimun.gov.np",src:"https://mahalaxmimun.gov.np/our-team-detail/4/"},
+  {d:"Lalitpur",n:"Bagmati",np:"बागमती",t:"Rural Municipality",w:7,s:"bad",src:"https://bagmatimunlalitpur.gov.np/"},
+  {d:"Lalitpur",n:"Konjyosom",np:"कोन्ज्योसोम",t:"Rural Municipality",w:5,s:"bad",src:"https://www.konjyosommun.gov.np/"},
+  {d:"Lalitpur",n:"Mahankal",np:"महाङ्काल",t:"Rural Municipality",w:6,s:"ok",cao:"Sharmila Banjade",caoNp:"शर्मिला बन्जाडे",ph:"9851320045",em:"cao.mahankal@gmail.com",addr:"Gotikhel, Lalitpur",oph:"9851320045",oem:"info@mahankalmun.gov.np",src:"https://mahankalmun.gov.np/our-team/"},
+  {d:"Bhaktapur",n:"Bhaktapur",np:"भक्तपुर",t:"Municipality",w:10,s:"ok",cao:"Jamuna Mishra",caoNp:"जमुना मिश्र",ph:"9851275111",em:"info@bhaktapurmun.gov.np",addr:"Byasi, Bhaktapur-2",oph:"01-6610096, 01-6613957",oem:"bhaktapurmuni@gmail.com",src:"https://bhaktapurmun.gov.np/our-team-detail/3/"},
+  {d:"Bhaktapur",n:"Changunarayan",np:"चाँगुनारायण",t:"Municipality",w:9,s:"bad",src:"https://changunarayanmun.gov.np/"},
+  {d:"Bhaktapur",n:"Madhyapur Thimi",np:"मध्यपुर थिमी",t:"Municipality",w:9,s:"bad",src:"https://www.madhyapurthimimun.gov.np/"},
+  {d:"Bhaktapur",n:"Suryabinayak",np:"सूर्यविनायक",t:"Municipality",w:10,s:"bad",src:"https://www.suryabinayakmun.gov.np/"}
+];
+const COLORS = { Kathmandu: "var(--ktm)", Lalitpur: "var(--ltp)", Bhaktapur: "var(--bkt)" };
+const STATUS = { ok: "On official site", warn: "Confirm", bad: "Site down" };
+const KEY = "kv-mapped";
+let done = {};
+try { done = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { done = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) {} };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const dash = '<span class="none">not published</span>';
+
+document.getElementById("wardTotal").textContent = DATA.reduce((s, r) => s + r.w, 0);
+document.getElementById("okTotal").textContent = DATA.filter(r => r.s === "ok").length + "/21";
+
+const stack = document.getElementById("stack");
+["Kathmandu","Lalitpur","Bhaktapur"].forEach(d => {
+  const rows = DATA.filter(r => r.d === d);
+  const wards = rows.reduce((s, r) => s + r.w, 0);
+  const sec = document.createElement("section");
+  sec.className = "district";
+  sec.style.setProperty("--c", COLORS[d]);
+  sec.innerHTML = `<h2>${d} District <small>${rows.length} local levels · ${wards} wards</small></h2>
+    <div class="scroll"><table><thead><tr><th>#</th><th>Local level</th><th>Type</th><th class="wards">Wards</th>
+      <th>CAO</th><th>CAO phone</th><th>CAO email</th><th>Office address</th><th>Office contact</th><th>Source</th><th class="chk">Mapped</th></tr></thead>
+    <tbody>${rows.map((r, i) => {
+      const id = (r.d + "-" + r.n).toLowerCase().replace(/\s+/g, "-");
+      const cls = r.t.startsWith("Metro") ? "metro" : r.t.startsWith("Rural") ? "rural" : "";
+      const label = r.t === "Metropolitan City" ? "Metro" : r.t === "Rural Municipality" ? "Rural mun." : "Municipality";
+      const caoCell = r.cao
+        ? `<span class="name">${esc(r.cao)}</span><span class="np" lang="ne">${esc(r.caoNp)}</span><span class="st ${r.s}">${STATUS[r.s]}</span>`
+        : `<span class="st ${r.s}">${STATUS[r.s]}</span>`;
+      const office = [r.oph ? `<span class="tel">${esc(r.oph)}</span>` : "", r.oem ? `<span class="sub mail">${esc(r.oem)}</span>` : ""].join("") || dash;
+      return `<tr data-id="${id}"><td class="n">${i + 1}</td>
+        <td><span class="name">${esc(r.n)}</span><span class="np" lang="ne">${esc(r.np)}</span></td>
+        <td><span class="type ${cls}">${label}</span></td>
+        <td class="wards">${r.w}</td>
+        <td>${caoCell}</td>
+        <td class="tel">${r.ph ? esc(r.ph) : dash}</td>
+        <td class="mail">${r.em ? esc(r.em) : dash}</td>
+        <td>${r.addr ? esc(r.addr) : dash}</td>
+        <td>${office}</td>
+        <td class="src"><a href="${esc(r.src)}" target="_blank" rel="noopener">${esc(r.src.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))}</a></td>
+        <td class="chk"><input type="checkbox" id="m-${id}" aria-label="Mark ${esc(r.n)} as mapped"></td></tr>`;
+    }).join("")}</tbody></table></div>`;
+  stack.appendChild(sec);
+});
+
+function refresh() {
+  let n = 0;
+  document.querySelectorAll("tr[data-id]").forEach(tr => {
+    const on = !!done[tr.dataset.id];
+    tr.classList.toggle("is-done", on);
+    tr.querySelector("input").checked = on;
+    if (on) n++;
+  });
+  document.getElementById("progress").textContent = `${n} of ${DATA.length} mapped`;
+}
+stack.addEventListener("change", e => {
+  const tr = e.target.closest("tr[data-id]");
+  if (!tr) return;
+  done[tr.dataset.id] = e.target.checked;
+  save(); refresh();
+});
+document.getElementById("resetBtn").addEventListener("click", () => { done = {}; save(); refresh(); flash("Ticks cleared"); });
+
+const msg = document.getElementById("msg");
+function flash(t) { msg.textContent = t; clearTimeout(flash.t); flash.t = setTimeout(() => msg.textContent = "", 2500); }
+const q = v => { v = v == null ? "" : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+const csv = "district,local_level,local_level_np,type,wards,cao_status,cao_name,cao_name_np,cao_phone,cao_email,office_address,office_phone,office_email,source_url\n" +
+  DATA.map(r => [r.d, r.n, r.np, r.t, r.w, STATUS[r.s], r.cao, r.caoNp, r.ph, r.em, r.addr, r.oph, r.oem, r.src].map(q).join(",")).join("\n");
+document.getElementById("copyCsv").addEventListener("click", () => {
+  const box = document.getElementById("csvBox");
+  const fallback = () => { box.value = csv; box.hidden = false; box.select(); flash("Select all and copy the text below"); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(csv).then(() => flash("CSV copied"), fallback);
+  } else fallback();
+});
+refresh();
+</script>
+
+</body>
+</html>
