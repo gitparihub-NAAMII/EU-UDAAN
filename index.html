@@ -11590,6 +11590,14 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
   #pmTab .pm-flag.late{ background:var(--cancelled-bg); color:var(--cancelled-ink); }
   #pmTab .pm-flag.soon{ background:var(--proposed-bg); color:var(--proposed-ink); }
   #pmTab .pm-mitem.fresh{ box-shadow:inset 3px 0 0 var(--confirmed); }
+  #pmTab .pm-muni-link{ border-left-color:var(--reserved); margin-top:-6px; }
+  #pmTab .pm-muni-stages{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+  #pmTab .pm-muni-stages .pm-btn b{ margin-left:4px; }
+  #pmTab .pm-muni-q{ margin-left:auto; min-width:220px; padding:7px 10px; border:1px solid var(--line); border-radius:8px; background:var(--paper); color:var(--charcoal); font:inherit; font-size:12.5px; }
+  #pmTab .pm-muni-table td{ white-space:normal; vertical-align:top; font-size:12.5px; }
+  #pmTab .pm-muni-table tr[data-edit]{ cursor:pointer; }
+  #pmTab .pm-np{ display:block; color:var(--charcoal-soft); font-size:11.5px; }
+  #pmTab .pm-muni-table a{ color:var(--confirmed-ink); }
   #pmTab .pm-wt-link{ display:flex; gap:12px; align-items:center; margin:0 0 16px; padding:14px 18px; border:1px solid var(--line); border-left:5px solid var(--confirmed); border-radius:12px; background:var(--paper); color:var(--charcoal); text-decoration:none; }
   #pmTab .pm-wt-link:hover{ border-color:var(--brand); box-shadow:0 2px 10px rgba(0,0,0,.06); }
   #pmTab .pm-wt-link .ic{ font-size:22px; }
@@ -11763,6 +11771,8 @@ var PROGRAMS = [
 var SHEETS = [
   { k:'cohorts', sheet:'Cohort Map',        label:'Cohort map',        one:'cohort',      ic:'📅', first:'ID', title:'Partner',
     cols:['ID','Programme','Date','End date','Partner','Sector','Format','Learners','Lead','Depends on','Status','Notes'] },
+  { k:'munis', sheet:'Karmashala Mapping', label:'Karmashala mapping', one:'local level', ic:'🏛', first:'District', title:'Local level',
+    cols:['District','Local level','Nepali name','Type','Wards','CAO','CAO (Nepali)','CAO phone','CAO email','Office address','Office phone','Office email','Contact check','Source','Mapping status','Owner','Next step','Notes'] },
   { k:'team',  sheet:'Team',               label:'Team',              one:'person',      ic:'👥', first:'Name',
     cols:['Name','Team','Role','Responsible for','Current focus'] },
   { k:'goals', sheet:'Goals',               label:'Goals',             one:'goal',        ic:'🎯', first:'Goal',
@@ -11801,6 +11811,14 @@ L.cstat = ['Delivered','Confirmed','Planned','Tentative','To confirm','Onboardin
 L.sector = ['Education','Science & engineering','Health','Municipality','Government organisation','Fintech','Hospitality','Small enterprises','Policymakers / MPs','Public (open cohort)','Out-of-valley (online)','Youth organisation','Mixed','Agritech','Healthtech'];
 L.format = ['In person','Online','Hybrid'];
 function choicesFor(k, col){
+  if(k === 'munis'){
+    if(col === 'District') return ['Kathmandu', 'Lalitpur', 'Bhaktapur'];
+    if(col === 'Type') return ['Metropolitan City', 'Municipality', 'Rural Municipality'];
+    if(col === 'Contact check') return ['On official site', 'Confirm', 'Site down', 'Verified by call'];
+    if(col === 'Mapping status') return MUNI_STAGES;
+    if(col === 'Owner') return teamNames();
+    return null;
+  }
   if(k === 'cohorts'){
     if(col === 'Programme') return L.programme;
     if(col === 'Status') return L.cstat;
@@ -11860,6 +11878,10 @@ function badgeClass(c, v){
   if(/^(planned|onboarding|pilot)$/.test(x)) return 'b';
   if(/^(tentative|to confirm|mou in progress|to verify|postponed)$/.test(x)) return 'y';
   if(/^(partner to find|cancelled)$/.test(x)) return 'r';
+  if(/^(mou signed|cohort booked|on official site|verified by call)$/.test(x)) return 'g';
+  if(/^(contacted|meeting held)$/.test(x)) return 'b';
+  if(/^(not contacted|confirm)$/.test(x)) return 'y';
+  if(/^(not interested|site down)$/.test(x)) return 'r';
   if(x === 'ai native') return 'b';
   if(x === 'ai foundation') return 'p';
   if(x === 'ai deep') return 'g';
@@ -11895,7 +11917,7 @@ function sheetOf(k){ return (st.data && st.data[k]) || { cols:(SHEETS.find(funct
 function defOf(k){ return SHEETS.find(function(s){ return s.k === k; }); }
 function countOpen(k){ return rowsOf(k).filter(function(r){ return !isDone(r.Status); }).length; }
 function ownerOf(r){ return r.Owner || r.Person || ''; }
-function titleOf(k, r){ var d = defOf(k); return String(r[d.cols[k === 'risk' ? 1 : (k === 'targets' ? 3 : (k === 'week' ? 2 : 0))]] || '').replace(/<br>/gi, ' '); }
+function titleOf(k, r){ var d = defOf(k); return String(r[d.cols[(k === 'risk' || k === 'munis') ? 1 : (k === 'targets' ? 3 : (k === 'week' ? 2 : 0))]] || '').replace(/<br>/gi, ' '); }
 function reachedFor(r){ var t = parseFloat(r.Target), a = parseFloat(r.Actual); return (t > 0 && !isNaN(a)) ? Math.round(a / t * 100) + '%' : ''; }
 function ownsRow(m, r){ var o = low(ownerOf(r)); return !!m && m.match.some(function(w){ return o.indexOf(low(w)) >= 0; }); }
 
@@ -12080,7 +12102,7 @@ function publishPeople(){
 /* Whatever the owner adds, edits or deletes directly in the tracker (goals, weekly plan, targets,
    to-dos, deliverables, challenges, risks, cohort map) is also listed on Team updates under their
    name automatically, already applied, so nothing has to be submitted by hand. */
-var LOG_SHEETS = { goals:1, week:1, targets:1, todo:1, deliv:1, chal:1, risk:1, cohorts:1 };
+var LOG_SHEETS = { goals:1, week:1, targets:1, todo:1, deliv:1, chal:1, risk:1, cohorts:1, munis:1 };
 /* several rows added at once (e.g. to-dos and decisions created when minutes are saved) */
 function logOwnerAdds(adds, where){
   var m = memberOf(curEmail()), c = col(UPDATES_COLLECTION);
@@ -12423,9 +12445,9 @@ function syncTabButton(){
   if(role !== lastRole){ stopListening(); st.view = 'home'; st.page = 'overview'; lastRole = role; }
   b.style.display = role ? '' : 'none';
   if(!role && b.classList.contains('active')){ var c = document.querySelector('.tab-btn[data-tab="cal"]'); if(c) c.click(); }
-  if(role === 'owner' && location.hash === WT_HASH && (st.wtTries || 0) < 10){   // opened from the weekly-targets link: keep trying until the page is showing
+  if(role === 'owner' && pmPageFor(location.hash) && (st.wtTries || 0) < 10){   // opened from a direct link: keep trying until the page is showing
     var pt = document.getElementById('pmTab');
-    if(pt && pt.style.display !== 'none' && st.page === 'weekly' && st.view === 'program') st.wtTries = 10; else { st.wtTries = (st.wtTries || 0) + 1; wtRoute(); }
+    if(pt && pt.style.display !== 'none' && st.page === pmPageFor(location.hash) && st.view === 'program') st.wtTries = 10; else { st.wtTries = (st.wtTries || 0) + 1; wtRoute(); }
   }
   if(role === 'owner' && !st.err) listen();        // keeps merging team updates while the owner is signed in, on any tab
 }
@@ -13095,6 +13117,7 @@ function cohortSummaryHtml(sh){
   }).join('');
   return html + cohortCalendarHtml(rows)
     + '<a class="pm-wt-link" href="' + WT_HASH + '"><span class="ic">📈</span><span><b>Weekly target mapping</b><small>AI Native 22,000 learners · 50 per cohort  ·  AI Foundation 1,500 learners · 40 per cohort. See the EU monthly cohort targets and the detailed week-by-week plan →</small></span></a>'
+    + '<a class="pm-wt-link pm-muni-link" href="#udaan-karmashala"><span class="ic">🏛</span><span><b>Karmashala mapping · municipality level</b><small>' + rowsOf('munis').length + ' local levels in the Kathmandu Valley with CAO contacts and outreach status. Open the mapping →</small></span></a>'
     + '<div class="pt-2col">'
     + '<div class="pt-card"><h3>Next three weeks</h3><div class="sub">Click a cohort to change its date, partner or status.</div>' + soonHtml + '</div>'
     + '<div class="pt-card"><h3>Month by month</h3><div class="sub">Learners per month (cancelled cohorts left out). <span style="color:var(--confirmed-ink)">■</span> AI Native <span style="color:var(--reserved-ink)">■</span> AI Foundation</div>' + monthHtml + '</div>'
@@ -13280,19 +13303,71 @@ function wtCsv(){
   var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type:'text/csv;charset=utf-8' }));
   a.download = 'udaan-weekly-targets-' + (st.wtPace === 'even' ? 'even' : 'catch-up') + '.csv'; a.click();
 }
+/* pages with their own link: index.html#udaan-weekly-targets and index.html#udaan-karmashala */
+function pmPageFor(hash){ return hash === '#udaan-weekly-targets' ? 'weekly' : (hash === '#udaan-karmashala' ? 'munis' : ''); }
+function pmHashFor(page){ return page === 'weekly' ? '#udaan-weekly-targets' : (page === 'munis' ? '#udaan-karmashala' : ''); }
 function wtRoute(){
-  if(location.hash !== WT_HASH || !pmAllowed()) return false;
+  var pg = pmPageFor(location.hash);
+  if(!pg || !pmAllowed()) return false;
   var b = document.getElementById('pmTabBtn');
   if(b && !b.classList.contains('active')) b.click();
   if(st.view !== 'program'){ st.view = 'program'; st.prog = 'udaan'; }
   listen();
-  if(st.page !== 'weekly') go('weekly'); else render();
+  if(st.page !== pg) go(pg); else render();
   return true;
 }
 window.addEventListener('hashchange', wtRoute);
 
+/* ---------- Karmashala mapping: local levels (municipalities) and their CAO contacts ----------
+   Kept in the private tracker (Firestore), never in this page's code, because it holds contact details. */
+var MUNI_STAGES = ['Not contacted', 'Contacted', 'Meeting held', 'MoU in progress', 'MoU signed', 'Cohort booked', 'Not interested'];
+function pageMunis(def, sh){
+  var rows = sh.rows, q = low(st.q);
+  var stage = function(r){ return r['Mapping status'] || 'Not contacted'; };
+  var wards = rows.reduce(function(a, r){ return a + (parseInt(r.Wards, 10) || 0); }, 0);
+  var count = function(f){ return rows.filter(f).length; };
+  var reached = count(function(r){ return stage(r) !== 'Not contacted'; }), mou = count(function(r){ return /^(mou signed|cohort booked)$/i.test(stage(r)); });
+  var verified = count(function(r){ return /^(on official site|verified by call)$/i.test(r['Contact check'] || ''); });
+  var head = '<div class="pt-card"><div class="pm-card-head"><div><h3>🏛 Karmashala mapping · municipality level</h3><div class="sub">Local levels for Karmashala outreach, with the Chief Administrative Officer (CAO, प्रमुख प्रशासकीय अधिकृत) of each. '
+    + 'Contacts were read from each local level’s own website on 20 Nov 2026; CAOs are transferred often, so call to confirm before relying on a name. Click a row to update its mapping status, owner and next step. Private: only you can see this page.</div></div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="pm-btn" data-pg="cohorts">← Cohort map</button>' + addBtn('munis', def) + '</div></div>'
+    + '<div class="kpi-grid">'
+    + kpi(rows.length, 'Local levels', count(function(r){ return /^metro/i.test(r.Type); }) + ' metro · ' + count(function(r){ return /^municipality$/i.test(r.Type); }) + ' municipalities · ' + count(function(r){ return /^rural/i.test(r.Type); }) + ' rural', 'munis', true)
+    + kpi(wards, 'Wards', 'across all local levels', 'munis')
+    + kpi(verified + ' / ' + rows.length, 'CAO contact found', count(function(r){ return /^site down$/i.test(r['Contact check'] || ''); }) + ' websites down · call the office', 'munis')
+    + kpi(reached + ' / ' + rows.length, 'Contacted so far', rows.length ? Math.round(reached / rows.length * 100) + '% reached' : '', 'munis', false, rows.length ? reached / rows.length * 100 : 0)
+    + kpi(mou, 'MoU signed or cohort booked', '', 'munis')
+    + '</div>'
+    + '<div class="pm-muni-stages">' + MUNI_STAGES.map(function(s){ var n = count(function(r){ return stage(r) === s; }); return '<button class="pm-btn' + (st.status === s ? ' primary' : '') + '" data-munistage="' + esc(s) + '">' + esc(s) + ' <b>' + n + '</b></button>'; }).join('')
+    + (st.status ? '<button class="pm-btn" data-munistage="">Show all</button>' : '') + '<input id="pmQ" class="pm-muni-q" type="search" placeholder="Search name, CAO, phone…" value="' + esc(st.q || '') + '"></div></div>';
+  if(!rows.length) return head + '<div class="pt-card"><div class="pm-empty">No local levels yet. Add one with “+ Add local level”.</div></div>';
+  var tel = function(v){ return v ? String(v).split(/,\s*/).map(function(p){ return '<a href="tel:' + esc(p.replace(/[^\d+]/g, '')) + '">' + esc(p) + '</a>'; }).join(', ') : '<span class="pm-muted">–</span>'; };
+  var mail = function(v){ return v ? '<a href="mailto:' + esc(v) + '">' + esc(v) + '</a>' : '<span class="pm-muted">–</span>'; };
+  var districts = []; rows.forEach(function(r){ if(districts.indexOf(r.District) < 0) districts.push(r.District); });
+  var cards = districts.map(function(d){
+    var list = rows.filter(function(r){ return r.District === d && (!st.status || stage(r) === st.status)
+      && (!q || low([r['Local level'], r['Nepali name'], r.CAO, r['CAO phone'], r['CAO email'], r['Office phone'], r.Owner, r['Next step']].join(' ')).indexOf(q) >= 0); });
+    if(!list.length) return '';
+    var all = rows.filter(function(r){ return r.District === d; });
+    var body = list.map(function(r){
+      return '<tr data-edit="munis:' + r.id + '"><td><b>' + esc(r['Local level']) + '</b><small class="pm-np">' + esc(r['Nepali name'] || '') + '</small></td>'
+        + '<td><span class="pm-muted">' + esc(r.Type || '') + '</span></td><td class="num">' + esc(r.Wards || '') + '</td>'
+        + '<td>' + (r.CAO ? '<b>' + esc(r.CAO) + '</b><small class="pm-np">' + esc(r['CAO (Nepali)'] || '') + '</small>' : '') + badge('Status', r['Contact check']) + '</td>'
+        + '<td>' + tel(r['CAO phone']) + '<br>' + mail(r['CAO email']) + '</td>'
+        + '<td>' + (r['Office address'] ? esc(r['Office address']) + '<br>' : '') + '<small>' + tel(r['Office phone']) + (r['Office email'] ? '<br>' + mail(r['Office email']) : '') + '</small></td>'
+        + '<td>' + badge('Status', stage(r)) + (r.Owner ? '<small class="pm-muted" style="display:block">' + esc(r.Owner) + '</small>' : '') + '</td>'
+        + '<td class="wrap">' + linkify(r['Next step'] || '') + (r.Notes ? '<small class="pm-muted" style="display:block">' + linkify(r.Notes) + '</small>' : '') + '</td>'
+        + '<td>' + (r.Source ? '<a href="' + esc(r.Source) + '" target="_blank" rel="noopener" title="' + esc(r.Source) + '">Website ↗</a>' : '') + '</td></tr>';
+    }).join('');
+    return '<div class="pt-card"><h3>' + esc(d) + ' District <span class="pm-muted" style="font-size:12px;font-weight:600">' + all.length + ' local levels · ' + all.reduce(function(a, r){ return a + (parseInt(r.Wards, 10) || 0); }, 0) + ' wards</span></h3>'
+      + '<div class="ptx-tablewrap"><table class="pt-table pm-muni-table"><thead><tr><th>Local level</th><th>Type</th><th class="num">Wards</th><th>CAO</th><th>CAO phone / email</th><th>Office</th><th>Mapping status</th><th>Next step</th><th>Source</th></tr></thead><tbody>' + body + '</tbody></table></div></div>';
+  }).join('');
+  return head + (cards || '<div class="pt-card"><div class="pm-empty">Nothing matches this filter.</div></div>');
+}
+
 function pageSheet(def, sh){
   if(def.k === 'team') return pageTeam(def, sh);
+  if(def.k === 'munis') return pageMunis(def, sh);
   if(def.k === 'cohorts' && !sh.rows.length){
     return '<div class="pt-card"><h3>Cohort map</h3><div class="sub">Plan and track every AI Native and AI Foundation cohort here: dates, partners, sectors, learners, leads and status. Every cohort you add or change is saved straight away.</div>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="pm-btn primary" id="pmSeedCohorts">Load the cohort map (13 Nov 2026)</button>' + addBtn('cohorts', def) + '</div>'
@@ -13442,7 +13517,7 @@ function render(){
 function go(page){
   if(st.meetDraft && st.meetDraft.isNew && page !== 'meetings' && !confirm('These new minutes are not saved yet. Leave without saving?')) return;
   st.page = page; st.q = ''; st.status = ''; st.owner = ''; st.type = ''; st.meetDraft = null;
-  try{ if(page === 'weekly' && location.hash !== WT_HASH) history.replaceState(null, '', WT_HASH); else if(page !== 'weekly' && location.hash === WT_HASH) history.replaceState(null, '', location.pathname + location.search); }catch(e){}
+  try{ var ph = pmHashFor(page); if(ph && location.hash !== ph) history.replaceState(null, '', ph); else if(!ph && pmPageFor(location.hash)) history.replaceState(null, '', location.pathname + location.search); }catch(e){}
   render(); try{ window.scrollTo({ top:0 }); }catch(e){}
 }
 function pickFile(box){
@@ -13467,6 +13542,7 @@ function wire(box){
   box.querySelectorAll('.pt-nav-item[data-pg]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.pg); }); });
   box.querySelectorAll('.kpi[data-go]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.go); }); });
   box.querySelectorAll('.pm-btn[data-pg]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.pg); }); });
+  box.querySelectorAll('[data-munistage]').forEach(function(el){ el.addEventListener('click', function(){ st.status = el.dataset.munistage; render(); }); });
   box.querySelectorAll('[data-wtpace]').forEach(function(el){ el.addEventListener('click', function(){ st.wtPace = el.dataset.wtpace; render(); }); });
   box.querySelectorAll('[data-wtview]').forEach(function(el){ el.addEventListener('click', function(){ st.wtView = el.dataset.wtview; render(); }); });
   var wtp = box.querySelector('#pmWtPast'); if(wtp) wtp.addEventListener('change', function(){ st.wtPast = wtp.checked; render(); });
