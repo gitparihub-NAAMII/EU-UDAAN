@@ -13148,7 +13148,7 @@ function cohortSummaryHtml(sh){
     return '<div class="prow"><div class="pr-name">' + m.label + '<small>' + txt + '</small></div><div class="pm-stack" style="margin:0;background:transparent">' + bar + '</div><div class="pr-fig">' + tot + '<small>learners</small></div></div>';
   }).join('');
   return html + cohortCalendarHtml(rows)
-    + '<a class="pm-wt-link" href="' + WT_HASH + '"><span class="ic">📈</span><span><b>Weekly target mapping</b><small>AI Native 22,000 learners · 50 per cohort  ·  AI Foundation 1,500 learners · 40 per cohort. See the EU monthly cohort targets and the detailed week-by-week plan →</small></span></a>'
+    + '<a class="pm-wt-link" href="' + WT_HASH + '"><span class="ic">📈</span><span><b>Weekly target mapping</b><small>AI Native 22,000 learners · 50 per cohort  ·  AI Foundation 1,500 learners · 40 per cohort · mapped every 2 weeks. See the EU monthly cohort targets and the detailed week-by-week plan →</small></span></a>'
     + '<a class="pm-wt-link pm-muni-link" href="#udaan-karmashala"><span class="ic">🏛</span><span><b>Karmashala mapping · municipality level</b><small>' + rowsOf('munis').length + ' local levels in the Kathmandu Valley with CAO contacts and outreach status. Open the mapping →</small></span></a>'
     + '<div class="pt-2col">'
     + '<div class="pt-card"><h3>Next three weeks</h3><div class="sub">Click a cohort to change its date, partner or status.</div>' + soonHtml + '</div>'
@@ -13164,7 +13164,9 @@ function cohortSummaryHtml(sh){
 var WT_HASH = '#udaan-weekly-targets';
 var WT_PROGS = [
   { p:'AI Native',     key:'ai_native',     short:'Native',     target:22000, size:50, color:'var(--confirmed)', ink:'var(--confirmed-ink)' },
-  { p:'AI Foundation', key:'ai_foundation', short:'Foundation', target:1500,  size:40, color:'var(--reserved)',  ink:'var(--reserved-ink)' }
+  /* every = how many weeks one step of the mapping covers (1 = weekly). AI Foundation starts one cohort every 2 weeks, so its targets are
+     mapped in 2-week blocks; from = a Monday on which a block starts (the first scale-up cohort, F2). AI Native stays weekly. */
+  { p:'AI Foundation', key:'ai_foundation', short:'Foundation', target:1500,  size:40, color:'var(--reserved)',  ink:'var(--reserved-ink)', every:2, from:new Date(2027, 1, 1) }
 ];
 var WT_START = new Date(2026, 5, 29);   // Monday of the week delivery starts (month 4 = July 2026)
 var WT_END   = new Date(2029, 8, 30);   // delivery ends (month 42 = September 2029)
@@ -13206,10 +13208,27 @@ function wtModel(){
     var even = wtSpread(g.target, W), evenC = wtSpread(cohorts, W);
     var catchT = zero(), catchC = zero();
     if(left){ var a = wtSpread(remaining, left), c = wtSpread(Math.ceil(remaining / g.size), left); for(var i = 0; i < left; i++){ catchT[curI + i] = a[i]; catchC[curI + i] = c[i]; } }
+    // a programme mapped every N weeks: its targets sit on the first week of each N-week block instead of on every week
+    var step = g.every > 1 ? g.every : 1, starts = [], startsLeft = [];
+    if(step > 1){
+      var off = Math.round((+wtMonday(g.from || WT_START) - +WT_START) / 6048e5);
+      for(var s = ((off % step) + step) % step; s < W; s += step) starts.push(s);
+      // blocks still to run; the block that is already running keeps its target, placed on this week
+      startsLeft = left ? starts.filter(function(x){ return x + step - 1 >= curI; }).map(function(x){ return Math.max(x, curI); }) : [];
+      var put = function(vals, at){ var o = zero(); at.forEach(function(x, n){ o[x] = vals[n]; }); return o; };
+      even = put(wtSpread(g.target, starts.length), starts); evenC = put(wtSpread(cohorts, starts.length), starts);
+      catchT = put(wtSpread(remaining, startsLeft.length), startsLeft); catchC = put(wtSpread(Math.ceil(remaining / g.size), startsLeft.length), startsLeft);
+    }
+    var s0 = starts.length ? starts[0] : 0;
+    var blockStart = function(i){ return step === 1 ? i : (i < s0 ? 0 : s0 + Math.floor((i - s0) / step) * step); };
+    var blockEnd = function(i){ return step === 1 ? i : (i < s0 ? s0 - 1 : Math.min(W - 1, blockStart(i) + step - 1)); };
     return { g:g, cohorts:cohorts, done:done, doneC:doneC, plan:plan, planC:planC, before:before, delivered:delivered, deliveredC:deliveredC,
       planned:planned, plannedC:plannedC, remaining:Math.max(0, g.target - delivered), overdue:overdue,
       perWeek:left ? remaining / left : 0, cohortsPerWeek:left ? remaining / g.size / left : 0,
-      tgt:st.wtPace === 'even' ? even : catchT, tgtC:st.wtPace === 'even' ? evenC : catchC, evenPerWeek:g.target / W };
+      tgt:st.wtPace === 'even' ? even : catchT, tgtC:st.wtPace === 'even' ? evenC : catchC, evenPerWeek:g.target / W,
+      step:step, blockStart:blockStart, blockEnd:blockEnd,
+      perStep:startsLeft.length ? remaining / startsLeft.length : 0, cohortsPerStep:startsLeft.length ? remaining / g.size / startsLeft.length : 0,
+      evenPerStep:starts.length ? g.target / starts.length : 0 };
   });
   return { weeks:weeks, W:W, curI:curI, left:Math.max(0, W - curI), progs:progs };
 }
@@ -13228,6 +13247,8 @@ function pageWeeklyTargets(){
   var M = wtModel(), periods = wtPeriods(M), sumR = function(arr, a, b){ var s = 0; for(var i = a; i <= b; i++) s += arr[i]; return s; };
   var seg = function(id, cur, opts){ return '<span class="pm-wt-seg">' + opts.map(function(o){ return '<button class="pm-btn' + (cur === o[0] ? ' primary' : '') + '" data-' + id + '="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</span>'; };
   var head = '<div class="pt-card"><div class="pm-card-head"><div><h3>📈 Weekly target mapping</h3><div class="sub">AI Native: <b>22,000 learners</b> at <b>50 per cohort</b> (' + M.progs[0].cohorts + ' cohorts). AI Foundation: <b>1,500 learners</b> at <b>40 per cohort</b> (' + M.progs[1].cohorts + ' cohorts). '
+    + M.progs.filter(function(P){ return P.step > 1; }).map(function(P){ return '<b>' + esc(P.g.p) + ' is mapped every ' + P.step + ' weeks</b>, in ' + P.step + '-week blocks. '; }).join('')
+    + (M.progs.some(function(P){ return P.step > 1; }) ? M.progs.filter(function(P){ return P.step === 1; }).map(function(P){ return esc(P.g.p); }).join(' and ') + ' stays weekly. ' : '')
     + 'Delivery runs from the week of ' + fmtDate(WT_START) + ' to ' + fmtDate(WT_END) + ' (' + M.W + ' weeks, months 4 to 42 of the action), with ' + M.left + ' weeks left. '
     + 'Delivered learners come live from the completed cohorts on the AI Native and AI Foundation calendars (participants trained), plus any cohort marked Delivered in the cohort map; planned learners come from the cohort map.</div></div>'
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="pm-btn" data-pg="cohorts">← Cohort map</button><button class="pm-btn" id="pmWtCsv">⬇ Download CSV</button></div></div>'
@@ -13241,7 +13262,8 @@ function pageWeeklyTargets(){
       + kpi(wtNum(P.delivered), 'Delivered so far', P.deliveredC + ' cohort' + (P.deliveredC === 1 ? '' : 's') + ' · ' + pct.toFixed(1) + '% of target', 'weekly', false, pct)
       + kpi(wtNum(P.planned), 'Planned in the cohort map', P.plannedC + ' upcoming cohort' + (P.plannedC === 1 ? '' : 's') + (P.overdue ? ' · ' + P.overdue + ' past date, not marked delivered' : ''), 'cohorts')
       + kpi(wtNum(P.remaining), 'Still to deliver', Math.ceil(P.remaining / g.size) + ' cohorts of ' + g.size, 'weekly')
-      + kpi(wtNum(P.perWeek), 'Learners needed per week', (P.cohortsPerWeek).toFixed(2) + ' cohorts a week from now · even pace was ' + wtNum(P.evenPerWeek), 'weekly')
+      + (P.step > 1 ? kpi(wtNum(P.perStep), 'Learners needed every ' + P.step + ' weeks', (P.cohortsPerStep).toFixed(2) + ' cohorts every ' + P.step + ' weeks from now · even pace was ' + wtNum(P.evenPerStep), 'weekly')
+        : kpi(wtNum(P.perWeek), 'Learners needed per week', (P.cohortsPerWeek).toFixed(2) + ' cohorts a week from now · even pace was ' + wtNum(P.evenPerWeek), 'weekly'))
       + kpi(wtNum(P.perWeek * 52 / 12), 'Learners needed per month', (P.cohortsPerWeek * 52 / 12).toFixed(1) + ' cohorts a month', 'weekly')
       + '</div></div>';
   }).join('');
@@ -13250,6 +13272,14 @@ function pageWeeklyTargets(){
   for(var i = M.curI; i < Math.min(M.W, M.curI + 8); i++){
     next += '<div class="prow' + (i === M.curI ? ' pm-wt-now' : '') + '"><div class="pr-name">' + (i === M.curI ? 'This week' : 'Week of') + '<small>' + fmtDate(M.weeks[i]) + '</small></div><div class="pm-wt-next">'
       + M.progs.map(function(P){
+          if(P.step > 1){
+            // mapped in blocks: the whole block is shown on its first week (or on this week, when a block is already running)
+            var a = P.blockStart(i), b = P.blockEnd(i);
+            if(i !== a && i !== M.curI) return '<span class="pm-muted"><b style="color:' + P.g.ink + '">' + P.g.short + '</b> counted in the ' + P.step + ' weeks from ' + fmtDate(M.weeks[a]) + '</span>';
+            var haveB = sumR(P.plan, a, b) + sumR(P.done, a, b), tB = sumR(P.tgt, a, b), okB = haveB >= tB;
+            return '<span><b style="color:' + P.g.ink + '">' + P.g.short + '</b> ' + wtNum(haveB) + ' / ' + wtNum(tB) + ' learners · ' + (sumR(P.planC, a, b) + sumR(P.doneC, a, b)) + ' / ' + sumR(P.tgtC, a, b) + ' cohorts in the ' + P.step + ' weeks from ' + fmtDate(M.weeks[a]) + ' '
+              + (tB ? '<i class="pm-wt-flag ' + (okB ? 'ok' : 'short') + '">' + (okB ? 'on target' : wtNum(tB - haveB) + ' short') + '</i>' : '') + '</span>';
+          }
           var have = P.plan[i] + P.done[i], t = P.tgt[i], ok = have >= t;
           return '<span><b style="color:' + P.g.ink + '">' + P.g.short + '</b> ' + wtNum(have) + ' / ' + wtNum(t) + ' learners · ' + (P.planC[i] + P.doneC[i]) + ' / ' + P.tgtC[i] + ' cohorts '
             + (t ? '<i class="pm-wt-flag ' + (ok ? 'ok' : 'short') + '">' + (ok ? 'on target' : wtNum(t - have) + ' short') + '</i>' : '') + '</span>';
@@ -13257,28 +13287,46 @@ function pageWeeklyTargets(){
   }
   var nextHtml = '<div class="pt-card"><h3>Next eight weeks</h3><div class="sub">Learners in the cohort map (planned or delivered) against the weekly target, for each programme. Add or move cohorts in the cohort map to close a gap.</div>' + (next || '<div class="pm-empty">Delivery period has ended.</div>') + '</div>';
   // the detailed table
+  var wtCells = function(P, i0, i1, cumEnd, isPast, span){
+    var t = sumR(P.tgt, i0, i1), tc = sumR(P.tgtC, i0, i1), d = sumR(P.done, i0, i1), pl = sumR(P.plan, i0, i1), c = sumR(P.doneC, i0, i1) + sumR(P.planC, i0, i1);
+    var gap = cumEnd.a - cumEnd.t, td = span ? '<td class="num pm-wt-blk" rowspan="' + span + '" style="vertical-align:middle">' : '<td class="num">';
+    return td + (isPast && st.wtPace !== 'even' ? '<span class="pm-muted">–</span>' : wtNum(t) + ' <small class="pm-muted">(' + tc + ')</small>') + '</td>'
+      + td + (d ? '<b>' + wtNum(d) + '</b>' : '') + (pl ? (d ? ' + ' : '') + '<i title="planned">' + wtNum(pl) + '</i>' : '') + (!d && !pl ? '<span class="pm-muted">0</span>' : '') + ' <small class="pm-muted">(' + c + ')</small></td>'
+      + td + wtNum(cumEnd.t) + '</td>' + td + wtNum(cumEnd.a) + '</td>'
+      + td + '<span class="pm-wt-gap ' + (gap >= 0 ? 'ok' : 'short') + '">' + (gap >= 0 ? '+' : '−') + wtNum(Math.abs(gap)) + '</span></td>';
+  };
+  // cumulative target and actual at the end of every row, for each programme (same sums as before)
   var cum = M.progs.map(function(){ return { t:0, a:0 }; });
-  var body = periods.map(function(pd){
-    var isPast = pd.i1 < M.curI, isNow = pd.i0 <= M.curI && M.curI <= pd.i1;
-    var cells = M.progs.map(function(P, j){
-      var t = sumR(P.tgt, pd.i0, pd.i1), tc = sumR(P.tgtC, pd.i0, pd.i1), d = sumR(P.done, pd.i0, pd.i1), pl = sumR(P.plan, pd.i0, pd.i1), c = sumR(P.doneC, pd.i0, pd.i1) + sumR(P.planC, pd.i0, pd.i1);
+  var cumAt = periods.map(function(pd){
+    return M.progs.map(function(P, j){
+      var d = sumR(P.done, pd.i0, pd.i1), pl = sumR(P.plan, pd.i0, pd.i1);
       if(pd.i0 === 0){ cum[j].a += P.before; if(st.wtPace !== 'even') cum[j].t += P.before; }
       for(var k = pd.i0; k <= pd.i1; k++) cum[j].t += (st.wtPace !== 'even' && k < M.curI) ? P.done[k] : P.tgt[k];   // catch-up: past weeks count what was delivered
       cum[j].a += d + pl;
-      var gap = cum[j].a - cum[j].t;
-      return '<td class="num">' + (isPast && st.wtPace !== 'even' ? '<span class="pm-muted">–</span>' : wtNum(t) + ' <small class="pm-muted">(' + tc + ')</small>') + '</td>'
-        + '<td class="num">' + (d ? '<b>' + wtNum(d) + '</b>' : '') + (pl ? (d ? ' + ' : '') + '<i title="planned">' + wtNum(pl) + '</i>' : '') + (!d && !pl ? '<span class="pm-muted">0</span>' : '') + ' <small class="pm-muted">(' + c + ')</small></td>'
-        + '<td class="num">' + wtNum(cum[j].t) + '</td><td class="num">' + wtNum(cum[j].a) + '</td>'
-        + '<td class="num"><span class="pm-wt-gap ' + (gap >= 0 ? 'ok' : 'short') + '">' + (gap >= 0 ? '+' : '−') + wtNum(Math.abs(gap)) + '</span></td>';
+      return { t:cum[j].t, a:cum[j].a };
+    });
+  });
+  var blocks = st.wtView !== 'month', shown = function(i){ return i >= M.curI || !!st.wtPast; };   // in the weekly view a row is one week, so row number = week number
+  var body = periods.map(function(pd, pi){
+    var isPast = pd.i1 < M.curI, isNow = pd.i0 <= M.curI && M.curI <= pd.i1;
+    var cells = M.progs.map(function(P, j){
+      if(!blocks || P.step === 1) return wtCells(P, pd.i0, pd.i1, cumAt[pi][j], isPast, 0);
+      // a programme mapped every N weeks: one block of cells across the N week rows, drawn on the first of them that is showing
+      var a = P.blockStart(pd.i0), b = P.blockEnd(pd.i0), first = -1, span = 0;
+      for(var k = a; k <= b; k++){ if(shown(k)){ if(first < 0) first = k; span++; } }
+      if(pd.i0 !== first) return '';
+      return wtCells(P, a, b, cumAt[b][j], b < M.curI, span);
     }).join('');
     if(isPast && !st.wtPast) return '';
     return '<tr class="' + (isNow ? 'pm-wt-now' : (isPast ? 'pm-wt-past' : '')) + '"><td>' + esc(pd.label) + (isNow ? ' <span class="pm-badge">now</span>' : '') + '</td>' + cells + '</tr>';
   }).join('');
-  var grp = M.progs.map(function(P){ return '<th colspan="5" class="pm-wt-grp" style="border-bottom:3px solid ' + P.g.color + '">' + esc(P.g.p) + ' · ' + wtNum(P.g.target) + ' · ' + P.g.size + ' per cohort</th>'; }).join('');
+  var grp = M.progs.map(function(P){ return '<th colspan="5" class="pm-wt-grp" style="border-bottom:3px solid ' + P.g.color + '">' + esc(P.g.p) + ' · ' + wtNum(P.g.target) + ' · ' + P.g.size + ' per cohort' + (P.step > 1 ? ' · every ' + P.step + ' weeks' : '') + '</th>'; }).join('');
   var sub = M.progs.map(function(){ return '<th class="num">Target (cohorts)</th><th class="num">Delivered + <i>planned</i></th><th class="num">Cum. target</th><th class="num">Cum. actual</th><th class="num">Ahead / behind</th>'; }).join('');
   var table = '<div class="pt-card"><h3>' + (st.wtView === 'month' ? 'Month' : 'Week') + ' by ' + (st.wtView === 'month' ? 'month' : 'week') + ' mapping</h3><div class="sub">'
     + (st.wtPace === 'even' ? 'Even pace: each target spread evenly over all ' + M.W + ' delivery weeks from July 2026.' : 'Catch-up pace: what is still to deliver, spread evenly over the ' + M.left + ' weeks left, starting this week.')
-    + ' Delivered numbers are in bold, planned ones in italics; cohorts are in brackets. Cumulative columns count from the start of delivery (earlier cohorts included).</div>'
+    + ' Delivered numbers are in bold, planned ones in italics; cohorts are in brackets. Cumulative columns count from the start of delivery (earlier cohorts included).'
+    + M.progs.filter(function(P){ return P.step > 1; }).map(function(P){ return st.wtView === 'month' ? ' ' + esc(P.g.p) + ' targets fall once every ' + P.step + ' weeks, so a month holds two or three of them.'
+        : ' ' + esc(P.g.p) + ' is mapped in ' + P.step + '-week blocks: each block spans the ' + P.step + ' week rows beside it and covers both weeks.'; }).join('') + '</div>'
     + '<div class="ptx-tablewrap pm-wt-wrap"><table class="pt-table pm-wt-table"><thead><tr><th></th>' + grp + '</tr><tr><th>' + (st.wtView === 'month' ? 'Month' : 'Week of') + '</th>' + sub + '</tr></thead><tbody>' + body + '</tbody></table></div></div>';
   return head + '<div class="pt-2col">' + kpis + '</div>' + wtEuHtml(M) + nextHtml + table;
 }
@@ -13325,7 +13373,7 @@ function wtEuHtml(M){
 function wtCsv(){
   var M = wtModel(), q = function(v){ v = String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
   var head = ['Week of'];
-  M.progs.forEach(function(P){ var s = P.g.short; head.push(s + ' target learners', s + ' target cohorts', s + ' delivered learners', s + ' planned learners', s + ' cohorts in map'); });
+  M.progs.forEach(function(P){ var s = P.g.short, ev = P.step > 1 ? ' (every ' + P.step + ' weeks, on the first week)' : ''; head.push(s + ' target learners' + ev, s + ' target cohorts' + ev, s + ' delivered learners', s + ' planned learners', s + ' cohorts in map'); });
   var lines = [head.map(q).join(',')];
   M.weeks.forEach(function(w, i){
     var row = [fmtDate(w)];
@@ -13672,7 +13720,7 @@ function wire(box){
   }
 }
 
-try{ console.info('UDAAN add-on patch 19 (2026-11-24) Program Management loaded: programmes ' + PROGRAMS.map(function(p){ return p.key; }).join(', ')); }catch(e){}
+try{ console.info('UDAAN add-on patch 20 (2026-11-24) Program Management loaded (AI Foundation mapped every 2 weeks): programmes ' + PROGRAMS.map(function(p){ return p.key; }).join(', ')); }catch(e){}
 })();
 </script>
 
