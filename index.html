@@ -11763,9 +11763,30 @@ var MINUTES_COLLECTION = 'udaan_pm_minutes';   // read-only copy of agendas and 
 
 /* The programmes listed under Program Management. Add more here later. */
 var PROGRAMS = [
-  { key:'udaan', name:'UDAAN', abbr:'U',
-    desc:'EU UDAAN project tracker: goals, weekly plan, targets, to-dos, deliverables, challenges, risks and decisions for the Education and Outreach team.' }
+  { key:'udaan', name:'UDAAN', short:'UDAAN', abbr:'U', eyebrow:'EU UDAAN', file:'UDAAN_Project_Tracker',
+    desc:'EU UDAAN project tracker: goals, weekly plan, targets, to-dos, deliverables, challenges, risks and decisions for the Education and Outreach team.' },
+  /* A separate programme with its own tracker: its own document in the same Firestore collection, so the
+     existing Program Management rules already cover it. ownerOnly = only the Program Management owner sees it.
+     It has none of the UDAAN team-update, minutes, cohort-map or calendar features, and nothing in it is
+     counted in the EU UDAAN people-trained figures. sheets = which tracker sheets it uses. */
+  { key:'policy_intelligence', name:'AI for Policy Intelligence (US Embassy)', short:'AI for Policy Intelligence', abbr:'P', eyebrow:'US Embassy',
+    file:'AI_for_Policy_Intelligence_Tracker', ownerOnly:true,
+    hash:'#policy-intelligence', page:'Program%20Management/AI%20for%20Policy%20Intelligence/',   // its own link, and its project page in the repository
+    sheets:['team','goals','week','targets','todo','deliv','chal','risk'],
+    desc:'AI for Policy Intelligence (US Embassy) project tracker: team, goals, weekly plan, targets, to-dos, deliverables, challenges, risks and decisions. Kept separate from the EU UDAAN figures.' }
 ];
+/* The programme that is open (UDAAN until another one is opened). */
+function progDef(){ var k = st && st.prog; return PROGRAMS.find(function(p){ return p.key === k; }) || PROGRAMS[0]; }
+function isUdaan(){ return progDef().key === PROGRAMS[0].key; }
+function progSheets(){ var p = progDef(); return p.sheets ? SHEETS.filter(function(s){ return p.sheets.indexOf(s.k) >= 0; }) : SHEETS; }
+/* Point the tracker at another programme's document. The old data is dropped first, so nothing typed for one
+   programme can ever be saved into another. Call listen() afterwards to load it. */
+function switchProg(key){
+  if(!PROGRAMS.some(function(p){ return p.key === key; })) key = PROGRAMS[0].key;
+  if(progDef().key === key){ st.prog = key; return; }
+  if(st.unsub){ try{ st.unsub(); }catch(e){} st.unsub = null; }
+  st.prog = key; st.data = null; st.meta = null; st.preview = null; st.meetDraft = null; st.loading = false; st.err = ''; st.ruleErr = false;
+}
 
 /* One entry per sheet of the UDAAN Project Tracker Excel. first = first column heading. */
 var SHEETS = [
@@ -11867,7 +11888,7 @@ function pmVisible(){ return pmAllowed() || pmMember() || pmReader(); }
 window.pmAllowed = pmVisible;            // used by updateRoleUI to show the tab
 function getDb(){ try{ return (typeof db !== 'undefined' && db) ? db : null; }catch(e){ return null; } }
 function col(name){ var d = getDb(); return d ? d.collection(name) : null; }
-function docRef(){ var c = col(PM_COLLECTION); return c ? c.doc('udaan') : null; }
+function docRef(){ var c = col(PM_COLLECTION); return c ? c.doc(progDef().key) : null; }
 function stamp(){ try{ return firebase.firestore.FieldValue.serverTimestamp(); }catch(e){ return new Date(); } }
 function tsDate(t){ return t && t.toDate ? t.toDate() : (t instanceof Date ? t : null); }
 function whenStr(d){ return d ? d.toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : 'just now'; }
@@ -11951,7 +11972,7 @@ function parseWorkbook(wb){
       if(out[s.k].cols.some(function(c){ return o[c]; })) out[s.k].rows.push(o);
     }
   });
-  if(!found) throw new Error('No UDAAN tracker sheets (Goals, To-Do, Challenges…) were found in this file.');
+  if(!found) throw new Error('No tracker sheets (Goals, To-Do, Challenges…) were found in this file.');
   return out;
 }
 function readExcelFile(file, cb){
@@ -11959,14 +11980,14 @@ function readExcelFile(file, cb){
   var fr = new FileReader();
   fr.onload = function(){
     try{ cb(parseWorkbook(XLSX.read(new Uint8Array(fr.result), { type:'array', cellDates:true })), file.name); }
-    catch(e){ alert('That file could not be read as the UDAAN tracker.\n\n' + (e && e.message || e)); }
+    catch(e){ alert('That file could not be read as a project tracker.\n\n' + (e && e.message || e)); }
   };
   fr.readAsArrayBuffer(file);
 }
 function exportExcel(){
   if(typeof XLSX === 'undefined' || !st.data) return;
   var wb = XLSX.utils.book_new();
-  SHEETS.forEach(function(s){
+  progSheets().forEach(function(s){
     var sh = sheetOf(s.k);
     var aoa = [[s.label], [sh.desc || ''], [], sh.cols.slice()];
     sh.rows.forEach(function(r){ aoa.push(sh.cols.map(function(c){ return String(r[c] || '').replace(/<br>/gi, '\n'); })); });
@@ -11975,7 +11996,7 @@ function exportExcel(){
     XLSX.utils.book_append_sheet(wb, ws, s.sheet);
   });
   var d = new Date();
-  XLSX.writeFile(wb, 'UDAAN_Project_Tracker_' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '.xlsx');
+  XLSX.writeFile(wb, progDef().file + '_' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '.xlsx');
 }
 
 /* ---------- owner: the main tracker ---------- */
@@ -12012,14 +12033,17 @@ function listen(){
   if(st.unsub || !pmAllowed()) return;
   var ref = docRef();
   if(!ref){ st.err = 'The shared database is not connected, so Program Management cannot load. Reload the page and sign in again.'; render(); return; }
+  var key = progDef().key;
   st.loading = true; st.err = ''; st.ruleErr = false; render();
   st.unsub = ref.onSnapshot(function(snap){
+    if(progDef().key !== key) return;          // another programme was opened meanwhile
     st.loading = false;
     if(snap.exists){ var d = snap.data() || {}; st.data = d.sheets || null; st.meta = { at:tsDate(d.updatedAt), by:d.updatedByName || d.updatedBy || '' }; }
     else { st.data = null; st.meta = null; }
     render();
-    if(st.data){ publishPeople(); mergePending(); }
+    if(st.data && isUdaan()){ publishPeople(); mergePending(); }
   }, function(e){
+    if(progDef().key !== key) return;
     st.loading = false; st.unsub = null;
     st.ruleErr = e && e.code === 'permission-denied';
     st.err = st.ruleErr ? 'The database refused access to Program Management. Add the rules below in Firebase (Firestore → Rules), then reload.'
@@ -12066,7 +12090,7 @@ function meetingsForReaders(){
   });
 }
 function publishMinutes(){
-  var c = col(MINUTES_COLLECTION); if(!c || !st.data || !pmAllowed()) return;
+  var c = col(MINUTES_COLLECTION); if(!c || !st.data || !pmAllowed() || !isUdaan()) return;
   var meetings = meetingsForReaders(), sig = JSON.stringify(meetings);
   if(st.minSig === sig) return; st.minSig = sig;
   c.doc('udaan').set({ meetings:meetings, updatedAt:stamp() })
@@ -12087,7 +12111,7 @@ function isUpcoming(m){
 }
 function publishPeople(){
   publishMinutes();
-  var c = col(PEOPLE_COLLECTION); if(!c || !st.data || !pmAllowed()) return;
+  var c = col(PEOPLE_COLLECTION); if(!c || !st.data || !pmAllowed() || !isUdaan()) return;
   PM_TEAM.forEach(function(m){
     var sheets = {};
     Object.keys(MEMBER_EDIT).forEach(function(k){ sheets[k] = { cols:sheetOf(k).cols, rows:rowsOf(k).filter(function(r){ return ownsRow(m, r); }) }; });
@@ -12106,7 +12130,7 @@ var LOG_SHEETS = { goals:1, week:1, targets:1, todo:1, deliv:1, chal:1, risk:1, 
 /* several rows added at once (e.g. to-dos and decisions created when minutes are saved) */
 function logOwnerAdds(adds, where){
   var m = memberOf(curEmail()), c = col(UPDATES_COLLECTION);
-  if(!m || !c || !adds.length) return;
+  if(!m || !c || !adds.length || !isUdaan()) return;
   var ref = c.doc();
   st.mergedIds = st.mergedIds || {}; st.mergedIds[ref.id] = 1;        // already in the tracker: never merge it again
   ref.set({ byEmail:curEmail(), byName:m.name, at:stamp(), status:'pending', patches:[], adds:adds, dels:[], note:'', direct:true })
@@ -12115,7 +12139,7 @@ function logOwnerAdds(adds, where){
 }
 function logOwnerChange(k, before, after){
   var m = memberOf(curEmail()), c = col(UPDATES_COLLECTION), def = defOf(k);
-  if(!m || !c || !def || !LOG_SHEETS[k]) return;
+  if(!m || !c || !def || !LOG_SHEETS[k] || !isUdaan()) return;
   var u = { byEmail:curEmail(), byName:m.name, at:stamp(), status:'pending', patches:[], adds:[], dels:[], note:'', direct:true };
   if(before && after){
     var fields = {};
@@ -12132,7 +12156,7 @@ function logOwnerChange(k, before, after){
 }
 /* Merge every pending team update into the main tracker (owner's browser only). */
 function mergePending(){
-  if(st.merging || !st.data || !pmAllowed()) return;
+  if(st.merging || !st.data || !pmAllowed() || !isUdaan()) return;
   st.mergedIds = st.mergedIds || {};
   var pend = st.updates.filter(function(u){ return u.status === 'pending' && !st.mergedIds[u._id]; });
   if(!pend.length) return;
@@ -12403,7 +12427,7 @@ function openEditor(k, id, preset){
     if(row){ nd[k].rows = nd[k].rows.map(function(r){ return r.id === row.id ? o : r; }); }
     else nd[k].rows.push(o);
     // an AI Native cohort also goes on (or updates) the AI Native calendar
-    var toCal = k === 'cohorts' && calSendable(o);
+    var toCal = k === 'cohorts' && isUdaan() && calSendable(o);
     if(toCal && !o.calId) o.calId = newEvId();
     var btn = ov.querySelector('#pmSave'); btn.disabled = true; btn.textContent = 'Saving…';
     save(nd, (row ? 'edited ' : 'added ') + def.one).then(function(){
@@ -12428,11 +12452,13 @@ function setBrand(on){
   if(!p || !h) return;
   if(!origBrand) origBrand = { p:p.innerHTML, h:h.innerHTML };
   if(on){
-    p.innerHTML = st.view === 'home' ? 'NAAMII · Programmes' : 'EU UDAAN · Program Management';
-    h.textContent = st.view === 'home' ? 'Program Management' : (pmMember() ? 'UDAAN · My updates' : (pmReader() ? 'UDAAN · Meeting minutes' : 'UDAAN Project Tracker'));
+    p.innerHTML = st.view === 'home' ? 'NAAMII · Programmes' : esc(progDef().eyebrow) + ' · Program Management';
+    h.textContent = st.view === 'home' ? 'Program Management' : (pmMember() ? 'UDAAN · My updates' : (pmReader() ? 'UDAAN · Meeting minutes' : (isUdaan() ? 'UDAAN Project Tracker' : progDef().short + ' Tracker')));
   }else{ p.innerHTML = origBrand.p; h.innerHTML = origBrand.h; }
 }
 window.pmOnTabChange = function(tab){
+  // leaving Program Management from another programme: go back to UDAAN so team updates keep merging in the background
+  if(tab !== 'pm' && pmAllowed() && !isUdaan()){ switchProg(PROGRAMS[0].key); st.view = 'home'; st.page = 'overview'; listen(); }
   setBrand(tab === 'pm');
   if(tab === 'pm'){ if(pmAllowed()){ listen(); try{ if(typeof initMasterListeners === 'function') initMasterListeners(); }catch(e){} } else if(pmMember()) listenMine(); else if(pmReader()) listenMinutes(); render(); }
 };
@@ -12442,12 +12468,18 @@ var lastRole = '';
 function syncTabButton(){
   var b = document.getElementById('pmTabBtn'); if(!b) return;
   var role = pmAllowed() ? 'owner' : (pmMember() ? 'member:' + curEmail() : (pmReader() ? 'reader:' + curEmail() : ''));
-  if(role !== lastRole){ stopListening(); st.view = 'home'; st.page = 'overview'; lastRole = role; }
+  if(role !== lastRole){ stopListening(); st.prog = PROGRAMS[0].key; st.view = 'home'; st.page = 'overview'; lastRole = role; }
   b.style.display = role ? '' : 'none';
   if(!role && b.classList.contains('active')){ var c = document.querySelector('.tab-btn[data-tab="cal"]'); if(c) c.click(); }
   if(role === 'owner' && pmPageFor(location.hash) && (st.wtTries || 0) < 10){   // opened from a direct link: keep trying until the page is showing
     var pt = document.getElementById('pmTab');
     if(pt && pt.style.display !== 'none' && st.page === pmPageFor(location.hash) && st.view === 'program') st.wtTries = 10; else { st.wtTries = (st.wtTries || 0) + 1; wtRoute(); }
+  }
+  if(role === 'owner' && progForHash(location.hash) && (st.prTries || 0) < 10){   // opened from a project page link: keep trying until its tracker is showing
+    var pp = document.getElementById('pmTab');
+    if(pp && pp.style.display !== 'none' && st.view === 'program' && progDef().key === progForHash(location.hash)){
+      st.prTries = 10; try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){}
+    }else{ st.prTries = (st.prTries || 0) + 1; progRoute(); }
   }
   if(role === 'owner' && !st.err) listen();        // keeps merging team updates while the owner is signed in, on any tab
 }
@@ -12491,7 +12523,7 @@ function pageOverview(){
     + kpi(delDone + ' / ' + deliv.length, 'Deliverables done', '', 'deliv', false, deliv.length ? delDone / deliv.length * 100 : 0)
     + kpi(openChal.length, 'Open challenges', openChal.filter(function(r){ return low(r.Severity) === 'high'; }).length + ' high severity', 'chal')
     + kpi(openRisk.length, 'Open risks', openRisk.filter(function(r){ return low(r.Impact) === 'high'; }).length + ' high impact', 'risk')
-    + kpi(recent, 'Team updates this week', openFu.length + ' open follow-ups', 'updates')
+    + (isUdaan() ? kpi(recent, 'Team updates this week', openFu.length + ' open follow-ups', 'updates') : kpi(openFu.length, 'Open follow-ups', '', 'risk'))
     + '</div>';
   var grows = goals.map(function(g){
     var p = pctOf(g.Progress) || 0, t = strip(g.Goal);
@@ -13311,12 +13343,24 @@ function wtRoute(){
   if(!pg || !pmAllowed()) return false;
   var b = document.getElementById('pmTabBtn');
   if(b && !b.classList.contains('active')) b.click();
-  if(st.view !== 'program'){ st.view = 'program'; st.prog = 'udaan'; }
+  if(st.view !== 'program' || !isUdaan()){ st.view = 'program'; switchProg(PROGRAMS[0].key); }
   listen();
   if(st.page !== pg) go(pg); else render();
   return true;
 }
 window.addEventListener('hashchange', wtRoute);
+/* a programme with its own link (index.html#policy-intelligence, used by its project page) opens straight on its tracker */
+function progForHash(hash){ var p = PROGRAMS.find(function(x){ return x.hash && x.hash === hash; }); return p ? p.key : ''; }
+function progRoute(){
+  var key = progForHash(location.hash);
+  if(!key || !pmAllowed()) return false;
+  var b = document.getElementById('pmTabBtn');
+  if(b && !b.classList.contains('active')) b.click();
+  st.view = 'program'; switchProg(key); listen();
+  if(st.page !== 'overview') go('overview'); else render();
+  return true;
+}
+window.addEventListener('hashchange', progRoute);
 
 /* ---------- Karmashala mapping: local levels (municipalities) and their CAO contacts ----------
    Kept in the private tracker (Firestore), never in this page's code, because it holds contact details. */
@@ -13411,9 +13455,11 @@ function pageImport(){
   if(pv){
     var list = SHEETS.map(function(s){ return '<li><b>' + esc(s.label) + ':</b> ' + pv.data[s.k].rows.length + ' rows</li>'; }).join('');
     return '<div class="pt-card"><h3>Check the Excel before saving</h3><div class="sub">From <b>' + esc(pv.name) + '</b>.'
-      + (st.data ? ' This <b>replaces everything</b> currently in UDAAN Program Management.' : '') + '</div><ul class="pm-list">' + list + '</ul>'
+      + (st.data ? ' This <b>replaces everything</b> currently in ' + esc(progDef().short) + ' Program Management.' : '') + '</div><ul class="pm-list">' + list + '</ul>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="pm-btn primary" id="pmImportSave">Save to Program Management</button><button class="pm-btn" id="pmImportCancel">Cancel</button></div></div>';
   }
+  if(!isUdaan()) return '<div class="pt-card"><h3>Start the ' + esc(progDef().short) + ' tracker</h3><div class="sub">Nothing has been added to this programme yet. Start with empty sheets and add the team, goals, to-dos and deliverables here, or load an Excel file that uses the same sheet names as the UDAAN tracker. This tracker is separate from UDAAN.</div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="pm-btn primary" id="pmStartBlank">Start with empty sheets</button><button class="pm-btn" id="pmDrop">Load from Excel…</button></div></div>';
   return '<div class="pt-card"><h3>Load the UDAAN Project Tracker</h3><div class="sub">There is no UDAAN data here yet. Open <b>UDAAN_Project_Tracker.xlsx</b> from your computer once. After that you add and edit everything here, and can export it back to Excel any time.</div>'
     + '<div class="upload-zone" id="pmDrop"><div class="uz-ic">📄</div><div><b>Choose the Excel file</b> or drop it here</div><div style="font-size:12px;color:var(--charcoal-soft);margin-top:4px">.xlsx</div></div>'
     + '<div style="margin-top:10px"><button class="pm-btn" id="pmStartBlank">Or start with empty sheets</button></div></div>';
@@ -13422,7 +13468,7 @@ function pageHome(){
   var sub = '', member = pmMember();
   if(pmReader()){
     return '<div class="pt-card"><h3>Programmes</h3><div class="sub">You can read the meeting agendas and minutes.</div><div class="pm-prog-grid">'
-      + PROGRAMS.map(function(p){ return '<div class="pt-card pm-prog" data-open="' + p.key + '" role="button" tabindex="0"><div class="pm-prog-top"><div class="pm-prog-ic">' + esc(p.abbr) + '</div><div><h3>' + esc(p.name) + '</h3><p>Meeting minutes</p></div></div>'
+      + PROGRAMS.filter(function(p){ return !p.ownerOnly; }).map(function(p){ return '<div class="pt-card pm-prog" data-open="' + p.key + '" role="button" tabindex="0"><div class="pm-prog-top"><div class="pm-prog-ic">' + esc(p.abbr) + '</div><div><h3>' + esc(p.name) + '</h3><p>Meeting minutes</p></div></div>'
         + '<p>Agendas and minutes of the Monday team check-ins and Tuesday UDAAN project meetings (read-only).</p><div><button class="pm-btn primary" data-open="' + p.key + '">Open meeting minutes →</button></div></div>'; }).join('')
       + '</div></div>';
   }
@@ -13430,10 +13476,11 @@ function pageHome(){
     sub = '<div class="pm-prog-stats"><div><b>' + avgGoal().toFixed(0) + '%</b>Goal progress</div><div><b>' + countOpen('todo') + '</b>To-dos open</div>'
       + '<div><b>' + countOpen('chal') + '</b>Challenges</div><div><b>' + rowsOf('risk').filter(function(r){ return low(r.Type) === 'risk' && !isDone(r.Status); }).length + '</b>Risks</div></div>';
   }else if(st.loading){ sub = '<p>Loading…</p>'; }
-  var cards = PROGRAMS.map(function(p){
+  var cards = PROGRAMS.filter(function(p){ return !member || !p.ownerOnly; }).map(function(p){
     return '<div class="pt-card pm-prog" data-open="' + p.key + '" role="button" tabindex="0"><div class="pm-prog-top"><div class="pm-prog-ic">' + esc(p.abbr) + '</div><div><h3>' + esc(p.name) + '</h3><p>' + (member ? 'My updates' : 'Project tracker') + '</p></div></div>'
-      + '<p>' + (member ? 'Update your goals, weekly tasks, targets, to-dos and deliverables for UDAAN. Your update goes straight into the main tracker.' : esc(p.desc)) + '</p>' + sub
-      + '<div><button class="pm-btn primary" data-open="' + p.key + '">' + (member ? 'Update my UDAAN work →' : 'Open UDAAN tracking →') + '</button></div></div>';
+      + '<p>' + (member ? 'Update your goals, weekly tasks, targets, to-dos and deliverables for UDAAN. Your update goes straight into the main tracker.' : esc(p.desc)) + '</p>' + (p.key === progDef().key ? sub : '')
+      + '<div><button class="pm-btn primary" data-open="' + p.key + '">' + (member ? 'Update my UDAAN work →' : 'Open ' + esc(p.short || p.name) + ' tracking →') + '</button>'
+      + (p.page && !member ? '<a href="' + p.page + '" target="_blank" rel="noopener" style="margin-left:12px;font-size:12.5px;font-weight:600;color:var(--charcoal-soft);text-decoration:none">Project page ↗</a>' : '') + '</div></div>';
   }).join('')
   + (member ? '' : '<div class="pt-card pm-prog soon"><div class="pm-prog-top"><div class="pm-prog-ic" style="background:var(--coolgrey)">+</div><div><h3>More programmes</h3><p>Coming later</p></div></div><p>Other NAAMII programmes can be added here with their own tracker.</p></div>');
   return '<div class="pt-card"><h3>Programmes</h3><div class="sub">' + (member ? 'Choose a programme to update your work.' : 'Choose a programme to see its tracking. Only you can change the tracker; the team sends updates that merge in automatically.') + '</div><div class="pm-prog-grid">' + cards + '</div></div>';
@@ -13449,7 +13496,7 @@ function render(){
   if(st.view === 'home'){
     nav = '<div class="pt-nav-item active" data-pmnav="home"><span class="ic">📁</span><span class="pt-nav-label">All programmes</span></div>'
       + '<div class="pm-nav-sep"></div>'
-      + PROGRAMS.map(function(p){ return '<div class="pt-nav-item" data-open="' + p.key + '"><span class="ic">✈</span><span class="pt-nav-label">' + esc(p.name) + '</span></div>'; }).join('');
+      + PROGRAMS.filter(function(p){ return pmAllowed() || !p.ownerOnly; }).map(function(p){ return '<div class="pt-nav-item" data-open="' + p.key + '"><span class="ic">✈</span><span class="pt-nav-label">' + esc(p.name) + '</span></div>'; }).join('');
     title = 'Program Management'; page = pageHome();
   }else if(pmReader()){
     st.page = 'minutes';
@@ -13466,22 +13513,24 @@ function render(){
     title = st.page === 'history' ? 'UDAAN · Submitted updates' : (st.page === 'minutes' ? 'UDAAN · Meeting minutes' : 'UDAAN · My updates');
     page = st.page === 'history' ? pageMyHistory() : (st.page === 'minutes' ? (st.mine ? pageMinutesRead() : '<div class="pt-note">Loading…</div>') : pageMyUpdates());
   }else{
+    // a programme without the UDAAN team features only has the overview and its own sheets
+    if(!isUdaan() && (['updates', 'meetings', 'weekly', 'mine'].indexOf(st.page) >= 0 || (defOf(st.page) && !progSheets().some(function(s){ return s.k === st.page; })))) st.page = 'overview';
     var pendO = st.updates.filter(function(u){ return u.status === 'pending'; }).length;
     nav = '<div class="pt-nav-item" data-pmnav="home"><span class="ic">←</span><span class="pt-nav-label">All programmes</span></div><div class="pm-nav-sep"></div>'
       + '<div class="pt-nav-item' + (st.page === 'overview' ? ' active' : '') + '" data-pg="overview"><span class="ic">📊</span><span class="pt-nav-label">Overview</span></div>'
-      + '<div class="pt-nav-item' + (st.page === 'updates' ? ' active' : '') + '" data-pg="updates"><span class="ic">📥</span><span class="pt-nav-label">Team updates' + (pendO ? ' <small style="opacity:.7">' + pendO + '</small>' : '') + '</span></div>'
+      + (!isUdaan() ? '' : '<div class="pt-nav-item' + (st.page === 'updates' ? ' active' : '') + '" data-pg="updates"><span class="ic">📥</span><span class="pt-nav-label">Team updates' + (pendO ? ' <small style="opacity:.7">' + pendO + '</small>' : '') + '</span></div>'
       + '<div class="pt-nav-item' + (st.page === 'meetings' ? ' active' : '') + '" data-pg="meetings"><span class="ic">📝</span><span class="pt-nav-label">Meetings' + (meetRows().length ? ' <small style="opacity:.6;font-weight:600">' + meetRows().length + '</small>' : '') + '</span></div>'
       + '<div class="pt-nav-item' + (st.page === 'weekly' ? ' active' : '') + '" data-pg="weekly"><span class="ic">📈</span><span class="pt-nav-label">Weekly targets</span></div>'
-      + (memberOf(curEmail()) ? '<div class="pt-nav-item' + (st.page === 'mine' ? ' active' : '') + '" data-pg="mine"><span class="ic">✍</span><span class="pt-nav-label">My updates</span></div>' : '')
-      + SHEETS.map(function(s){
+      + (memberOf(curEmail()) ? '<div class="pt-nav-item' + (st.page === 'mine' ? ' active' : '') + '" data-pg="mine"><span class="ic">✍</span><span class="pt-nav-label">My updates</span></div>' : ''))
+      + progSheets().map(function(s){
           var n = st.data ? rowsOf(s.k).length : '';
           return '<div class="pt-nav-item' + (st.page === s.k ? ' active' : '') + '" data-pg="' + s.k + '"><span class="ic">' + s.ic + '</span><span class="pt-nav-label">' + esc(s.label) + (n !== '' ? ' <small style="opacity:.6;font-weight:600">' + n + '</small>' : '') + '</span></div>';
         }).join('');
     var def = defOf(st.page);
-    title = 'UDAAN · ' + (def ? def.label : (st.page === 'updates' ? 'Team updates' : (st.page === 'mine' ? 'My updates' : (st.page === 'meetings' ? (st.meetDraft ? st.meetDraft.Meeting + ', ' + st.meetDraft.Date : 'Meetings') : (st.page === 'weekly' ? 'Weekly target mapping' : 'Overview')))));
+    title = progDef().short + ' · ' + (def ? def.label : (st.page === 'updates' ? 'Team updates' : (st.page === 'mine' ? 'My updates' : (st.page === 'meetings' ? (st.meetDraft ? st.meetDraft.Meeting + ', ' + st.meetDraft.Date : 'Meetings') : (st.page === 'weekly' ? 'Weekly target mapping' : 'Overview')))));
     if(st.err) page = '<div class="pt-note">' + esc(st.err) + (st.ruleErr ? '<pre class="pm-rule">' + esc(RULE_TXT) + '</pre>' : '') + '</div>';
-    else if(st.loading) page = '<div class="pt-note">Loading UDAAN Program Management…</div>';
-    else if(!st.data || st.preview){ page = pageImport(); title = 'UDAAN · Load the tracker'; }
+    else if(st.loading) page = '<div class="pt-note">Loading ' + esc(progDef().short) + ' Program Management…</div>';
+    else if(!st.data || st.preview){ page = pageImport(); title = progDef().short + ' · ' + (isUdaan() ? 'Load the tracker' : 'Start the tracker'); }
     else if(st.page === 'updates') page = pageTeamUpdates();
     else if(st.page === 'meetings') page = pageMeetings();
     else if(st.page === 'weekly') page = pageWeeklyTargets();
@@ -13496,7 +13545,7 @@ function render(){
     if(st.data && !st.preview){
       tools = '<div class="pm-tools"><span>' + (st.meta && st.meta.at ? 'Last saved ' + esc(whenStr(st.meta.at)) + (st.meta.by ? ' by ' + esc(st.meta.by) : '') : 'Saved in the shared database') + '</span>'
         + '<button class="pm-btn" id="pmExport" title="Download everything as an Excel file">⬇ Export to Excel</button>'
-        + '<button class="pm-btn" id="pmReplace" title="Replace all UDAAN data with an Excel file">Replace from Excel…</button></div>';
+        + '<button class="pm-btn" id="pmReplace" title="Replace all ' + esc(progDef().short) + ' data with an Excel file">Replace from Excel…</button></div>';
     }
   }
   // keep what a team member has typed if the page redraws
@@ -13505,7 +13554,7 @@ function render(){
   var keepScroll = box.querySelector('.pt-side') ? box.querySelector('.pt-side').scrollTop : 0;
   var focusQ = document.activeElement && document.activeElement.id === 'pmQ', caret = focusQ ? document.activeElement.selectionStart : 0;
   box.innerHTML = '<div class="pt-shell"><div class="pt-side' + (st.collapsed ? ' collapsed' : '') + '">'
-    + '<div class="pt-side-head"><span class="pt-side-title">' + (st.view === 'home' ? 'Programmes' : 'UDAAN') + '</span><button class="pt-collapse" id="pmCollapse" title="Collapse">' + (st.collapsed ? '»' : '«') + '</button></div>'
+    + '<div class="pt-side-head"><span class="pt-side-title">' + (st.view === 'home' ? 'Programmes' : esc(progDef().short)) + '</span><button class="pt-collapse" id="pmCollapse" title="Collapse">' + (st.collapsed ? '»' : '«') + '</button></div>'
     + '<div class="pt-nav">' + nav + '</div></div>'
     + '<div class="pt-main"><div class="pt-page-title">' + esc(title) + '</div>' + tools + page + '</div></div>'
     + '<input type="file" id="pmFile" accept=".xlsx,.xls" hidden>';
@@ -13533,12 +13582,13 @@ function refreshChangeCount(box){
 }
 function wire(box){
   box.querySelectorAll('[data-open]').forEach(function(el){
-    var open = function(e){ if(e) e.stopPropagation(); st.view = 'program'; st.prog = el.dataset.open;
+    var open = function(e){ if(e && e.target && e.target.closest && e.target.closest('a')) return;   // the project page link opens on its own
+      if(e) e.stopPropagation(); st.view = 'program'; switchProg(pmAllowed() ? el.dataset.open : PROGRAMS[0].key);
       if(pmMember()){ listenMine(); go('mine'); } else if(pmReader()){ listenMinutes(); go('minutes'); } else { listen(); go('overview'); } };
     el.addEventListener('click', open);
     el.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(e); } });
   });
-  box.querySelectorAll('[data-pmnav="home"]').forEach(function(el){ el.addEventListener('click', function(){ st.view = 'home'; st.preview = null; render(); }); });
+  box.querySelectorAll('[data-pmnav="home"]').forEach(function(el){ el.addEventListener('click', function(){ st.view = 'home'; st.preview = null; if(pmAllowed() && !isUdaan()){ switchProg(PROGRAMS[0].key); listen(); } render(); }); });
   box.querySelectorAll('.pt-nav-item[data-pg]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.pg); }); });
   box.querySelectorAll('.kpi[data-go]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.go); }); });
   box.querySelectorAll('.pm-btn[data-pg]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.pg); }); });
@@ -13622,7 +13672,7 @@ function wire(box){
   }
 }
 
-try{ console.info('UDAAN add-on patch 18 (2026-11-13) Program Management loaded'); }catch(e){}
+try{ console.info('UDAAN add-on patch 19 (2026-11-24) Program Management loaded: programmes ' + PROGRAMS.map(function(p){ return p.key; }).join(', ')); }catch(e){}
 })();
 </script>
 
