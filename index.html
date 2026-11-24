@@ -13217,13 +13217,12 @@ function wtModel(){
       // blocks still to run; the block that is already running keeps its target, placed on this week
       startsLeft = left ? starts.filter(function(x){ return x + step - 1 >= curI; }).map(function(x){ return Math.max(x, curI); }) : [];
       var put = function(vals, at){ var o = zero(); at.forEach(function(x, n){ o[x] = vals[n]; }); return o; };
-      // whole cohorts: one cohort of g.size learners in every block until the total is covered (the last cohort takes what is left;
-      // more than one cohort per block only when too few blocks remain)
+      // whole cohorts: one full cohort of g.size learners in every block until the total is covered, so every cohort is the same size
+      // (38 cohorts of 40 = 1,520, just above the 1,500 target); more than one cohort per block only when too few blocks remain
       var whole = function(total, at){
-        var need = Math.ceil(total / g.size), rest = total;
+        var need = Math.ceil(total / g.size);
         var c = need <= at.length ? at.map(function(x, k){ return k < need ? 1 : 0; }) : wtSpread(need, at.length);
-        var l = c.map(function(k){ var v = Math.min(rest, k * g.size); rest -= v; return v; });
-        return { t:put(l, at), c:put(c, at) };
+        return { t:put(c.map(function(k){ return k * g.size; }), at), c:put(c, at) };
       };
       var ev = whole(g.target, starts), ca = whole(remaining, startsLeft);
       even = ev.t; evenC = ev.c; catchT = ca.t; catchC = ca.c;
