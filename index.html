@@ -10115,8 +10115,19 @@ function buildClock(){
 }
 function pad(n){ return String(n).padStart(2, '0'); }
 /* Calendar difference: whole years, then whole months, then the remaining days as weeks + days. */
-function untilDeadline(){
-  var a = new Date(), b = new Date(PROJECT_DEADLINE.getTime());
+/* Another programme open in Program Management (e.g. AI for Policy Intelligence) has its own project time. */
+function clockProg(){ try{ return typeof window.pmClockProgramme === 'function' ? window.pmClockProgramme() : null; }catch(e){ return null; } }
+/* its end date = start + months, midnight Nepal Standard Time; null while the start date is not set */
+function progEnd(p){
+  if(!p || !p.months || !/^\d{4}-\d{2}-\d{2}$/.test(p.start || '')) return null;
+  var s = p.start.split('-'), y = +s[0], m = +s[1] - 1 + p.months, d = +s[2];
+  y += Math.floor(m / 12); m = m % 12;
+  d = Math.min(d, new Date(y, m + 1, 0).getDate());
+  var e = new Date(y + '-' + pad(m + 1) + '-' + pad(d) + 'T00:00:00+05:45');
+  return isNaN(e) ? null : e;
+}
+function untilDeadline(end){
+  var a = new Date(), b = new Date((end instanceof Date ? end : PROJECT_DEADLINE).getTime());
   if(b <= a) return { y:0, mo:0, w:0, d:0, months:0, days:0 };
   var y = b.getFullYear() - a.getFullYear(), mo = b.getMonth() - a.getMonth(), d = b.getDate() - a.getDate();
   var tod = function(x){ return ((x.getHours() * 60 + x.getMinutes()) * 60 + x.getSeconds()) * 1000 + x.getMilliseconds(); };
@@ -10129,11 +10140,20 @@ function untilDeadline(){
 window.udaanUntilDeadline = untilDeadline;
 function tick(){
   var c = document.querySelector('.bar-clock'); if(!c) return;
-  var t = untilDeadline();
+  var tot = document.querySelector('.bar-clock-total');
+  var p = clockProg(), end = progEnd(p);
+  if(p && !end){   // its start date is not set yet: show the project length instead of UDAAN's countdown
+    c.style.display = 'none';
+    var len = p.months === 12 ? 'One-year' : (p.months % 12 === 0 ? (p.months / 12) + '-year' : p.months + '-month');
+    if(tot) tot.textContent = p.name + ' · ' + len + ' project' + (p.period ? ' · ' + p.period : '');
+    return;
+  }
+  c.style.display = '';
+  c.title = 'Time to project deadline · ' + (end ? end.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kathmandu' }) : endLabel());
+  var t = untilDeadline(end);
   var set = function(k, v){ var el = c.querySelector('[data-bc="' + k + '"]'); if(el) el.textContent = v; };
   set('y', t.y); set('mo', t.mo); set('w', t.w); set('d', t.d);
-  var tot = document.querySelector('.bar-clock-total');
-  if(tot) tot.textContent = 'In total: ' + t.months + ' months · ' + t.days.toLocaleString() + ' days left';
+  if(tot) tot.textContent = (p ? p.name + ' · ' : '') + 'In total: ' + t.months + ' months · ' + t.days.toLocaleString() + ' days left';
   /* old: days / hours / minutes / seconds
   var diff = Math.max(0, PROJECT_DEADLINE - new Date());
   var d = Math.floor(diff / 86400000); diff -= d * 86400000;
@@ -11772,12 +11792,23 @@ var PROGRAMS = [
   { key:'policy_intelligence', name:'AI for Policy Intelligence (US Embassy)', short:'AI for Policy Intelligence', abbr:'P', eyebrow:'US Embassy',
     file:'AI_for_Policy_Intelligence_Tracker', ownerOnly:true,
     hash:'#policy-intelligence', page:'Program%20Management/AI%20for%20Policy%20Intelligence/',   // its own link, and its project page in the repository
+    /* Its own project time, from the consortium proposal: a 12-month project in 2026 to 2027 (not UDAAN's 2029 deadline).
+       The proposal gives no start date. When the award start date is known, put it in start as 'YYYY-MM-DD':
+       the header clock then counts down to start + months. Until then the header shows the project length. */
+    months:12, period:'2026 to 2027', start:'',
     sheets:['team','goals','week','targets','todo','deliv','chal','risk'],
     desc:'AI for Policy Intelligence (US Embassy) project tracker: team, goals, weekly plan, targets, to-dos, deliverables, challenges, risks and decisions. Kept separate from the EU UDAAN figures.' }
 ];
 /* The programme that is open (UDAAN until another one is opened). */
 function progDef(){ var k = st && st.prog; return PROGRAMS.find(function(p){ return p.key === k; }) || PROGRAMS[0]; }
 function isUdaan(){ return progDef().key === PROGRAMS[0].key; }
+/* The programme the header clock should describe: null = UDAAN and its own deadline. */
+window.pmClockProgramme = function(){
+  var tab = document.getElementById('pmTab');
+  if(!tab || tab.style.display === 'none' || st.view !== 'program' || isUdaan()) return null;
+  var p = progDef();
+  return p.months ? { name:p.short, months:p.months, period:p.period || '', start:p.start || '' } : null;
+};
 function progSheets(){ var p = progDef(); return p.sheets ? SHEETS.filter(function(s){ return p.sheets.indexOf(s.k) >= 0; }) : SHEETS; }
 /* Point the tracker at another programme's document. The old data is dropped first, so nothing typed for one
    programme can ever be saved into another. Call listen() afterwards to load it. */
