@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI for Policy Intelligence · NAAMII</title>
+<meta name="description" content="Project page for AI for Policy Intelligence (US Embassy), a NAAMII programme.">
+<meta name="robots" content="noindex">
+<style>
+  :root{
+    --bg:#ffffff; --ink:#1d1d1f; --soft:#6e6e73; --line:#e5e5ea; --card:#f5f5f7;
+    --accent:#db0505; --accent-ink:#ffffff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#000000; --ink:#f5f5f7; --soft:#a1a1a6; --line:#2c2c2e; --card:#1c1c1e; --accent:#ff453a; --accent-ink:#ffffff; }
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+    font-size:17px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  a{ color:inherit; }
+  .wrap{ max-width:880px; margin:0 auto; padding:0 24px; }
+
+  header{ padding:22px 0; border-bottom:1px solid var(--line); }
+  header .wrap{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .brand{ font-size:14px; font-weight:600; letter-spacing:.01em; }
+  .brand span{ color:var(--soft); font-weight:500; }
+  .back{ font-size:14px; color:var(--soft); text-decoration:none; }
+  .back:hover{ color:var(--ink); }
+
+  .hero{ padding:112px 24px 96px; text-align:center; }
+  .eyebrow{ font-size:13px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--soft); margin:0 0 18px; }
+  h1{ font-size:clamp(38px, 7vw, 64px); line-height:1.06; letter-spacing:-.025em; font-weight:700; margin:0 auto; max-width:14ch; text-wrap:balance; }
+  .lede{ font-size:clamp(18px, 2.4vw, 21px); color:var(--soft); max-width:36em; margin:26px auto 0; text-wrap:pretty; }
+  .actions{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:40px; }
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; padding:13px 26px; border-radius:980px;
+    font-size:16px; font-weight:600; text-decoration:none; border:1px solid transparent; transition:opacity .15s ease, background .15s ease;
+  }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); }
+  .btn.primary:hover{ opacity:.88; }
+  .btn.quiet{ border-color:var(--line); color:var(--ink); }
+  .btn.quiet:hover{ background:var(--card); }
+  .btn:focus-visible, .back:focus-visible{ outline:2px solid var(--accent); outline-offset:3px; }
+
+  section{ padding:72px 0; border-top:1px solid var(--line); }
+  h2{ font-size:clamp(26px, 4vw, 34px); line-height:1.15; letter-spacing:-.018em; font-weight:700; margin:0 0 12px; }
+  .sub{ color:var(--soft); margin:0 0 36px; max-width:38em; }
+  .grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; list-style:none; margin:0; padding:0; }
+  .grid li{ background:var(--card); border-radius:16px; padding:20px 18px; }
+  .grid b{ display:block; font-size:16px; font-weight:600; }
+  .grid small{ display:block; font-size:13.5px; color:var(--soft); margin-top:4px; line-height:1.4; }
+  @media (max-width:760px){ .grid{ grid-template-columns:repeat(2, 1fr); } .hero{ padding:80px 24px 68px; } section{ padding:56px 0; } }
+
+  .facts{ display:grid; grid-template-columns:repeat(3, 1fr); gap:36px; }
+  .facts h3{ font-size:17px; font-weight:600; margin:0 0 6px; }
+  .facts p{ margin:0; color:var(--soft); font-size:15.5px; }
+  @media (max-width:760px){ .facts{ grid-template-columns:1fr; gap:26px; } }
+
+  footer{ border-top:1px solid var(--line); padding:28px 0 44px; color:var(--soft); font-size:13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">NAAMII <span>· Programmes</span></div>
+    <a class="back" href="../../">← Programme dashboard</a>
+  </div>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <p class="eyebrow">US Embassy</p>
+    <h1>AI for Policy Intelligence</h1>
+    <p class="lede">The project page for AI for Policy Intelligence. Its tracker lives in the NAAMII programme dashboard and is kept separate from EU UDAAN.</p>
+    <div class="actions">
+      <a class="btn primary" href="../../#policy-intelligence">Open the project tracker</a>
+      <a class="btn quiet" href="../../">All programmes</a>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <h2>What the tracker holds</h2>
+      <p class="sub">Eight sheets, each added to and edited directly in the dashboard, with an overview that sums them up.</p>
+      <ul class="grid">
+        <li><b>Team</b><small>Who is on the project and what each person owns</small></li>
+        <li><b>Goals</b><small>Progress and status against each goal</small></li>
+        <li><b>Weekly plan</b><small>This week's tasks, by owner</small></li>
+        <li><b>Targets</b><small>Targets and actuals per person</small></li>
+        <li><b>To-do</b><small>Open tasks, priority and due date</small></li>
+        <li><b>Deliverables</b><small>What is due, and when</small></li>
+        <li><b>Challenges</b><small>Open issues and their mitigation</small></li>
+        <li><b>Risks &amp; decisions</b><small>Risks, decisions and follow-ups</small></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="facts">
+        <div>
+          <h3>Separate from UDAAN</h3>
+          <p>Nothing recorded here is counted in the EU UDAAN people-trained figures or targets.</p>
+        </div>
+        <div>
+          <h3>Who can open it</h3>
+          <p>The tracker opens after signing in to the dashboard with the Program Management owner login.</p>
+        </div>
+        <div>
+          <h3>Where it sits</h3>
+          <p>In the dashboard under Program Management, as the card beside UDAAN.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Project description: add a short "About this project" section here (aims, dates, partners) when it is ready. -->
+</main>
+
+<footer>
+  <div class="wrap">© 2026 NAAMII. All rights reserved.</div>
+</footer>
+
+</body>
+</html>
