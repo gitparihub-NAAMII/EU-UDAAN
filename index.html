@@ -1812,6 +1812,7 @@ const ADMIN_LOGINS = [
   { user:'drabid',       aliases:[],                              email:'drabid@naamii.org.np',       name:'Drabid' },
   { user:'ramesh',       aliases:['rameshlama','ramesh.lama'],    email:'ramesh@naamii.org.np',       name:'Ramesh' },
   { user:'sumi',         aliases:[],                              email:'sumi@naamii.org.np',         name:'Sumi' },
+  { user:'bishesh',      aliases:['bishesh.khanal','bisheshkhanal'], email:'bishesh.khanal@naamii.org.np', name:'Bishesh' },
   { user:'euudaanadmin', aliases:['euudaan','eu-udaan-admin'],    email:'euudaanadmin@naamii.org.np', name:'EU UDAAN Admin' }
 ];
 const ADMINS_COLLECTION = 'udaan_admins';
@@ -11770,6 +11771,11 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
      }
    --------------------------------------------------------------------- */
 var PM_EDITORS = ['sumi@naamii.org.np', 'sumi.dhakal@naamii.org.np'];
+/* View-only access. These people see every page of Program Management exactly as the owner does (overview, team updates,
+   meetings, weekly targets, cohort map and every sheet, for every programme) but cannot add, edit, delete or import anything.
+   Each of them also needs: (1) a dashboard admin login (ADMIN_LOGINS above, the Firebase user and the udaan_admins entry) and
+   (2) their email in the Firestore rules, as printed by RULE_TXT below. */
+var PM_VIEWERS = ['bishesh.khanal@naamii.org.np'];
 var PM_TEAM = [
   { email:'drabid@naamii.org.np',  name:'Drabid Subedi',    match:['drabid'] },
   { email:'ramesh@naamii.org.np',  name:'Ramesh Lama',      match:['ramesh'] },
@@ -11904,7 +11910,9 @@ function low(s){ return String(s == null ? '' : s).trim().toLowerCase(); }
 function adminOk(){ try{ return typeof isAdmin === 'function' ? isAdmin() : false; }catch(e){ return false; } }
 function curUser(){ try{ return (typeof fbUser !== 'undefined' && fbUser && !fbUser.isAnonymous) ? fbUser : null; }catch(e){ return null; } }
 function curEmail(){ var u = curUser(); return u ? low(u.email) : ''; }
-function pmAllowed(){ return adminOk() && PM_EDITORS.indexOf(curEmail()) >= 0; }
+function pmAllowed(){ return adminOk() && PM_EDITORS.indexOf(curEmail()) >= 0; }          // the owner: may change things
+function pmViewer(){ return adminOk() && !pmAllowed() && PM_VIEWERS.indexOf(curEmail()) >= 0; }   // sees everything, changes nothing
+function pmFull(){ return pmAllowed() || pmViewer(); }                                     // sees the whole tracker
 function memberOf(email){
   email = low(email);
   var m = PM_TEAM.find(function(x){ return low(x.email) === email; });
@@ -11912,10 +11920,10 @@ function memberOf(email){
   if(!m && PM_EDITORS.indexOf(email) >= 0) m = PM_TEAM.find(function(x){ return PM_EDITORS.indexOf(low(x.email)) >= 0; });
   return m || null;
 }
-function pmMember(){ return adminOk() && !pmAllowed() && !!memberOf(curEmail()); }
+function pmMember(){ return adminOk() && !pmFull() && !!memberOf(curEmail()); }
 // any other signed-in dashboard admin can read the meeting agendas and minutes
-function pmReader(){ return adminOk() && !!curUser() && !pmAllowed() && !memberOf(curEmail()); }
-function pmVisible(){ return pmAllowed() || pmMember() || pmReader(); }
+function pmReader(){ return adminOk() && !!curUser() && !pmFull() && !memberOf(curEmail()); }
+function pmVisible(){ return pmFull() || pmMember() || pmReader(); }
 window.pmAllowed = pmVisible;            // used by updateRoleUI to show the tab
 function getDb(){ try{ return (typeof db !== 'undefined' && db) ? db : null; }catch(e){ return null; } }
 function col(name){ var d = getDb(); return d ? d.collection(name) : null; }
@@ -12033,7 +12041,9 @@ function exportExcel(){
 /* ---------- owner: the main tracker ---------- */
 var RULE_TXT = [
   "match /" + PM_COLLECTION + "/{d} {",
-  "  allow read, write: if request.auth != null",
+  "  allow read: if request.auth != null",
+  "    && request.auth.token.email in ['" + PM_EDITORS.concat(PM_VIEWERS).join("','") + "'];",
+  "  allow write: if request.auth != null",
   "    && request.auth.token.email in ['" + PM_EDITORS.join("','") + "'];",
   "}",
   "match /" + PEOPLE_COLLECTION + "/{email} {",
@@ -12049,7 +12059,7 @@ var RULE_TXT = [
   "    && request.resource.data.status == 'pending';",
   "  allow read: if request.auth != null",
   "    && (resource.data.byEmail == request.auth.token.email",
-  "        || request.auth.token.email in ['" + PM_EDITORS.join("','") + "']);",
+  "        || request.auth.token.email in ['" + PM_EDITORS.concat(PM_VIEWERS).join("','") + "']);",
   "  allow update, delete: if request.auth != null",
   "    && request.auth.token.email in ['" + PM_EDITORS.join("','") + "'];",
   "}",
@@ -12061,7 +12071,7 @@ var RULE_TXT = [
   "}"].join('\n');
 var MINUTES_RULE_TXT = RULE_TXT.split('\n').slice(-6).join('\n');
 function listen(){
-  if(st.unsub || !pmAllowed()) return;
+  if(st.unsub || !pmFull()) return;
   var ref = docRef();
   if(!ref){ st.err = 'The shared database is not connected, so Program Management cannot load. Reload the page and sign in again.'; render(); return; }
   var key = progDef().key;
@@ -12489,30 +12499,30 @@ function setBrand(on){
 }
 window.pmOnTabChange = function(tab){
   // leaving Program Management from another programme: go back to UDAAN so team updates keep merging in the background
-  if(tab !== 'pm' && pmAllowed() && !isUdaan()){ switchProg(PROGRAMS[0].key); st.view = 'home'; st.page = 'overview'; listen(); }
+  if(tab !== 'pm' && pmFull() && !isUdaan()){ switchProg(PROGRAMS[0].key); st.view = 'home'; st.page = 'overview'; listen(); }
   setBrand(tab === 'pm');
-  if(tab === 'pm'){ if(pmAllowed()){ listen(); try{ if(typeof initMasterListeners === 'function') initMasterListeners(); }catch(e){} } else if(pmMember()) listenMine(); else if(pmReader()) listenMinutes(); render(); }
+  if(tab === 'pm'){ if(pmFull()){ listen(); try{ if(typeof initMasterListeners === 'function') initMasterListeners(); }catch(e){} } else if(pmMember()) listenMine(); else if(pmReader()) listenMinutes(); render(); }
 };
 
 /* ---------- show the tab only to the owner and the team ---------- */
 var lastRole = '';
 function syncTabButton(){
   var b = document.getElementById('pmTabBtn'); if(!b) return;
-  var role = pmAllowed() ? 'owner' : (pmMember() ? 'member:' + curEmail() : (pmReader() ? 'reader:' + curEmail() : ''));
+  var role = pmAllowed() ? 'owner' : (pmViewer() ? 'viewer:' + curEmail() : (pmMember() ? 'member:' + curEmail() : (pmReader() ? 'reader:' + curEmail() : '')));
   if(role !== lastRole){ stopListening(); st.prog = PROGRAMS[0].key; st.view = 'home'; st.page = 'overview'; lastRole = role; }
   b.style.display = role ? '' : 'none';
   if(!role && b.classList.contains('active')){ var c = document.querySelector('.tab-btn[data-tab="cal"]'); if(c) c.click(); }
-  if(role === 'owner' && pmPageFor(location.hash) && (st.wtTries || 0) < 10){   // opened from a direct link: keep trying until the page is showing
+  if(pmFull() && pmPageFor(location.hash) && (st.wtTries || 0) < 10){   // opened from a direct link: keep trying until the page is showing
     var pt = document.getElementById('pmTab');
     if(pt && pt.style.display !== 'none' && st.page === pmPageFor(location.hash) && st.view === 'program') st.wtTries = 10; else { st.wtTries = (st.wtTries || 0) + 1; wtRoute(); }
   }
-  if(role === 'owner' && progForHash(location.hash) && (st.prTries || 0) < 10){   // opened from a project page link: keep trying until its tracker is showing
+  if(pmFull() && progForHash(location.hash) && (st.prTries || 0) < 10){   // opened from a project page link: keep trying until its tracker is showing
     var pp = document.getElementById('pmTab');
     if(pp && pp.style.display !== 'none' && st.view === 'program' && progDef().key === progForHash(location.hash)){
       st.prTries = 10; try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){}
     }else{ st.prTries = (st.prTries || 0) + 1; progRoute(); }
   }
-  if(role === 'owner' && !st.err) listen();        // keeps merging team updates while the owner is signed in, on any tab
+  if(pmFull() && !st.err) listen();        // keeps merging team updates while the owner is signed in, on any tab (a viewer only reads)
 }
 if(typeof updateRoleUI === 'function'){
   var _uru = updateRoleUI;
@@ -13038,7 +13048,7 @@ function calSync(){
 /* redraw the cohort map when calendar data arrives or changes */
 var calRedrawT = null;
 function calRefresh(){
-  if(st.page !== 'cohorts' || st.view === 'home' || !pmAllowed()) return;
+  if(st.page !== 'cohorts' || st.view === 'home' || !pmFull()) return;
   var box = document.getElementById('pmTab'); if(!box || box.style.display === 'none') return;
   clearTimeout(calRedrawT); calRedrawT = setTimeout(render, 400);
 }
@@ -13431,7 +13441,7 @@ function pmPageFor(hash){ return hash === '#udaan-weekly-targets' ? 'weekly' : (
 function pmHashFor(page){ return page === 'weekly' ? '#udaan-weekly-targets' : (page === 'munis' ? '#udaan-karmashala' : ''); }
 function wtRoute(){
   var pg = pmPageFor(location.hash);
-  if(!pg || !pmAllowed()) return false;
+  if(!pg || !pmFull()) return false;
   var b = document.getElementById('pmTabBtn');
   if(b && !b.classList.contains('active')) b.click();
   if(st.view !== 'program' || !isUdaan()){ st.view = 'program'; switchProg(PROGRAMS[0].key); }
@@ -13444,7 +13454,7 @@ window.addEventListener('hashchange', wtRoute);
 function progForHash(hash){ var p = PROGRAMS.find(function(x){ return x.hash && x.hash === hash; }); return p ? p.key : ''; }
 function progRoute(){
   var key = progForHash(location.hash);
-  if(!key || !pmAllowed()) return false;
+  if(!key || !pmFull()) return false;
   var b = document.getElementById('pmTabBtn');
   if(b && !b.classList.contains('active')) b.click();
   st.view = 'program'; switchProg(key); listen();
@@ -13587,7 +13597,7 @@ function render(){
   if(st.view === 'home'){
     nav = '<div class="pt-nav-item active" data-pmnav="home"><span class="ic">📁</span><span class="pt-nav-label">All programmes</span></div>'
       + '<div class="pm-nav-sep"></div>'
-      + PROGRAMS.filter(function(p){ return pmAllowed() || !p.ownerOnly; }).map(function(p){ return '<div class="pt-nav-item" data-open="' + p.key + '"><span class="ic">✈</span><span class="pt-nav-label">' + esc(p.name) + '</span></div>'; }).join('');
+      + PROGRAMS.filter(function(p){ return pmFull() || !p.ownerOnly; }).map(function(p){ return '<div class="pt-nav-item" data-open="' + p.key + '"><span class="ic">✈</span><span class="pt-nav-label">' + esc(p.name) + '</span></div>'; }).join('');
     title = 'Program Management'; page = pageHome();
   }else if(pmReader()){
     st.page = 'minutes';
@@ -13671,15 +13681,31 @@ function refreshChangeCount(box){
   lab.textContent = n ? n + ' change' + (n === 1 ? '' : 's') + ' ready to submit' : 'No changes yet';
   btn.disabled = !n;
 }
+/* View-only: take away every control that adds, edits, deletes or imports, and lock the minutes form. Saving is refused for a viewer
+   anyway (save() checks pmAllowed, and so do the Firestore rules); this keeps the page honest about it. */
+function lockReadOnly(box){
+  box.querySelectorAll('button[data-add], [data-newmeet], [data-adel], #pmReplace, #pmDrop, #pmStartBlank, #pmSeedCohorts, #pmImportSave, #pmImportCancel, #pmCalSync, #pmMeetSave, #pmMeetDel, #pmActAdd, #pmAgendaRefresh, #pmFile')
+    .forEach(function(el){ if(el.parentNode) el.parentNode.removeChild(el); });
+  box.querySelectorAll('[data-mt], [data-mp], [data-ai]').forEach(function(el){
+    if(el.tagName === 'SELECT' || el.type === 'checkbox' || el.type === 'date') el.disabled = true; else el.readOnly = true; });
+  box.querySelectorAll('[data-edit], .pm-cal-day[data-calday], .pm-cal-ev[data-cal], .pm-cal-ev[data-recmeet]').forEach(function(el){ el.style.cursor = 'default'; });
+  var t = box.querySelector('.pt-page-title');
+  if(t && !t.querySelector('.pm-viewonly')){
+    var chip = document.createElement('span'); chip.className = 'pm-viewonly'; chip.textContent = 'View only';
+    chip.title = 'You can see everything in Program Management but cannot change it';
+    chip.style.cssText = 'margin-left:10px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid var(--line, #e5e5ea);color:var(--charcoal-soft, #6e6e73);vertical-align:middle;white-space:nowrap';
+    t.appendChild(chip);
+  }
+}
 function wire(box){
   box.querySelectorAll('[data-open]').forEach(function(el){
     var open = function(e){ if(e && e.target && e.target.closest && e.target.closest('a')) return;   // the project page link opens on its own
-      if(e) e.stopPropagation(); st.view = 'program'; switchProg(pmAllowed() ? el.dataset.open : PROGRAMS[0].key);
+      if(e) e.stopPropagation(); st.view = 'program'; switchProg(pmFull() ? el.dataset.open : PROGRAMS[0].key);
       if(pmMember()){ listenMine(); go('mine'); } else if(pmReader()){ listenMinutes(); go('minutes'); } else { listen(); go('overview'); } };
     el.addEventListener('click', open);
     el.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(e); } });
   });
-  box.querySelectorAll('[data-pmnav="home"]').forEach(function(el){ el.addEventListener('click', function(){ st.view = 'home'; st.preview = null; if(pmAllowed() && !isUdaan()){ switchProg(PROGRAMS[0].key); listen(); } render(); }); });
+  box.querySelectorAll('[data-pmnav="home"]').forEach(function(el){ el.addEventListener('click', function(){ st.view = 'home'; st.preview = null; if(pmFull() && !isUdaan()){ switchProg(PROGRAMS[0].key); listen(); } render(); }); });
   box.querySelectorAll('.pt-nav-item[data-pg]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.pg); }); });
   box.querySelectorAll('.kpi[data-go]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.go); }); });
   box.querySelectorAll('.pm-btn[data-pg]').forEach(function(el){ el.addEventListener('click', function(){ go(el.dataset.pg); }); });
@@ -13707,7 +13733,7 @@ function wire(box){
     var blank = {}; SHEETS.forEach(function(s){ blank[s.k] = { cols:s.cols.slice(), rows:[], desc:'' }; });
     save(blank, 'started empty sheets').catch(function(){});
   });
-  if(pmAllowed()) wireMeetings(box);
+  if(pmFull()) wireMeetings(box);     // a viewer can open and read minutes; lockReadOnly takes the editing controls away
   var cp = box.querySelector('#pmCalPrev'), cn = box.querySelector('#pmCalNext'), ct = box.querySelector('#pmCalToday');
   if(cp) cp.addEventListener('click', function(){ st.calMonth = new Date(st.calMonth.getFullYear(), st.calMonth.getMonth() - 1, 1); render(); });
   if(cn) cn.addEventListener('click', function(){ st.calMonth = new Date(st.calMonth.getFullYear(), st.calMonth.getMonth() + 1, 1); render(); });
@@ -13761,9 +13787,10 @@ function wire(box){
     box.querySelector('#pmSubmit').addEventListener('click', function(){ submitMemberUpdate(box); });
     refreshChangeCount(box);
   }
+  if(pmViewer()) lockReadOnly(box);
 }
 
-try{ console.info('UDAAN add-on patch 21 (2026-11-24) Program Management loaded (AI Foundation: one cohort of 40 every 2 weeks): programmes ' + PROGRAMS.map(function(p){ return p.key; }).join(', ')); }catch(e){}
+try{ console.info('UDAAN add-on patch 22 (2026-11-25) Program Management loaded (view-only access for ' + PM_VIEWERS.length + ' viewer): programmes ' + PROGRAMS.map(function(p){ return p.key; }).join(', ')); }catch(e){}
 })();
 </script>
 
