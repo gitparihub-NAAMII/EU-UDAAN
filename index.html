@@ -10143,16 +10143,17 @@ function tick(){
   var c = document.querySelector('.bar-clock'); if(!c) return;
   var tot = document.querySelector('.bar-clock-total');
   var p = clockProg(), end = progEnd(p);
-  if(p && !end){   // its start date is not set yet: show the project length instead of UDAAN's countdown
-    c.style.display = 'none';
+  var set = function(k, v){ var el = c.querySelector('[data-bc="' + k + '"]'); if(el) el.textContent = v; };
+  c.style.display = '';
+  if(p && !end){   // its start date is not set yet: the boxes show the project length (1 year), not UDAAN's countdown
     var len = p.months === 12 ? 'One-year' : (p.months % 12 === 0 ? (p.months / 12) + '-year' : p.months + '-month');
+    c.title = p.name + ' · project length. The countdown starts once the start date is set.';
+    set('y', Math.floor(p.months / 12)); set('mo', p.months % 12); set('w', 0); set('d', 0);
     if(tot) tot.textContent = p.name + ' · ' + len + ' project' + (p.period ? ' · ' + p.period : '');
     return;
   }
-  c.style.display = '';
   c.title = 'Time to project deadline · ' + (end ? end.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kathmandu' }) : endLabel());
   var t = untilDeadline(end);
-  var set = function(k, v){ var el = c.querySelector('[data-bc="' + k + '"]'); if(el) el.textContent = v; };
   set('y', t.y); set('mo', t.mo); set('w', t.w); set('d', t.d);
   if(tot) tot.textContent = (p ? p.name + ' · ' : '') + 'In total: ' + t.months + ' months · ' + t.days.toLocaleString() + ' days left';
   /* old: days / hours / minutes / seconds
