@@ -11555,7 +11555,20 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
   .pm-form{ display:grid; grid-template-columns:1fr 1fr; gap:0 12px; }
   .pm-form .pm-full{ grid-column:1 / -1; }
   .pm-hint{ font-size:11px; color:var(--charcoal-soft); margin-top:3px; }
-  @media(max-width:560px){ .pm-form{ grid-template-columns:1fr; } #pmTab .pm-list{ columns:1; } }
+  /* to-do form: the "Also update" part, and the small link labels in the tables */
+  .pm-linkbox{ margin:6px 0 4px; padding:14px 14px 1px; border:1px solid var(--line); border-radius:12px; background:var(--paper); }
+  .pm-linkhead{ font-size:13px; font-weight:800; color:var(--charcoal); margin:0 0 12px; }
+  .pm-linkhead small{ display:block; font-size:11.5px; font-weight:500; color:var(--charcoal-soft); margin-top:3px; line-height:1.45; }
+  .field label.pm-check{ display:flex; align-items:center; gap:8px; margin:0; padding:8px 10px; border:1px solid var(--line); border-radius:var(--radius-ctl, 8px);
+    background:var(--cream); font-size:13.5px; font-weight:500; color:var(--charcoal); cursor:pointer; }
+  .field label.pm-check input{ width:auto; margin:0; padding:0; accent-color:var(--charcoal); }
+  .pm-opt{ font-weight:500; opacity:.8; }
+  .pm-form.pm-form-ta{ grid-template-columns:1fr 130px; }
+  .pm-linkbox input:disabled{ opacity:.5; }
+  #pmTab .pm-links{ display:flex; flex-wrap:wrap; gap:4px 6px; margin-top:6px; }
+  #pmTab .pm-links span{ font-size:11px; font-weight:600; color:var(--charcoal-soft); background:var(--cream); border:1px solid var(--line); border-radius:999px;
+    padding:1px 8px; white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+  @media(max-width:560px){ .pm-form, .pm-form.pm-form-ta{ grid-template-columns:1fr; } #pmTab .pm-list{ columns:1; } }
   .pm-toast{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--charcoal); color:#fff; padding:10px 16px;
     border-radius:10px; font-size:13px; font-weight:600; z-index:90; box-shadow:var(--shadow); }
   #pmTab .pm-muted{ color:var(--charcoal-soft); font-weight:600; font-size:12px; }
@@ -12109,6 +12122,16 @@ function stopListening(){
 function save(newData, what, quiet){
   var ref = docRef(); if(!ref || !pmAllowed()) return Promise.reject(new Error('Not allowed'));
   var name = (typeof adminName !== 'undefined' && adminName) || curEmail();
+  // UDAAN: bring the Weekly plan, Deliverables and Targets in step with the to-dos. It works on a copy, so a fault in it can never spoil what is saved.
+  st.lastSync = null;
+  if(isUdaan() && newData && newData.todo){
+    try{
+      var synced = JSON.parse(JSON.stringify(newData)), lrep = linkSync(synced);
+      newData = synced; st.lastSync = lrep;
+      var also = Object.keys(lrep.touched).map(function(k){ return (defOf(k) || {}).label; }).filter(Boolean);
+      if(also.length && what) what += ' (also updated ' + also.join(', ') + ')';
+    }catch(e){ console.warn('The to-do links were not applied', e); }
+  }
   st.saving = true;
   var payload = { sheets:newData, updatedBy:curEmail(), updatedByName:name, updatedAt:stamp(), lastChange:what || '' };
   return ref.set(payload).then(function(){ st.saving = false; if(!quiet) toast('Saved: ' + (what || 'changes')); })
@@ -12178,21 +12201,28 @@ function logOwnerAdds(adds, where){
     .then(function(){ return ref.update({ status:'merged', result:'Added from ' + where, mergedAt:stamp() }); })
     .catch(function(e){ console.warn('Could not list the change on Team updates', e); });
 }
-function logOwnerChange(k, before, after){
+function logOwnerChange(k, before, after, extra){
   var m = memberOf(curEmail()), c = col(UPDATES_COLLECTION), def = defOf(k);
   if(!m || !c || !def || !LOG_SHEETS[k] || !isUdaan()) return;
   var u = { byEmail:curEmail(), byName:m.name, at:stamp(), status:'pending', patches:[], adds:[], dels:[], note:'', direct:true };
+  var cols = sheetOf(k).cols || [];                                   // only what shows as a column (not the hidden link fields)
   if(before && after){
     var fields = {};
-    Object.keys(after).forEach(function(f){ if(f !== 'id' && f !== 'calId' && String(after[f] || '') !== String(before[f] || '')) fields[f] = String(after[f] || ''); });
-    if(!Object.keys(fields).length) return;
-    u.patches = [{ k:k, id:after.id, title:titleOf(k, after), fields:fields }];
+    Object.keys(after).forEach(function(f){ if(f !== 'id' && f !== 'calId' && (!cols.length || cols.indexOf(f) >= 0) && String(after[f] || '') !== String(before[f] || '')) fields[f] = String(after[f] || ''); });
+    if(Object.keys(fields).length) u.patches = [{ k:k, id:after.id, title:titleOf(k, after), fields:fields }];
   }else if(after) u.adds = [{ k:k, row:after }];
   else if(before) u.dels = [{ k:k, id:before.id, title:titleOf(k, before) }];
   else return;
+  var alsoIn = {};
+  if(extra){   // what the to-do links changed on the other sheets, in the same entry
+    u.patches = u.patches.concat(extra.patches || []); u.adds = u.adds.concat(extra.adds || []); u.dels = u.dels.concat(extra.dels || []);
+    (extra.patches || []).concat(extra.adds || [], extra.dels || []).forEach(function(x){ var d = defOf(x.k); if(d && x.k !== k) alsoIn[d.label] = 1; });
+  }
+  if(!u.patches.length && !u.adds.length && !u.dels.length) return;
+  var result = 'Changed directly in ' + def.label + (Object.keys(alsoIn).length ? ', which also updated ' + Object.keys(alsoIn).join(', ') : '');
   var ref = c.doc();
   st.mergedIds = st.mergedIds || {}; st.mergedIds[ref.id] = 1;        // already in the tracker: never merge it again
-  ref.set(u).then(function(){ return ref.update({ status:'merged', result:'Changed directly in ' + def.label, mergedAt:stamp() }); })
+  ref.set(u).then(function(){ return ref.update({ status:'merged', result:result, mergedAt:stamp() }); })
     .catch(function(e){ console.warn('Could not list the change on Team updates', e); });
 }
 /* Merge every pending team update into the main tracker (owner's browser only). */
@@ -12221,6 +12251,7 @@ function mergePending(){
       if(nd[a.k].rows.some(function(r){ return r.id === a.row.id; })) return;            // already merged
       var r = {}; Object.keys(a.row).forEach(function(f){ r[f] = String(a.row[f] == null ? '' : a.row[f]); });
       r.Owner = m.name;
+      if(a.k === 'todo' && !u.direct && r.lkWeek == null) r.lkWeek = '1';      // a new to-do also becomes a task in the Weekly plan (linkSync adds it)
       if(a.k === 'chal' && !r.Raised) r.Raised = fmtDate(new Date());
       nd[a.k].rows.push(r); applied++;
     });
@@ -12301,6 +12332,8 @@ function memberItemsHtml(k){
   var items = rows.map(function(r){
     var ctx = [], due = k === 'todo' ? todoDue(r) : '';
     ['Due', 'Week of', 'Priority', 'Severity', 'Impact', 'Type', 'Which period', 'Target', 'Unit', 'Deliverable'].forEach(function(c){ if(r[c] && edit.indexOf(c) < 0) ctx.push(esc(c) + ': ' + esc(String(r[c]).replace(/<br>/gi, ' '))); });
+    if(k === 'todo' && r.lkWeekId) ctx.push('Also in the Weekly plan: they update together');
+    if(k === 'week' && r.todoId) ctx.push('From the To-do list: they update together');
     var fields = edit.map(function(c){
       return '<div class="field' + (LONG.test(c) ? ' pm-full' : '') + '"><label>' + esc(c) + (c === 'Progress' ? ' (%)' : '') + '</label>'
         + fieldInput(k, c, r[c] || '', 'data-mk="' + k + '" data-mid="' + esc(r.id) + '" data-mcol="' + esc(c) + '" data-orig="' + esc(r[c] || '') + '"') + '</div>';
@@ -12328,7 +12361,7 @@ function memberAddHtml(){
       + '<div class="field"><label>Status</label>' + fieldInput('week', 'Status', 'Not started', 'data-af="Status"') + '</div></div>';
   }).join('');
   return '<div class="pt-card"><h3>➕ Add this week’s tasks</h3><div class="sub">Leave empty if you have nothing new. Each task is added to the Weekly plan for the week of ' + esc(mon) + '.</div>' + weekRows + '</div>'
-    + '<div class="pt-card"><h3>☑ Add a to-do</h3><div class="sub">New tasks go straight into the To-do list with you as the owner.</div>'
+    + '<div class="pt-card"><h3>☑ Add a to-do</h3><div class="sub">New tasks go straight into the To-do list with you as the owner, and into the Weekly plan for the week they are due.</div>'
     + [0, 1].map(function(){
         return '<div class="pm-form pm-addrow" data-add="todo">'
           + '<div class="field pm-full"><label>Task</label><input type="text" data-af="Task" placeholder="What needs to be done?"></div>'
@@ -12411,6 +12444,234 @@ function submitMemberUpdate(box){
       alert('Could not submit.\n\n' + (e && e.message || e) + (e && e.code === 'permission-denied' ? '\n\nAsk Sumi to add the Program Management rules in Firebase.' : '')); });
 }
 
+/* ---------- write once: a to-do keeps the other sheets in step (UDAAN only) ----------
+   A to-do can carry four links, all set on the to-do form:
+     Weekly plan   lkWeek '1'            one task in the Weekly plan (lkWeekId) for the week lkWeekOf
+     Deliverable   lkDeliv (text)        a row in Deliverables (lkDelivId): the existing one with that name, or a new one
+     Goal          lkGoalId              the goal it supports. The goal shows how many of its to-dos are done; its % stays hand-typed
+     Target        lkTargetId + lkAdd    lkAdd is added to that target's Actual while the to-do is Done
+                                         (lkCounted / lkCountedId remember what is in the Actual now, so it can be taken out again)
+   linkSync runs inside save(), so every way of changing the tracker (the forms, team updates, meeting minutes) goes through it.
+   Task, owner, status, notes, deliverable and week are kept the same on the to-do, on its weekly task and on the deliverable it
+   created, whichever of them was edited: lkSnap remembers the last agreed values and the side that differs from it wins (the
+   to-do first). The lk… fields are not columns, so they never show as table columns or in the Excel export. */
+function sv(v){ return String(v == null ? '' : v); }
+function mondayOf(d){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x; }
+function weekOfFor(t){ return fmtDate(mondayOf(parseDate(t && t.Due) || new Date())); }
+function numOf(v){ var n = parseFloat(sv(v).replace(/,/g, '')); return isNaN(n) ? 0 : n; }
+function numStr(n){ return String(Math.round(n * 100) / 100); }
+function shortTxt(s, n){ s = sv(s).replace(/<br>/gi, ' ').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+function ensureSheet(nd, k){ if(!nd[k]) nd[k] = { cols:((defOf(k) || {}).cols || []).slice(), rows:[], desc:'' }; if(!nd[k].rows) nd[k].rows = []; return nd[k]; }
+function linkSync(nd){
+  var rep = { adds:[], patches:[], dels:[], touched:{} }, pk = {};
+  var todo = nd && nd.todo && nd.todo.rows; if(!todo || !todo.length) return rep;
+  var find = function(k, id){ return (id && nd[k] && nd[k].rows) ? (nd[k].rows.find(function(r){ return r.id === id; }) || null) : null; };
+  var note = function(k, r, f, v){
+    if(/^lk/.test(f)) return;
+    rep.touched[k] = 1;
+    var key = k + ':' + r.id;
+    if(!pk[key]){ pk[key] = { k:k, id:r.id, title:'', fields:{}, row:r }; rep.patches.push(pk[key]); }
+    pk[key].fields[f] = v;
+  };
+  var created = {};
+  todo.forEach(function(t){
+    if(!t || !t.id) return;
+    if(!(t.lkWeek === '1' || t.lkWeekId || t.lkDeliv || t.lkDelivId || t.lkGoalId || t.lkTargetId || t.lkCountedId || t.lkSnap)) return;
+    var snap = {}; try{ snap = JSON.parse(t.lkSnap || '{}') || {}; }catch(e){ snap = {}; }
+    // 1. its task in the Weekly plan
+    var w = find('week', t.lkWeekId);
+    if(t.lkWeekId && !w){ t.lkWeekId = ''; t.lkWeek = '0'; t.lkWeekOf = ''; }          // the weekly task was deleted: stop mirroring
+    if(t.lkWeek === '1' && !t.lkWeekId){
+      if(!t.lkWeekOf) t.lkWeekOf = weekOfFor(t);
+      w = { id:uid(), 'Week of':t.lkWeekOf, Owner:sv(t.Owner), Task:sv(t.Task), Deliverable:sv(t.lkDeliv), Status:sv(t.Status), 'Blockers and notes':sv(t.Notes), todoId:t.id };
+      ensureSheet(nd, 'week').rows.push(w); t.lkWeekId = w.id; created[w.id] = 1;
+      rep.adds.push({ k:'week', row:w }); rep.touched.week = 1;
+    }
+    // 2. its deliverable: the one already there with that name, or a new one
+    var d = null;
+    var linkDeliv = function(){
+      d = find('deliv', t.lkDelivId);
+      if(t.lkDelivId && !d){ t.lkDelivId = ''; t.lkDeliv = ''; }                         // the deliverable was deleted
+      var name = low(shortTxt(t.lkDeliv, 9999));
+      if(name && !t.lkDelivId){
+        d = ensureSheet(nd, 'deliv').rows.find(function(r){ return low(shortTxt(r.Deliverable, 9999)) === name; }) || null;
+        if(!d){
+          d = { id:uid(), Deliverable:sv(t.lkDeliv).trim(), Team:sv(t.Team), Owner:sv(t.Owner), Due:sv(t.Due), Status:sv(t.Status), 'Notes and link':'', todoId:t.id };
+          nd.deliv.rows.push(d); created[d.id] = 1;
+          rep.adds.push({ k:'deliv', row:d }); rep.touched.deliv = 1;
+        }
+        t.lkDelivId = d.id;
+      }
+    };
+    // 3. keep the shared fields the same on every side
+    var FIELDS = [   // name, on the to-do, on the weekly task, on the deliverable this to-do created
+      ['task', 'Task', 'Task', null], ['owner', 'Owner', 'Owner', 'Owner'], ['status', 'Status', 'Status', 'Status'],
+      ['notes', 'Notes', 'Blockers and notes', null], ['deliv', 'lkDeliv', 'Deliverable', 'Deliverable'],
+      ['team', 'Team', null, 'Team'], ['due', 'Due', null, 'Due'], ['weekOf', 'lkWeekOf', 'Week of', null] ];
+    var mirror = function(){
+      // only the deliverable this to-do created, and only while no other to-do shares it, follows the to-do field by field
+      var own = !!d && d.todoId === t.id && todo.filter(function(x){ return x.lkDelivId === d.id; }).length === 1;
+      FIELDS.forEach(function(f){
+        var parts = [['todo', t, f[1]]];
+        if(w && f[2]) parts.push(['week', w, f[2]]);
+        if(own && f[3]) parts.push(['deliv', d, f[3]]);
+        if(parts.length < 2){ delete snap[f[0]]; return; }
+        var last = (f[0] in snap) ? sv(snap[f[0]]) : null, win = null;
+        if(last === null) win = parts[0];
+        else parts.some(function(p){ if(sv(p[1][p[2]]) !== last){ win = p; return true; } return false; });
+        if(!win) return;
+        var val = sv(win[1][win[2]]);
+        parts.forEach(function(p){ if(sv(p[1][p[2]]) !== val){ p[1][p[2]] = val; if(!created[p[1].id]) note(p[0], p[1], p[2], val); } });
+        snap[f[0]] = val;
+      });
+    };
+    linkDeliv(); mirror();
+    if(sv(t.lkDeliv).trim() && !t.lkDelivId){ linkDeliv(); mirror(); }                  // a deliverable typed on the weekly task
+    // 4. the goal it supports
+    if(t.lkGoalId && !find('goals', t.lkGoalId)) t.lkGoalId = '';
+    // 5. the target it counts towards: in the Actual only while the to-do is done
+    if(t.lkTargetId && !find('targets', t.lkTargetId)){ t.lkTargetId = ''; t.lkAdd = ''; }
+    var wantId = (t.lkTargetId && isDone(t.Status)) ? t.lkTargetId : '', want = wantId ? (numOf(t.lkAdd) > 0 ? numOf(t.lkAdd) : 1) : 0;
+    var hadId = sv(t.lkCountedId), had = hadId ? numOf(t.lkCounted) : 0;
+    if(wantId !== hadId || want !== had){
+      var oldT = find('targets', hadId), newT = find('targets', wantId);
+      if(oldT && had){ oldT.Actual = numStr(Math.max(0, numOf(oldT.Actual) - had)); oldT.Reached = reachedFor(oldT); note('targets', oldT, 'Actual', oldT.Actual); }
+      if(newT && want){ newT.Actual = numStr(numOf(newT.Actual) + want); newT.Reached = reachedFor(newT); note('targets', newT, 'Actual', newT.Actual); }
+      t.lkCountedId = wantId; t.lkCounted = want ? numStr(want) : '';
+    }
+    var js = Object.keys(snap).length ? JSON.stringify(snap) : '';
+    if(sv(t.lkSnap) !== js) t.lkSnap = js;
+  });
+  // a goal or a shared deliverable that is still "Not started" moves to "In progress" once one of its to-dos is under way.
+  // Nothing else on them is changed: goal progress and "Done" stay the owner's call.
+  var underWay = function(t){ return /^(in progress|done|completed)$/.test(low(t.Status)); };
+  [['goals', 'lkGoalId'], ['deliv', 'lkDelivId']].forEach(function(x){
+    ((nd[x[0]] && nd[x[0]].rows) || []).forEach(function(r){
+      if(r.Status && low(r.Status) !== 'not started') return;
+      if(todo.some(function(t){ return t[x[1]] === r.id && underWay(t); })){ r.Status = 'In progress'; if(!created[r.id]) note(x[0], r, 'Status', 'In progress'); }
+    });
+  });
+  rep.patches.forEach(function(p){ p.title = titleOf(p.k, p.row); delete p.row; });
+  return rep;
+}
+/* What the sync changed besides the row that was edited, for the Team updates entry. */
+function linkExtra(rep, k, id, dels){
+  var x = { adds:(rep && rep.adds) || [], patches:((rep && rep.patches) || []).filter(function(p){ return !(p.k === k && p.id === id); }), dels:dels || [] };
+  return (x.adds.length || x.patches.length || x.dels.length) ? x : null;
+}
+/* "2 of 5 to-dos done" for a goal, a deliverable or a target. */
+function linkCount(field, id){
+  var L = rowsOf('todo').filter(function(t){ return t[field] === id; });
+  return L.length ? L.filter(function(t){ return isDone(t.Status); }).length + ' of ' + L.length + ' to-do' + (L.length === 1 ? '' : 's') + ' done' : '';
+}
+/* Small labels under a row's title showing what it is linked to. */
+var NOTE_COL = { todo:'Task', week:'Task', deliv:'Deliverable', goals:'Goal', targets:'Target for' };
+function linkNote(k, r){
+  if(!isUdaan() || !st.data || !NOTE_COL[k]) return '';
+  var chips = [], row = function(s, id){ return id ? rowsOf(s).find(function(x){ return x.id === id; }) : null; }, c;
+  if(k === 'todo'){
+    var w = row('week', r.lkWeekId), d = row('deliv', r.lkDelivId), g = row('goals', r.lkGoalId), t = row('targets', r.lkTargetId);
+    if(w) chips.push('🗓 Weekly plan · week of ' + (w['Week of'] || '?'));
+    if(d) chips.push('📦 ' + shortTxt(d.Deliverable, 44));
+    if(g) chips.push('🎯 ' + shortTxt(g.Goal, 44));
+    if(t) chips.push('📈 ' + shortTxt(t['Target for'], 36) + (r.lkCountedId === t.id ? ' · +' + r.lkCounted + ' counted' : ' · +' + (r.lkAdd || '1') + ' when done'));
+  }else if(k === 'week'){
+    if(r.todoId && row('todo', r.todoId)) chips.push('☑ From the to-do list');
+  }else if(k === 'deliv'){ c = linkCount('lkDelivId', r.id); if(c) chips.push('☑ ' + c); }
+  else if(k === 'goals'){ c = linkCount('lkGoalId', r.id); if(c) chips.push('☑ ' + c); }
+  else if(k === 'targets'){
+    var L = rowsOf('todo').filter(function(x){ return x.lkTargetId === r.id; });
+    if(L.length) chips.push('☑ ' + L.length + ' to-do' + (L.length === 1 ? '' : 's') + ' linked · ' + numStr(L.reduce(function(a, x){ return a + (x.lkCountedId === r.id ? numOf(x.lkCounted) : 0); }, 0)) + ' counted');
+  }
+  return chips.length ? '<div class="pm-links">' + chips.map(function(x){ return '<span>' + esc(x) + '</span>'; }).join('') + '</div>' : '';
+}
+/* The "Also update" part of the to-do form. */
+function todoLinkHtml(v, isNew){
+  var on = isNew ? v.lkWeek !== '0' : v.lkWeek === '1';
+  var wk = toIso(v.lkWeekOf) || toIso(weekOfFor(v));
+  var opt = function(id, label, sel){ return '<option value="' + esc(id) + '"' + (id === sel ? ' selected' : '') + '>' + esc(label) + '</option>'; };
+  var goals = rowsOf('goals').map(function(g){ return opt(g.id, shortTxt(g.Goal, 92), v.lkGoalId); }).join('');
+  var targets = rowsOf('targets').map(function(t){
+    return opt(t.id, shortTxt((t.Person ? sv(t.Person).split(' ')[0] + ': ' : '') + sv(t['Target for']), 64) + ' (' + (t.Actual || '0') + ' of ' + (t.Target || '?') + (t.Unit ? ' ' + t.Unit : '') + ')', v.lkTargetId);
+  }).join('');
+  var names = rowsOf('deliv').map(function(d){ return '<option value="' + esc(shortTxt(d.Deliverable, 9999)) + '">'; }).join('');
+  return '<div class="pm-linkbox"><div class="pm-linkhead">Also update<small>Write it once here. The Weekly plan, Deliverables, Targets, My updates and Team updates follow, and stay in step when the status changes.</small></div>'
+    + '<div class="pm-form">'
+    + '<div class="field"><label>Weekly plan</label><label class="pm-check"><input type="checkbox" id="pmLkWeek"' + (on ? ' checked' : '') + '>Add as a task</label></div>'
+    + '<div class="field"><label for="pmLkWeekOf">Week of</label><input type="date" id="pmLkWeekOf" value="' + wk + '"' + (v.lkWeekId ? '' : ' data-auto="1"') + '></div>'
+    + '<div class="field pm-full"><label for="pmLkDeliv">Deliverable <span class="pm-opt">(optional)</span></label>'
+    +   '<input type="text" id="pmLkDeliv" list="pmLkDelivList" autocomplete="off" value="' + esc(shortTxt(v.lkDeliv, 9999)) + '" placeholder="What will exist when this is done?"><datalist id="pmLkDelivList">' + names + '</datalist>'
+    +   '<div class="pm-hint">Adds a row to Deliverables. Pick a name from the list to link to one that is already there.</div></div>'
+    + '<div class="field pm-full"><label for="pmLkGoal">Supports goal</label><select id="pmLkGoal"><option value="">None</option>' + goals + '</select></div>'
+    + '</div><div class="pm-form pm-form-ta">'
+    + '<div class="field"><label for="pmLkTarget">Counts towards target</label><select id="pmLkTarget"><option value="">None</option>' + targets + '</select></div>'
+    + '<div class="field"><label for="pmLkAdd">Adds when done</label><input type="number" id="pmLkAdd" min="0" step="any" value="' + esc(v.lkAdd || '1') + '"></div>'
+    + '</div></div>';
+}
+function wireTodoLinks(ov){
+  var wk = ov.querySelector('#pmLkWeek'), wo = ov.querySelector('#pmLkWeekOf'), due = ov.querySelector('[data-col="Due"]'), tg = ov.querySelector('#pmLkTarget'), ad = ov.querySelector('#pmLkAdd');
+  if(!wk || !wo) return;
+  var sync = function(){ wo.disabled = !wk.checked; if(ad && tg) ad.disabled = !tg.value; };
+  wk.addEventListener('change', sync); if(tg) tg.addEventListener('change', sync); sync();
+  wo.addEventListener('input', function(){ wo.removeAttribute('data-auto'); });
+  // until a week is chosen by hand, it follows the due date
+  if(due) due.addEventListener('change', function(){ if(wo.getAttribute('data-auto') === '1') wo.value = toIso(fmtDate(mondayOf(parseDate(due.value) || new Date()))); });
+}
+/* Read the "Also update" part into the to-do (o is already in nd). Returns the rows it removed, for the Team updates entry. */
+function readTodoLinks(ov, o, old, nd){
+  var wk = ov.querySelector('#pmLkWeek'), wo = ov.querySelector('#pmLkWeekOf'), dv = ov.querySelector('#pmLkDeliv'), gl = ov.querySelector('#pmLkGoal'), tg = ov.querySelector('#pmLkTarget'), ad = ov.querySelector('#pmLkAdd');
+  var dels = []; if(!wk) return dels;
+  if(wk.checked){
+    var wd = parseDate(wo.value);
+    o.lkWeek = '1'; o.lkWeekOf = wd ? fmtDate(wd) : weekOfFor(o);
+  }else{
+    if(o.lkWeekId && nd.week && nd.week.rows) nd.week.rows = nd.week.rows.filter(function(w){
+      if(w.id !== o.lkWeekId || w.todoId !== o.id) return true;
+      dels.push({ k:'week', id:w.id, title:titleOf('week', w) }); return false; });
+    o.lkWeek = '0'; o.lkWeekId = ''; o.lkWeekOf = '';
+  }
+  var text = dv.value.replace(/\s+/g, ' ').trim(), was = shortTxt(old && old.lkDeliv, 9999), rows = ensureSheet(nd, 'deliv').rows;
+  if(low(text) !== low(was)){
+    var cur = o.lkDelivId ? rows.find(function(r){ return r.id === o.lkDelivId; }) : null;
+    var own = !!cur && cur.todoId === o.id && !nd.todo.rows.some(function(t){ return t.id !== o.id && t.lkDelivId === cur.id; });
+    var other = text ? rows.find(function(r){ return r !== cur && low(shortTxt(r.Deliverable, 9999)) === low(text); }) : null;
+    if(!text || other || !own){
+      // unlink; the deliverable this to-do created goes with it, one that was already there (or is shared) stays
+      if(own){ nd.deliv.rows = rows.filter(function(r){ return r !== cur; }); dels.push({ k:'deliv', id:cur.id, title:titleOf('deliv', cur) }); }
+      o.lkDelivId = other ? other.id : '';
+    }
+  }
+  o.lkDeliv = text;
+  o.lkGoalId = gl ? gl.value : '';
+  o.lkTargetId = tg ? tg.value : '';
+  var n = ad ? parseFloat(ad.value) : 1;
+  o.lkAdd = o.lkTargetId ? numStr(n > 0 ? n : 1) : '';
+  return dels;
+}
+/* Deleting a to-do: an unfinished one takes its weekly task and the deliverable it created with it;
+   a finished one leaves them (and what it added to a target) as a record of the work. */
+function todoLinkedRows(data, t){
+  var out = [];
+  ['week', 'deliv'].forEach(function(k){
+    ((data && data[k] && data[k].rows) || []).forEach(function(r){
+      if(r.todoId !== t.id) return;
+      if(k === 'deliv' && ((data.todo && data.todo.rows) || []).some(function(x){ return x.id !== t.id && x.lkDelivId === r.id; })) return;
+      out.push({ k:k, row:r });
+    });
+  });
+  return out;
+}
+function dropTodoLinks(nd, t){
+  var dels = [], gone = {};
+  if(!isDone(t.Status)) todoLinkedRows(nd, t).forEach(function(x){ gone[x.k + ':' + x.row.id] = 1; dels.push({ k:x.k, id:x.row.id, title:titleOf(x.k, x.row) }); });
+  ['week', 'deliv'].forEach(function(k){
+    if(!nd[k] || !nd[k].rows) return;
+    nd[k].rows = nd[k].rows.filter(function(r){ return !gone[k + ':' + r.id]; });
+    nd[k].rows.forEach(function(r){ if(r.todoId === t.id) delete r.todoId; });
+  });
+  return dels;
+}
+
 /* ---------- add / edit / delete (owner) ---------- */
 function openEditor(k, id, preset){
   var def = defOf(k); if(!def || !pmAllowed()) return;
@@ -12437,9 +12698,10 @@ function openEditor(k, id, preset){
     }
     return '<div class="field' + (LONG.test(c) ? ' pm-full' : '') + '"><label for="' + fid + '">' + esc(c) + (c === 'Progress' ? ' (%)' : '') + '</label>' + input + '</div>';
   }).join('');
+  var linked = k === 'todo' && isUdaan();                              // the to-do form also fills the other sheets
   var ov = document.createElement('div'); ov.className = 'overlay pm-overlay';
   ov.innerHTML = '<div class="modal pm-modal" role="dialog" aria-modal="true"><h3>' + (row ? 'Edit ' : 'Add ') + esc(def.one) + ' · ' + esc(def.label) + '</h3>'
-    + '<div class="pm-form">' + fields + '</div>'
+    + '<div class="pm-form">' + fields + '</div>' + (linked ? todoLinkHtml(vals, !row) : '')
     + '<div class="err" id="pmErr"></div>'
     + '<div class="modal-actions">' + (row ? '<button class="btn btn-danger" id="pmDel">Delete</button>' : '<span></span>')
     + '<div style="display:flex;gap:8px"><button class="btn btn-ghost" id="pmCancel">Cancel</button><button class="btn btn-primary" id="pmSave">' + (row ? 'Save changes' : 'Add') + '</button></div></div></div>';
@@ -12450,6 +12712,7 @@ function openEditor(k, id, preset){
   ov.addEventListener('mousedown', function(e){ if(e.target === ov) close(); });
   ov.querySelector('#pmCancel').addEventListener('click', close);
   var first = ov.querySelector('.pm-form [data-col]'); if(first) setTimeout(function(){ first.focus(); }, 30);
+  if(linked) wireTodoLinks(ov);
   ov.querySelector('#pmSave').addEventListener('click', function(){
     var o = { id: row ? row.id : uid() };
     if(row) Object.keys(row).forEach(function(c){ if(row[c] != null) o[c] = row[c]; });   // keeps hidden fields such as the calendar link
@@ -12467,22 +12730,33 @@ function openEditor(k, id, preset){
     var nd = cloneData(); if(!nd[k]) nd[k] = { cols:sh.cols.slice(), rows:[], desc:sh.desc || '' };
     if(row){ nd[k].rows = nd[k].rows.map(function(r){ return r.id === row.id ? o : r; }); }
     else nd[k].rows.push(o);
+    var linkDels = linked ? readTodoLinks(ov, o, row, nd) : [];
     // an AI Native cohort also goes on (or updates) the AI Native calendar
     var toCal = k === 'cohorts' && isUdaan() && calSendable(o);
     if(toCal && !o.calId) o.calId = newEvId();
     var btn = ov.querySelector('#pmSave'); btn.disabled = true; btn.textContent = 'Saving…';
-    save(nd, (row ? 'edited ' : 'added ') + def.one).then(function(){
+    var saving = save(nd, (row ? 'edited ' : 'added ') + def.one), lrep = st.lastSync;
+    saving.then(function(){
       close();
-      logOwnerChange(k, row, o);
+      logOwnerChange(k, row, o, linkExtra(lrep, k, o.id, linkDels));
       if(toCal) pushRowToCalendar(o, row).then(function(){ toast('Also ' + (row && row.calId ? 'updated on' : 'added to') + ' the AI Native calendar'); }).catch(function(e){ console.warn('calendar', e); });
     }).catch(function(){ btn.disabled = false; btn.textContent = row ? 'Save changes' : 'Add'; });
   });
   var del = ov.querySelector('#pmDel');
   if(del) del.addEventListener('click', function(){
     var titleCol = def.title || def.cols[def.k === 'risk' ? 1 : 0];
-    if(!confirm('Delete this ' + def.one + '?\n\n' + String(row[titleCol] || '').replace(/<br>/gi, ' ').slice(0, 160) + '\n\nThis cannot be undone (export to Excel first if you want a copy).')) return;
+    var also = '';
+    if(isUdaan() && k === 'todo'){
+      var gone = isDone(row.Status) ? [] : todoLinkedRows(st.data, row).map(function(x){ return x.k === 'week' ? 'its task in the Weekly plan' : 'the deliverable it created'; });
+      if(gone.length) also = '\n\nThis also deletes ' + gone.join(' and ') + '.';
+    }else if(isUdaan() && k === 'week' && row.todoId && rowsOf('todo').some(function(t){ return t.id === row.todoId; })){
+      also = '\n\nThis task comes from the To-do list. The to-do stays; it just stops showing in the Weekly plan.';
+    }
+    if(!confirm('Delete this ' + def.one + '?\n\n' + String(row[titleCol] || '').replace(/<br>/gi, ' ').slice(0, 160) + also + '\n\nThis cannot be undone (export to Excel first if you want a copy).')) return;
     var nd = cloneData(); nd[k].rows = nd[k].rows.filter(function(r){ return r.id !== row.id; });
-    save(nd, 'deleted ' + def.one).then(function(){ close(); logOwnerChange(k, row, null); }).catch(function(){});
+    var delDels = (isUdaan() && k === 'todo') ? dropTodoLinks(nd, row) : [];
+    var deleting = save(nd, 'deleted ' + def.one), drep = st.lastSync;
+    deleting.then(function(){ close(); logOwnerChange(k, row, null, linkExtra(drep, k, row.id, delDels)); }).catch(function(){});
   });
 }
 
@@ -12568,7 +12842,7 @@ function pageOverview(){
     + '</div>';
   var grows = goals.map(function(g){
     var p = pctOf(g.Progress) || 0, t = strip(g.Goal);
-    return '<div class="prow" data-edit="goals:' + g.id + '"><div class="pr-name">' + esc(t.length > 110 ? t.slice(0, 107) + '…' : t) + '<small>' + esc(g.Owner) + (g.Due ? ' · due ' + esc(g.Due) : '') + '</small></div>'
+    return '<div class="prow" data-edit="goals:' + g.id + '"><div class="pr-name">' + esc(t.length > 110 ? t.slice(0, 107) + '…' : t) + '<small>' + esc(g.Owner) + (g.Due ? ' · due ' + esc(g.Due) : '') + (isUdaan() && linkCount('lkGoalId', g.id) ? ' · ' + linkCount('lkGoalId', g.id) : '') + '</small></div>'
       + '<div class="pr-track"><i class="' + (p >= 100 ? 'done' : '') + '" style="width:' + Math.min(100, p) + '%"></i></div>'
       + '<div class="pr-fig">' + p.toFixed(0) + '%<small>' + esc(g.Status) + '</small></div></div>';
   }).join('') || '<div class="pm-empty">No goals yet.</div>';
@@ -12825,7 +13099,7 @@ function saveMeeting(){
   m.actions.forEach(function(a){
     var t = a.todoId && nd.todo.rows.find(function(r){ return r.id === a.todoId; });
     if(t){ t.Task = a.action; t.Owner = a.owner || t.Owner; t.Due = a.due || t.Due; }
-    else { var id = uid(); nd.todo.rows.push({ id:id, Task:a.action, Priority:'Medium', Owner:a.owner || '', Team:'Education and Outreach', Due:a.due || '', Status:'Not started', Notes:from }); a.todoId = id; }
+    else { var id = uid(); nd.todo.rows.push({ id:id, Task:a.action, Priority:'Medium', Owner:a.owner || '', Team:'Education and Outreach', Due:a.due || '', Status:'Not started', Notes:from, lkWeek:'1' }); a.todoId = id; }
   });
   m.decIds = m.decIds || {};
   meetLines(m.Decisions).forEach(function(line){
@@ -12837,7 +13111,8 @@ function saveMeeting(){
   var btn = document.getElementById('pmMeetSave'); if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
   var oldIds = {}; ['todo', 'risk'].forEach(function(k){ ((st.data && st.data[k] && st.data[k].rows) || []).forEach(function(r){ oldIds[k + ':' + r.id] = 1; }); });
   var newRows = []; ['todo', 'risk'].forEach(function(k){ nd[k].rows.forEach(function(r){ if(!oldIds[k + ':' + r.id]) newRows.push({ k:k, row:r }); }); });
-  save(nd, 'saved minutes: ' + m.Meeting + ', ' + m.Date).then(function(){ st.meetDraft = meetClone(m); render(); if(newRows.length) logOwnerAdds(newRows, 'the minutes of ' + m.Meeting + ', ' + m.Date); })
+  var savingMin = save(nd, 'saved minutes: ' + m.Meeting + ', ' + m.Date), mrep = st.lastSync;
+  savingMin.then(function(){ st.meetDraft = meetClone(m); render(); var all = newRows.concat((mrep && mrep.adds) || []); if(all.length) logOwnerAdds(all, 'the minutes of ' + m.Meeting + ', ' + m.Date); })
     .catch(function(){ if(btn){ btn.disabled = false; btn.textContent = 'Save minutes'; } });
 }
 function pageMinutesRead(){
@@ -13540,7 +13815,9 @@ function pageSheet(def, sh){
     + ((st.q || st.status || st.owner || st.type) ? '<button class="pt-filt-reset" id="pmReset">Clear</button>' : '')
     + '</div>';
   var table = rows.length ? '<div class="pt-scroll"><table class="pt-table"><thead><tr>' + cols.map(function(c){ return '<th>' + esc(c) + '</th>'; }).join('') + '<th></th></tr></thead><tbody>'
-    + rows.map(function(r){ return '<tr data-edit="' + def.k + ':' + r.id + '">' + cols.map(function(c){ return cellHtml(c, r); }).join('') + '<td><button class="pm-icon" data-edit="' + def.k + ':' + r.id + '" title="Edit">✎</button></td></tr>'; }).join('') + '</tbody></table></div>'
+    + rows.map(function(r){
+        var lnote = linkNote(def.k, r);
+        return '<tr data-edit="' + def.k + ':' + r.id + '">' + cols.map(function(c){ var h = cellHtml(c, r); return (lnote && c === NOTE_COL[def.k]) ? h.slice(0, -5) + lnote + '</td>' : h; }).join('') + '<td><button class="pm-icon" data-edit="' + def.k + ':' + r.id + '" title="Edit">✎</button></td></tr>'; }).join('') + '</tbody></table></div>'
     : '<div class="pm-empty">' + (sh.rows.length ? 'No rows match these filters.' : 'Nothing here yet. Use “+ Add ' + esc(def.one) + '”.') + '</div>';
   var summary = def.k === 'cohorts' ? cohortSummaryHtml(sh)
     : (hasStatus && sh.rows.length ? '<div class="pt-card"><h3>Status</h3>' + stackRow(def.label, sh.rows, 'Status') + '</div>' : '');
@@ -13549,7 +13826,8 @@ function pageSheet(def, sh){
     + '<p class="pm-count">Showing ' + rows.length + ' of ' + sh.rows.length + '. Click a row to edit or delete it.</p>' + table + '</div>';
   return filters + summary
     + '<div class="pt-card"><div class="pm-card-head"><div><h3>' + esc(def.label) + '</h3><div class="sub">' + esc(sh.desc) + '</div></div>' + addBtn(def.k, def) + '</div>'
-    + '<p class="pm-count">Showing ' + rows.length + ' of ' + sh.rows.length + '. Click a row to edit or delete it.</p>' + table + '</div>';
+    + '<p class="pm-count">Showing ' + rows.length + ' of ' + sh.rows.length + '. Click a row to edit or delete it.'
+    + (def.k === 'todo' && isUdaan() ? ' A to-do can also fill the Weekly plan, Deliverables, a goal and a target: set it once in the to-do form.' : '') + '</p>' + table + '</div>';
 }
 function pageImport(){
   var pv = st.preview;
@@ -13790,7 +14068,7 @@ function wire(box){
   if(pmViewer()) lockReadOnly(box);
 }
 
-try{ console.info('UDAAN add-on patch 22 (2026-11-25) Program Management loaded (view-only access for ' + PM_VIEWERS.length + ' viewer): programmes ' + PROGRAMS.map(function(p){ return p.key; }).join(', ')); }catch(e){}
+try{ console.info('UDAAN add-on patch 23 (2026-11-26) Program Management loaded (to-do links to the Weekly plan, Deliverables, Goals and Targets; view-only access for ' + PM_VIEWERS.length + ' viewer): programmes ' + PROGRAMS.map(function(p){ return p.key; }).join(', ')); }catch(e){}
 })();
 </script>
 
