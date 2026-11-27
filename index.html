@@ -13696,15 +13696,18 @@ function wtModel(){
   var rows = st.data ? rowsOf('cohorts') : [], zero = function(){ return weeks.map(function(){ return 0; }); };
   var progs = WT_PROGS.map(function(g){
     var done = zero(), doneC = zero(), plan = zero(), planC = zero(), before = 0, beforeC = 0, overdue = 0;
-    // delivered learners: completed cohorts on the programme's calendar (participants trained)
-    var compl = []; try{ compl = (evsForProgram(g.key) || []).filter(function(e){ return e && e.status === 'completed' && e.date; }); }catch(x){}
+    // delivered learners: completed cohorts on the programme's calendar, counted exactly as the Milestone monitor, Master and
+    // Project Tracking count them (an open cohort = the people trained in it; a person inside an open cohort is not counted again)
+    var allEvs = qaEvs(g.key), compl = allEvs.filter(function(e){ return e && e.status === 'completed' && e.date; });
     var complIds = {}, complDates = {};
     compl.forEach(function(e){
       complIds[e.id] = 1; complDates[e.date] = 1;
       var d = new Date(e.date + 'T00:00:00'); if(isNaN(d)) return;
-      var n = participantsNum(e), i = idx[+wtMonday(d)];
-      if(i == null){ if(d < WT_START){ before += n; beforeC++; } return; }
-      done[i] += n; doneC[i]++;
+      var ind = qaIsInd(e);
+      if(ind && allEvs.some(function(c){ return qaIsOpen(c) && c.date === e.date; })) return;      // counted in the open cohort's number
+      var n = qaValue(e, g.key), i = idx[+wtMonday(d)], c = ind ? 0 : 1;
+      if(i == null){ if(d < WT_START){ before += n; beforeC += c; } return; }
+      done[i] += n; doneC[i] += c;
     });
     rows.forEach(function(r){
       if(r.Programme !== g.p || !(cohortDone(r) || cohortLive(r))) return;
@@ -14268,7 +14271,7 @@ function wire(box){
   if(pmViewer()) lockReadOnly(box);
 }
 
-try{ console.info('UDAAN add-on patch 24 (2026-11-27) Program Management loaded (people trained: one entry updates every tab; to-do links to the Weekly plan, Deliverables, Goals and Targets; view-only access for ' + PM_VIEWERS.length + ' viewer): programmes ' + PROGRAMS.map(function(p){ return p.key; }).join(', ')); }catch(e){}
+try{ console.info('UDAAN add-on patch 25 (2026-11-27) Program Management loaded (people trained: one entry updates every tab, weekly target mapping included; to-do links to the Weekly plan, Deliverables, Goals and Targets; view-only access for ' + PM_VIEWERS.length + ' viewer): programmes ' + PROGRAMS.map(function(p){ return p.key; }).join(', ')); }catch(e){}
 })();
 </script>
 
