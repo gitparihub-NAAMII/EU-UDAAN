@@ -11556,6 +11556,11 @@ try{ console.info('UDAAN add-on patch 17 (2026-10-28) loaded'); }catch(e){}
   .pm-form{ display:grid; grid-template-columns:1fr 1fr; gap:0 12px; }
   .pm-form .pm-full{ grid-column:1 / -1; }
   .pm-hint{ font-size:11px; color:var(--charcoal-soft); margin-top:3px; }
+  /* people trained: the quick-entry bar on the Milestone monitor */
+  .qa-bar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:0 0 14px; padding:14px 16px;
+    border:1px solid var(--line); border-radius:14px; background:var(--paper); }
+  .qa-bar b{ display:block; font-size:14px; color:var(--charcoal); }
+  .qa-bar span{ font-size:12.5px; color:var(--charcoal-soft); }
   /* to-do form: the "Also update" part, and the small link labels in the tables */
   .pm-linkbox{ margin:6px 0 4px; padding:14px 14px 1px; border:1px solid var(--line); border-radius:12px; background:var(--paper); }
   .pm-linkhead{ font-size:13px; font-weight:800; color:var(--charcoal); margin:0 0 12px; }
@@ -12096,7 +12101,7 @@ function listen(){
     if(snap.exists){ var d = snap.data() || {}; st.data = d.sheets || null; st.meta = { at:tsDate(d.updatedAt), by:d.updatedByName || d.updatedBy || '' }; }
     else { st.data = null; st.meta = null; }
     render();
-    if(st.data && isUdaan()){ publishPeople(); mergePending(); }
+    if(st.data && isUdaan()){ publishPeople(); mergePending(); autoDeliverSoon(); }
   }, function(e){
     if(progDef().key !== key) return;
     st.loading = false; st.unsub = null;
@@ -12833,6 +12838,7 @@ function pageOverview(){
   var recent = st.updates.filter(function(u){ var d = tsDate(u.at); return !d || (Date.now() - d) < 7 * 864e5; }).length;
   var html = '<div class="kpi-grid">'
     + kpi(avg.toFixed(0) + '%', 'Average goal progress', goals.length + ' goals', 'goals', true, avg)
+    + (isUdaan() ? kpi(calTrained('ai_native').total.toLocaleString(), 'People trained · AI Native', 'from completed cohorts on the calendar', 'weekly') : '')
     + kpi(team.length, 'Team members', '', 'team')
     + kpi(countOpen('week'), 'Weekly tasks open', week.length + ' planned', 'week')
     + kpi(countOpen('todo'), 'To-dos open', todo.filter(function(r){ return low(r.Priority) === 'high' && !isDone(r.Status); }).length + ' high priority', 'todo')
@@ -13324,13 +13330,199 @@ function calSync(){
 /* redraw the cohort map when calendar data arrives or changes */
 var calRedrawT = null;
 function calRefresh(){
-  if(st.page !== 'cohorts' || st.view === 'home' || !pmFull()) return;
+  if((st.page !== 'cohorts' && st.page !== 'overview') || st.view === 'home' || !pmFull()) return;
   var box = document.getElementById('pmTab'); if(!box || box.style.display === 'none') return;
+  if(document.querySelector('.pm-overlay')) return;          // never redraw under an open form
   clearTimeout(calRedrawT); calRedrawT = setTimeout(render, 400);
 }
 if(typeof renderTrackingIfVisible === 'function'){
   var _rtv = renderTrackingIfVisible;
-  window.renderTrackingIfVisible = function(){ var r = _rtv.apply(this, arguments); try{ calRefresh(); }catch(e){} return r; };
+  window.renderTrackingIfVisible = function(){ var r = _rtv.apply(this, arguments); try{ calRefresh(); autoDeliverSoon(); }catch(e){} return r; };
+}
+
+/* ---------- people trained: one entry, every tab ----------
+   The programme calendars are the one place people trained are counted from: the Milestone monitor, Master, Project Tracking and
+   the weekly target mapping all read the completed cohorts there. Two things make that true everywhere:
+     1. "+ Add people trained" (Milestone monitor and the cohort map): a short form that adds a completed cohort to the calendar,
+        or changes the total of one that is already there (for a running count such as registrations through Tangible).
+     2. The cohort map follows on its own: its summary figures use the calendar's people trained, a cohort that is completed on
+        the AI Native calendar is marked Delivered with the actual number, and a completed cohort that is not in the map yet is added.
+        The calendar is never changed from here except through the form in 1. */
+var QA_PROGS = [{ key:'ai_native', label:'AI Native' }, { key:'ai_foundation', label:'AI Foundation' }, { key:'ai_deep', label:'AI Deep' }];
+function qaEvs(prog){ try{ return (typeof evsForProgram === 'function' ? evsForProgram(prog) : []) || []; }catch(e){ return []; } }
+function qaIsInd(e){ try{ return typeof isIndividual === 'function' && isIndividual(e); }catch(x){ return false; } }
+function qaIsOpen(e){ try{ return typeof isOpenCohort === 'function' && isOpenCohort(e); }catch(x){ return false; } }
+/* People trained in a programme, from its calendar: { total, y2026…, cohorts, ids, dates }. */
+function calTrained(prog){
+  var evs = qaEvs(prog), out = { total:0, years:{}, cohorts:0, ids:{}, dates:{} };
+  try{ var y = programAchievedByYear(evs); out.years = y; Object.keys(y).forEach(function(k){ out.total += y[k]; }); }catch(e){}
+  evs.forEach(function(e){ if(e && e.status === 'completed' && e.date && !qaIsInd(e)){ out.cohorts++; out.ids[e.id] = 1; out.dates[e.date] = 1; } });
+  return out;
+}
+/* Completed entries a new number can be put on: name → the latest completed cohort with that name. */
+function qaExisting(prog){
+  var by = {};
+  qaEvs(prog).forEach(function(e){
+    if(!e || e.status !== 'completed' || qaIsInd(e) || !String(e.title || '').trim()) return;
+    var k = low(e.title); if(!by[k] || String(e.date) > String(by[k].date)) by[k] = e;
+  });
+  return by;
+}
+function qaValue(e, prog){ try{ return unitPeopleTrained(e, qaEvs(prog)); }catch(x){ return parseInt(e.participants, 10) || 0; } }
+function openQuickAdd(){
+  if(!adminOk()) return;
+  var cur = 'ai_native'; try{ cur = currentProgram.key; }catch(e){}
+  var today = toIso(fmtDate(new Date()));
+  var ov = document.createElement('div'); ov.className = 'overlay pm-overlay';
+  ov.innerHTML = '<div class="modal pm-modal" role="dialog" aria-modal="true" style="width:520px"><h3>Add people trained</h3>'
+    + '<p class="pm-hint" style="font-size:12.5px;margin:-4px 0 14px;line-height:1.5">Type it once here. The Milestone monitor, Master, Project Tracking and Program Management all update from it.</p>'
+    + '<div class="pm-form">'
+    + '<div class="field"><label for="qaN">People trained</label><input type="number" id="qaN" min="1" step="1" placeholder="e.g. 13"></div>'
+    + '<div class="field"><label for="qaProg">Training</label><select id="qaProg">' + QA_PROGS.map(function(p){ return '<option value="' + p.key + '"' + (p.key === cur ? ' selected' : '') + '>' + p.label + '</option>'; }).join('') + '</select></div>'
+    + '<div class="field pm-full"><label for="qaName">Institution or source</label><input type="text" id="qaName" list="qaNames" autocomplete="off" placeholder="e.g. Tangible, or the college or company"><datalist id="qaNames"></datalist></div>'
+    + '<div class="field pm-full" id="qaModeBox" style="display:none"><label>This name already has a completed entry</label>'
+    +   '<label class="pm-check" style="margin-bottom:6px"><input type="radio" name="qaMode" value="total" checked><span id="qaModeTotal"></span></label>'
+    +   '<label class="pm-check"><input type="radio" name="qaMode" value="new"><span>Add these as a new entry on the date below</span></label></div>'
+    + '<div class="field"><label for="qaDate">Date</label><input type="date" id="qaDate" value="' + today + '"></div>'
+    + '<div class="field"><label for="qaFmt">Format</label><select id="qaFmt"><option>In person</option><option>Online</option></select></div>'
+    + '</div><div class="err" id="qaErr"></div>'
+    + '<div class="modal-actions"><span></span><div style="display:flex;gap:8px"><button class="btn btn-ghost" id="qaCancel">Cancel</button><button class="btn btn-primary" id="qaSave">Add</button></div></div></div>';
+  document.body.appendChild(ov);
+  var q = function(id){ return ov.querySelector('#' + id); };
+  var close = function(){ ov.remove(); document.removeEventListener('keydown', onKey); };
+  var onKey = function(e){ if(e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  ov.addEventListener('mousedown', function(e){ if(e.target === ov) close(); });
+  q('qaCancel').addEventListener('click', close);
+  var match = null;
+  var refresh = function(){
+    var prog = q('qaProg').value, ex = qaExisting(prog), name = low(q('qaName').value);
+    q('qaNames').innerHTML = Object.keys(ex).map(function(k){ return '<option value="' + esc(ex[k].title.trim()) + '">'; }).join('');
+    match = name && ex[name] ? ex[name] : null;
+    q('qaModeBox').style.display = match ? '' : 'none';
+    if(match){
+      var n = parseInt(q('qaN').value, 10), was = qaValue(match, prog);
+      q('qaModeTotal').textContent = 'Change its total' + (n > 0 ? ' from ' + was + ' to ' + n : ' (now ' + was + ')') + ' · ' + fmtDate(parseDate(match.date));
+    }
+    var total = match && ov.querySelector('input[name="qaMode"]:checked').value === 'total';
+    q('qaDate').disabled = !!total; q('qaFmt').disabled = !!total;
+    q('qaSave').textContent = total ? 'Save the new total' : 'Add';
+  };
+  ['qaN', 'qaName', 'qaProg'].forEach(function(id){ q(id).addEventListener('input', refresh); q(id).addEventListener('change', refresh); });
+  ov.querySelectorAll('input[name="qaMode"]').forEach(function(r){ r.addEventListener('change', refresh); });
+  refresh(); setTimeout(function(){ q('qaN').focus(); }, 30);
+  q('qaSave').addEventListener('click', function(){
+    var prog = q('qaProg').value, n = parseInt(q('qaN').value, 10), name = q('qaName').value.replace(/\s+/g, ' ').trim(), iso = q('qaDate').value, er = q('qaErr');
+    var total = match && ov.querySelector('input[name="qaMode"]:checked').value === 'total';
+    var fail = function(m){ er.textContent = m; er.style.display = 'block'; };
+    if(!(n > 0)) return fail('Please enter how many people were trained.');
+    if(!name) return fail('Please say where they were trained or how they registered, for example Tangible.');
+    if(!total && !parseDate(iso)) return fail('Please choose the date.');
+    var btn = q('qaSave'); btn.disabled = true; btn.textContent = 'Saving…';
+    qaSave(prog, total ? match : null, { n:n, name:name, iso:iso, online:q('qaFmt').value === 'Online' }).then(function(r){
+      close();
+      var lab = (QA_PROGS.find(function(p){ return p.key === prog; }) || {}).label;
+      toast(r.before == null ? 'Added ' + n + ' people trained (' + name + '). ' + lab + ' is now ' + r.total.toLocaleString() + ' on every tab.'
+                             : name + ': ' + r.before + ' → ' + n + '. ' + lab + ' is now ' + r.total.toLocaleString() + ' on every tab.');
+    }).catch(function(e){ btn.disabled = false; btn.textContent = total ? 'Save the new total' : 'Add'; fail('Could not save: ' + (e && e.message || e)); });
+  });
+}
+/* Write the number to the programme calendar, the same way the calendar form and "Edit numbers" do. */
+function qaSave(prog, existing, v){
+  if(!adminOk() || typeof persistEventToProgram !== 'function') return Promise.reject(new Error('Sign in as an admin first.'));
+  var now = new Date().toISOString(), who = (typeof adminName !== 'undefined' && adminName) || 'Admin', before = null, ev;
+  if(existing){
+    ev = existing; before = qaValue(ev, prog);
+    if(qaIsOpen(ev)) ev.trainedOverride = v.n; else { ev.participants = v.n; ev.manualParticipants = true; }
+    ev.history = Array.isArray(ev.history) ? ev.history : []; ev.history.push({ by:who, status:ev.status, at:now });
+    ev.lastActionBy = who; ev.lastActionStatus = ev.status; ev.lastActionAt = now; ev.updatedAt = now;
+  }else{
+    ev = { id:newEvId(), date:v.iso, status:'completed', title:v.name, location:v.online ? 'Online' : '', proposedBy:'', contact:'',
+      notes:'Added with “Add people trained”', participants:v.n, manualParticipants:true, capacity:'',
+      sector:'', cohortType:'', institutionType:'', province:'', district:'', municipality:'', time:'', timeFrom:'', timeTo:'',
+      ownerId:(typeof profile !== 'undefined' && profile) ? profile.userId : null, createdAt:now, updatedAt:now, completedAt:now,
+      history:[{ by:who, status:'completed', at:now }], lastActionBy:who, lastActionStatus:'completed', lastActionAt:now };
+    try{ if(currentProgram.key === prog) events.push(ev); else if(masterEvents[prog] && !masterEvents[prog].some(function(e){ return e.id === ev.id; })) masterEvents[prog].push(ev); }catch(e){}
+  }
+  return Promise.resolve(persistEventToProgram(prog, ev)).then(function(){
+    try{ if(typeof trkAddLog === 'function') trkAddLog('numbers', before == null ? 'People trained added: ' + v.n + ' for ' + v.name + ' (' + ev.date + ').' : 'People changed for ' + (ev.title || 'cohort') + ' (' + ev.date + '): ' + before + ' → ' + v.n + '.'); }catch(e){}
+    try{ if(typeof renderAll === 'function') renderAll(); }catch(e){}
+    try{ if(typeof renderMasterIfVisible === 'function') renderMasterIfVisible(); }catch(e){}
+    try{ if(typeof renderTrackingIfVisible === 'function') renderTrackingIfVisible(); }catch(e){}
+    calRefresh(); autoDeliverSoon();
+    return { before:before, total:calTrained(prog).total };
+  });
+}
+/* The button on the Milestone monitor (admins only). */
+function qaButton(){
+  var tab = document.getElementById('listTab'), tr = document.getElementById('trainedTracker');
+  if(!tab || !tr) return;
+  var bar = document.getElementById('qaBar');
+  if(!adminOk()){ if(bar) bar.remove(); return; }
+  if(bar) return;
+  bar = document.createElement('div'); bar.id = 'qaBar'; bar.className = 'qa-bar';
+  bar.innerHTML = '<div><b>People trained</b><span>Add a number once. Every tab updates from it.</span></div><button type="button" class="btn btn-primary" id="qaOpen">+ Add people trained</button>';
+  tr.parentNode.insertBefore(bar, tr);
+  bar.querySelector('#qaOpen').addEventListener('click', openQuickAdd);
+}
+try{ qaButton(); setInterval(qaButton, 1500); }catch(e){}
+
+/* A cohort completed on the AI Native calendar → Delivered in the cohort map, with the number trained. */
+function calDeliveredPlan(rows){
+  var evs = qaEvs('ai_native'), out = [], used = {};
+  var first = rows.map(function(r){ return toIso(r.Date); }).filter(Boolean).sort()[0] || '';     // the map's first date: older completed cohorts are counted, not listed
+  evs.filter(function(e){ return e && e.id && e.date && e.status === 'completed' && !qaIsInd(e); })
+    .sort(function(a, b){ return String(a.date).localeCompare(String(b.date)); })
+    .forEach(function(e){
+      var n = qaValue(e, 'ai_native'), open = qaIsOpen(e), place = String(e.location || '').split(',')[0].trim();
+      var name = String(e.title || '').trim() || (/^online$/i.test(place) ? 'Online cohort' : (open ? 'Open cohort' + (place ? ' · ' + place : '') : (place || 'AI Native cohort')));
+      var ev = { calId:e.id, status:'completed', iso:e.date, d:parseDate(e.date), Partner:name, Learners:n > 0 ? String(n) : '', Status:'Delivered',
+        Sector:open ? 'Public (open cohort)' : '', Format:/online|zoom|meet|virtual/i.test(e.location || '') ? 'Online' : 'In person',
+        Notes:['From the AI Native calendar', e.location, e.time].filter(Boolean).join(' · ') };
+      if(!ev.d) return;
+      // which row is it? the one already linked to this calendar entry, else one on the same date with a similar name
+      // (a nameless calendar entry may take the only unlinked row on its date). Anything else becomes a new row.
+      var natv = function(x){ return x.Programme === 'AI Native'; }, multi = function(x){ var en = toIso(x['End date']); return en && en > toIso(x.Date); };
+      var r = rows.find(function(x){ return x.calId === ev.calId; }), ch = {};
+      if(!r){
+        if(rows.some(function(x){ return natv(x) && multi(x) && low(x.Status) !== 'cancelled' && toIso(x.Date) <= ev.iso && ev.iso <= toIso(x['End date']); })) return;   // inside a combined multi-week row
+        var same = rows.filter(function(x){ return natv(x) && !multi(x) && !x.calId && !used[x.id] && toIso(x.Date) === ev.iso; }), ew = nameWords(ev.Partner);
+        r = same.filter(function(x){ return nameWords(x.Partner).some(function(w){ return ew.indexOf(w) >= 0; }); })[0] || ((!ew.length && same.length === 1) ? same[0] : null);
+      }
+      if(r){
+        used[r.id] = 1;
+        var rs = low(r.Status);
+        if(rs === 'to verify' || rs === 'cancelled') return;                                  // checked by hand: left alone
+        if(!r.calId) ch.calId = ev.calId;
+        if(rs !== 'delivered') ch.Status = 'Delivered';
+        if(ev.Learners && learnersOf(r) !== +ev.Learners) ch.Learners = ev.Learners;
+        if(r.calId === ev.calId && toIso(r.Date) !== ev.iso) ch.Date = fmtDate(ev.d);
+        if(Object.keys(ch).length) out.push({ ev:ev, row:r, ch:ch });
+      }else if(first && ev.iso >= first) out.push({ ev:ev, row:null, ch:ch, isNew:true });
+    });
+  return out;
+}
+var autoDeliverT = null;
+function autoDeliverSoon(){ clearTimeout(autoDeliverT); autoDeliverT = setTimeout(autoDeliver, 1500); }
+function autoDeliver(){
+  if(!pmAllowed() || !isUdaan() || !st.data || st.saving || st.merging || st.preview || st.autoBusy) return;
+  var rows = rowsOf('cohorts'); if(!rows.length) return;
+  var plan; try{ plan = calDeliveredPlan(rows); }catch(e){ console.warn('cohort map: calendar check', e); return; }
+  if(!plan.length) return;
+  var sig = JSON.stringify(plan.map(function(p){ return [p.ev.calId, p.row ? p.row.id : '', p.ch, p.ev.Learners]; }));
+  if(st.autoSig === sig) return;                                                             // the same change was just tried: never loop
+  st.autoSig = sig; st.autoBusy = true;
+  var nd = cloneData(), byId = {}, add = 0, upd = 0;
+  nd.cohorts.rows.forEach(function(r){ byId[r.id] = r; });
+  plan.forEach(function(p){
+    if(p.row && byId[p.row.id]){ Object.keys(p.ch).forEach(function(k){ byId[p.row.id][k] = p.ch[k]; }); if(Object.keys(p.ch).some(function(k){ return k !== 'calId'; })) upd++; }
+    else if(p.isNew){ nd.cohorts.rows.push({ id:uid(), calId:p.ev.calId, ID:'', Programme:'AI Native', Date:fmtDate(p.ev.d), 'End date':'', Partner:p.ev.Partner,
+      Sector:p.ev.Sector, Format:p.ev.Format, Learners:p.ev.Learners, Lead:'', 'Depends on':'', Status:'Delivered', Notes:p.ev.Notes }); add++; }
+  });
+  save(nd, 'cohort map updated from the AI Native calendar (' + upd + ' marked delivered or corrected, ' + add + ' added)', true)
+    .then(function(){ if(add || upd) toast('Cohort map updated from the calendar: ' + [upd ? upd + ' delivered' : '', add ? add + ' added' : ''].filter(Boolean).join(', ')); })
+    .catch(function(e){ console.warn('cohort map: could not follow the calendar', e); })
+    .then(function(){ st.autoBusy = false; });
 }
 
 /* Month calendar of cohorts: delivered in green, upcoming by status, past-but-not-delivered flagged. */
@@ -13431,15 +13623,20 @@ function cohortSummaryHtml(sh){
   var sum = function(list){ return list.reduce(function(a, r){ return a + learnersOf(r); }, 0); };
   var prog = function(p){ return rows.filter(function(r){ return r.Programme === p; }); };
   var nat = prog('AI Native'), fnd = prog('AI Foundation');
-  var natDone = sum(nat.filter(cohortDone)), natPlan = sum(nat.filter(cohortLive));
-  var fndDone = sum(fnd.filter(cohortDone)), fndPlan = sum(fnd.filter(cohortLive));
+  // people trained are counted from the programme calendars (the same figure as the Milestone monitor and Master);
+  // a Delivered row that is not on a calendar is added on top, so nothing is counted twice
+  var calN = calTrained('ai_native'), calF = calTrained('ai_foundation');
+  var offCal = function(list, c){ return list.filter(function(r){ return cohortDone(r) && !c.ids[r.calId] && !c.dates[toIso(r.Date)]; }); };
+  var natX = offCal(nat, calN), fndX = offCal(fnd, calF);
+  var natDone = calN.total + sum(natX), natDoneC = calN.cohorts + natX.length, natPlan = sum(nat.filter(cohortLive));
+  var fndDone = calF.total + sum(fndX), fndPlan = sum(fnd.filter(cohortLive));
   var in2026 = function(r){ var d = parseDate(r.Date); return d && d.getFullYear() === 2026; };
-  var nat26 = sum(nat.filter(function(r){ return in2026(r) && (cohortDone(r) || cohortLive(r)); }));
+  var nat26 = (calN.years[2026] || 0) + sum(natX.filter(in2026)) + sum(nat.filter(function(r){ return in2026(r) && cohortLive(r); }));
   var attention = rows.filter(function(r){ var d = parseDate(r.Date); return cohortLive(r) && /^(partner to find|to verify|mou in progress|to confirm)$/.test(low(r.Status)) && d && d - today < 31 * 864e5; });
   var soon = rows.filter(function(r){ var d = parseDate(r.Date); return cohortLive(r) && d && d >= today && d - today <= 21 * 864e5; })
     .sort(function(a, b){ return parseDate(a.Date) - parseDate(b.Date); });
   var html = '<div class="kpi-grid">'
-    + kpi(natDone.toLocaleString(), 'AI Native learners delivered', nat.filter(cohortDone).length + ' cohorts · target 22,000', 'cohorts', true, natDone / 220)
+    + kpi(natDone.toLocaleString(), 'AI Native learners delivered', natDoneC + ' cohorts · target 22,000', 'cohorts', true, natDone / 220)
     + kpi(natPlan.toLocaleString(), 'AI Native learners planned', nat.filter(cohortLive).length + ' upcoming cohorts', 'cohorts')
     + kpi(nat26.toLocaleString() + ' / 2,000', 'AI Native 2026 (delivered + planned)', Math.round(nat26 / 20) + '% of the 2026 goal', 'cohorts', false, nat26 / 20)
     + kpi(fndDone + ' / 1,500', 'AI Foundation learners delivered', fnd.filter(cohortLive).length + ' cohorts planned · ' + fndPlan + ' learners', 'cohorts', false, fndDone / 15)
@@ -13823,7 +14020,8 @@ function pageSheet(def, sh){
   var summary = def.k === 'cohorts' ? cohortSummaryHtml(sh)
     : (hasStatus && sh.rows.length ? '<div class="pt-card"><h3>Status</h3>' + stackRow(def.label, sh.rows, 'Status') + '</div>' : '');
   if(def.k === 'cohorts') return summary + filters
-    + '<div class="pt-card"><div class="pm-card-head"><div><h3>All cohorts</h3><div class="sub">Sorted by date. Change a status to Delivered and add the actual learners once a cohort has run.</div></div>' + addBtn(def.k, def) + '</div>'
+    + '<div class="pt-card"><div class="pm-card-head"><div><h3>All cohorts</h3><div class="sub">Sorted by date. A cohort that is completed on the calendar is marked Delivered here with its number on its own. To record people trained, use “+ Add people trained”.</div></div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (pmAllowed() && isUdaan() ? '<button class="pm-btn" id="pmQuickAdd">+ Add people trained</button>' : '') + addBtn(def.k, def) + '</div></div>'
     + '<p class="pm-count">Showing ' + rows.length + ' of ' + sh.rows.length + '. Click a row to edit or delete it.</p>' + table + '</div>';
   return filters + summary
     + '<div class="pt-card"><div class="pm-card-head"><div><h3>' + esc(def.label) + '</h3><div class="sub">' + esc(sh.desc) + '</div></div>' + addBtn(def.k, def) + '</div>'
@@ -14043,6 +14241,7 @@ function wire(box){
     });
   });
   var cs = box.querySelector('#pmCalSync'); if(cs) cs.addEventListener('click', calSync);
+  var qa = box.querySelector('#pmQuickAdd'); if(qa) qa.addEventListener('click', openQuickAdd);
   var sc = box.querySelector('#pmSeedCohorts'); if(sc) sc.addEventListener('click', function(){
     sc.disabled = true; sc.textContent = 'Loading…';
     var nd = cloneData(); nd.cohorts = { cols:defOf('cohorts').cols.slice(), rows:seedCohortRows(), desc:'AI School cohorts: delivered and tentative' };
@@ -14069,7 +14268,7 @@ function wire(box){
   if(pmViewer()) lockReadOnly(box);
 }
 
-try{ console.info('UDAAN add-on patch 23 (2026-11-26) Program Management loaded (to-do links to the Weekly plan, Deliverables, Goals and Targets; view-only access for ' + PM_VIEWERS.length + ' viewer): programmes ' + PROGRAMS.map(function(p){ return p.key; }).join(', ')); }catch(e){}
+try{ console.info('UDAAN add-on patch 24 (2026-11-27) Program Management loaded (people trained: one entry updates every tab; to-do links to the Weekly plan, Deliverables, Goals and Targets; view-only access for ' + PM_VIEWERS.length + ' viewer): programmes ' + PROGRAMS.map(function(p){ return p.key; }).join(', ')); }catch(e){}
 })();
 </script>
 
